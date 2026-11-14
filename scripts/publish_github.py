@@ -9,6 +9,43 @@ from pathlib import Path
 import subprocess
 import sys
 import requests
+from requests.adapters import HTTPAdapter
+
+
+class BulkUploadAdapter(HTTPAdapter):
+    """Avoid tiny file reads/writes on a high-latency HTTP proxy."""
+    def init_poolmanager(self, connections, maxsize, block=False, **kwargs):
+        kwargs['blocksize'] = 1024 * 1024
+        return super().init_poolmanager(connections, maxsize, block, **kwargs)
+
+    def proxy_manager_for(self, proxy, **kwargs):
+        kwargs['blocksize'] = 1024 * 1024
+        return super().proxy_manager_for(proxy, **kwargs)
+
+
+class UploadReader:
+    def __init__(self, path):
+        self.stream = path.open('rb')
+        self.name = str(path)
+        self.total = path.stat().st_size
+        self.last_report = 0
+
+    def __len__(self):
+        return self.total
+
+    def read(self, size=-1):
+        data = self.stream.read(size)
+        current = self.stream.tell()
+        if current - self.last_report >= 16 * 1024**2 or current == self.total:
+            print(json.dumps({'sending': Path(self.name).name, 'read_bytes': current, 'total_bytes': self.total}), flush=True)
+            self.last_report = current
+        return data
+
+    def tell(self):
+        return self.stream.tell()
+
+    def close(self):
+        self.stream.close()
 
 
 def session():
@@ -20,6 +57,7 @@ def session():
     if not token:
         raise RuntimeError("No noninteractive GitHub credential available")
     client = requests.Session()
+    client.mount('https://uploads.github.com/', BulkUploadAdapter())
     client.headers.update({"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
                            "X-GitHub-Api-Version": "2022-11-28"})
     return client
@@ -62,13 +100,28 @@ def main():
     elif args.action == "release":
         if not args.notes or not args.asset:
             parser.error("--notes and --asset are required")
-        data = api(client, "POST", repo_path+"/releases", json={"tag_name": args.tag,
-            "name": "GaussianLab V0.1.0 — Windows 首版", "body": args.notes.read_text(encoding="utf-8"),
-            "draft": True, "prerelease": False})
+        existing = [r for r in api(client, 'GET', repo_path+'/releases') if r['tag_name'] == args.tag]
+        if existing:
+            data = existing[0]
+            if not data['draft']:
+                raise RuntimeError('Release is already published; refusing to overwrite')
+        else:
+            data = api(client, "POST", repo_path+"/releases", json={"tag_name": args.tag,
+                "name": "GaussianLab V0.1.0 — Windows 首版", "body": args.notes.read_text(encoding="utf-8"),
+                "draft": True, "prerelease": False})
         for path in args.asset:
-            with path.open("rb") as stream:
+            present = [a for a in api(client, 'GET', repo_path+f"/releases/{data['id']}/assets") if a['name'] == path.name]
+            if present:
+                if present[0]['state'] == 'uploaded' and present[0]['size'] == path.stat().st_size:
+                    print(json.dumps({'already_uploaded': path.name}), flush=True)
+                    continue
+                raise RuntimeError('Incomplete or mismatched existing asset requires inspection')
+            stream = UploadReader(path)
+            try:
                 response = client.post(data["upload_url"].split("{")[0], params={"name": path.name},
                     headers={"Content-Type": "application/octet-stream"}, data=stream, timeout=900)
+            finally:
+                stream.close()
             if response.status_code != 201:
                 raise RuntimeError(f"Asset upload {path.name}: HTTP {response.status_code}; release remains draft")
             print(json.dumps({"uploaded": path.name, "bytes": path.stat().st_size}))

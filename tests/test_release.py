@@ -34,3 +34,22 @@ def test_publisher_requires_explicit_action_and_has_no_hardcoded_token():
     text = (ROOT / "scripts/publish_github.py").read_text(encoding="utf-8")
     assert "GIT_TERMINAL_PROMPT" in text
     assert "'ghp_" not in text and '"ghp_' not in text
+
+
+def test_upload_reader_and_bulk_proxy_configuration(tmp_path):
+    spec = importlib.util.spec_from_file_location("publisher", ROOT / "scripts/publish_github.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    path = tmp_path / 'sample.bin'
+    path.write_bytes(b'abc' * 100)
+    stream = module.UploadReader(path)
+    try:
+        assert len(stream) == 300
+        assert stream.read(7) == b'abcabca'
+        assert stream.tell() == 7
+    finally:
+        stream.close()
+    adapter = module.BulkUploadAdapter()
+    assert adapter.poolmanager.connection_pool_kw['blocksize'] == 1024**2
+    proxy = adapter.proxy_manager_for('http://localhost:12345')
+    assert proxy.connection_pool_kw['blocksize'] == 1024**2
