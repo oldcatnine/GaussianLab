@@ -9,7 +9,7 @@
     blockquote{border-left:4px solid #5084a5;padding:3px 18px;margin:18px 0;background:#f1f7fa}img,svg{max-width:100%;height:auto}.hint{font-size:12px;color:#627a8d}
     @media(max-width:1000px){nav{position:static;width:auto;max-height:280px}main{margin:15px;padding:25px}}
     @page{size:A4;margin:18mm 16mm}@media print{nav{display:none}body{background:white}main{margin:0;padding:0;border-radius:0;max-width:none}h2{break-before:page}h2:first-of-type{break-before:auto}h2,h3{break-after:avoid}p,li{font-size:10.5pt}td,th{font-size:9pt}tr,pre,blockquote,svg{break-inside:avoid}a{color:inherit;text-decoration:none}}
-    </style></head><body><nav><strong>GaussianLab 项目学习手册</strong><a class="h2" href="#section-1">1 项目解决什么问题</a><a class="h2" href="#section-2">2 建议的学习顺序</a><a class="h2" href="#section-3">3 如何运行应用</a><a class="h3" href="#section-4">3.1 使用便携版</a><a class="h3" href="#section-5">3.2 从源码运行</a><a class="h3" href="#section-6">3.3 找不到模块时</a><a class="h2" href="#section-7">4 看懂界面与一轮操作</a><a class="h3" href="#section-8">4.1 各区域的职责</a><a class="h3" href="#section-9">4.2 完成第一次计算</a><a class="h3" href="#section-10">4.3 为什么两个扫描页可能为空</a><a class="h2" href="#section-11">5 光学基础词汇</a><a class="h3" href="#section-12">5.1 波长与相干光</a><a class="h3" href="#section-13">5.2 光场与光强</a><a class="h3" href="#section-14">5.3 束腰与瑞利长度</a><a class="h3" href="#section-15">5.4 薄透镜与焦距</a><a class="h3" href="#section-16">5.5 光阑、截断与衍射</a><a class="h2" href="#section-17">6 单位与符号对照</a><a class="h2" href="#section-18">7 正确理解输出指标</a><a class="h3" href="#section-19">7.1 高斯半径 w 与直径 2w</a><a class="h3" href="#section-20">7.2 包围能量半径 r86</a><a class="h3" href="#section-21">7.3 发散半角与远场能量角</a><a class="h3" href="#section-22">7.4 数值焦点与透过率</a><a class="h2" href="#section-23">8 解析高斯传播如何计算</a><a class="h3" href="#section-24">8.1 q 参数的作用</a><a class="h3" href="#section-25">8.2 自由传播与薄透镜</a><a class="h3" href="#section-26">8.3 ABCD 矩阵与执行顺序</a><a class="h3" href="#section-27">8.4 从末端参数求束腰</a><a class="h2" href="#section-28">9 数值衍射如何计算</a><a class="h3" href="#section-29">9.1 建立二维网格</a><a class="h3" href="#section-30">9.2 构造入射场</a><a class="h3" href="#section-31">9.3 透镜与光阑作用</a><a class="h3" href="#section-32">9.4 菲涅耳（Fresnel）频域传播</a><a class="h3" href="#section-33">9.5 一次 simulate 的完整顺序</a><a class="h2" href="#section-34">10 远场与能量指标的实现</a><a class="h2" href="#section-35">11 误差与收敛需要怎样理解</a><a class="h3" href="#section-36">11.1 三种不同的分辨率问题</a><a class="h3" href="#section-37">11.2 周期窗口与混叠</a><a class="h3" href="#section-38">11.3 当前收敛按钮实际做什么</a><a class="h3" href="#section-39">11.4 当前警告的意义</a><a class="h2" href="#section-40">12 三个案例怎样解读</a><a class="h3" href="#section-41">12.1 单透镜聚焦</a><a class="h3" href="#section-42">12.2 双透镜扩束</a><a class="h3" href="#section-43">12.3 光阑衍射</a><a class="h2" href="#section-44">13 先看懂软件的整体架构</a><a class="h2" href="#section-45">14 数据模型是怎样组织的</a><a class="h3" href="#section-46">14.1 Element 与 Project</a><a class="h3" href="#section-47">14.2 Result 的主要字段</a><a class="h3" href="#section-48">14.3 为什么需要参数快照</a><a class="h3" href="#section-49">14.4 看源码前要认识的 Python 写法</a><a class="h2" href="#section-50">15 界面与线程如何协作</a><a class="h3" href="#section-51">15.1 一次按钮点击的链路</a><a class="h3" href="#section-52">15.2 为什么不用一个按钮执行所有任务</a><a class="h3" href="#section-53">15.3 取消与资源管理</a><a class="h2" href="#section-54">16 三维显示究竟做了什么</a><a class="h2" href="#section-55">17 参数扫描与文件保存</a><a class="h3" href="#section-56">17.1 扫描做了哪些重复工作</a><a class="h3" href="#section-57">17.2 项目 JSON 与扫描 CSV</a><a class="h2" href="#section-58">18 文件目录应该怎样读</a><a class="h2" href="#section-59">19 如何证明程序在工作</a><a class="h3" href="#section-60">19.1 测试分工</a><a class="h3" href="#section-61">19.2 解析基准与独立对照</a><a class="h3" href="#section-62">19.3 真实交互与冻结程序</a><a class="h3" href="#section-63">19.4 不应夸大的结论</a><a class="h2" href="#section-64">20 构建 发布与版本管理</a><a class="h3" href="#section-65">20.1 三类启动入口</a><a class="h3" href="#section-66">20.2 为什么可执行文件旁边还有目录</a><a class="h3" href="#section-67">20.3 打包配置为何要排除部分动态库</a><a class="h3" href="#section-68">20.4 Git 和 GitHub 各自负责什么</a><a class="h2" href="#section-69">21 常见问题与定位方法</a><a class="h2" href="#section-70">22 技术自测问答</a><a class="h3" href="#section-71">22.1 项目为什么选择 Python</a><a class="h3" href="#section-72">22.2 解析方法和数值方法为何同时存在</a><a class="h3" href="#section-73">22.3 相位为什么重要</a><a class="h3" href="#section-74">22.4 程序是不是在做几何光线追迹</a><a class="h3" href="#section-75">22.5 三维画面是否意味着三维电磁求解</a><a class="h3" href="#section-76">22.6 透镜外形和厚度如何影响结果</a><a class="h3" href="#section-77">22.7 小孔径为什么有时使远场变宽</a><a class="h3" href="#section-78">22.8 你如何说明精度</a><a class="h3" href="#section-79">22.9 为什么不直接输出 M²</a><a class="h3" href="#section-80">22.10 r86 与 w 为什么不完全相同</a><a class="h3" href="#section-81">22.11 你如何证明多透镜顺序正确</a><a class="h3" href="#section-82">22.12 计算是否在 GPU 上执行</a><a class="h3" href="#section-83">22.13 为什么扫描不会阻塞所有界面操作</a><a class="h3" href="#section-84">22.14 如何保证导出数据与图对应</a><a class="h3" href="#section-85">22.15 为什么同一版本的两个构建摘要可能不同</a><a class="h3" href="#section-86">22.16 是否采用了外部光学库的实现</a><a class="h3" href="#section-87">22.17 是否完成实体实验验证</a><a class="h3" href="#section-88">22.18 项目的不足是什么</a><a class="h3" href="#section-89">22.19 下一步如何扩展</a><a class="h3" href="#section-90">22.20 一分钟如何介绍这个应用</a><a class="h2" href="#section-91">23 学习练习与检查点</a><a class="h2" href="#section-92">24 维护手册与中文规范</a><a class="h2" href="#section-93">附录 逐文件用途清单</a></nav><main><h1>GaussianLab 项目学习手册</h1>
+    </style></head><body><nav><strong>GaussianLab 项目学习手册</strong><a class="h2" href="#section-1">1 项目解决什么问题</a><a class="h2" href="#section-2">2 建议的学习顺序</a><a class="h2" href="#section-3">3 如何运行应用</a><a class="h3" href="#section-4">3.1 使用便携版</a><a class="h3" href="#section-5">3.2 从源码运行</a><a class="h3" href="#section-6">3.3 找不到模块时</a><a class="h2" href="#section-7">4 看懂界面与一轮操作</a><a class="h3" href="#section-8">4.1 各区域的职责</a><a class="h3" href="#section-9">4.2 完成第一次计算</a><a class="h3" href="#section-10">4.3 为什么两个扫描页可能为空</a><a class="h2" href="#section-11">5 光学基础词汇</a><a class="h3" href="#section-12">5.1 波长与相干光</a><a class="h3" href="#section-13">5.2 光场与光强</a><a class="h3" href="#section-14">5.3 束腰与瑞利长度</a><a class="h3" href="#section-15">5.4 薄透镜与焦距</a><a class="h3" href="#section-16">5.5 光阑、截断与衍射</a><a class="h2" href="#section-17">6 单位与符号对照</a><a class="h2" href="#section-18">7 正确理解输出指标</a><a class="h3" href="#section-19">7.1 高斯半径 w 与直径 2w</a><a class="h3" href="#section-20">7.2 包围能量半径 r86</a><a class="h3" href="#section-21">7.3 发散半角与远场能量角</a><a class="h3" href="#section-22">7.4 数值焦点与透过率</a><a class="h2" href="#section-23">8 解析高斯传播如何计算</a><a class="h3" href="#section-24">8.1 q 参数的作用</a><a class="h3" href="#section-25">8.2 自由传播与薄透镜</a><a class="h3" href="#section-26">8.3 ABCD 矩阵与执行顺序</a><a class="h3" href="#section-27">8.4 从末端参数求束腰</a><a class="h2" href="#section-28">9 数值衍射如何计算</a><a class="h3" href="#section-29">9.1 建立二维网格</a><a class="h3" href="#section-30">9.2 构造入射场</a><a class="h3" href="#section-31">9.3 透镜与光阑作用</a><a class="h3" href="#section-32">9.4 菲涅耳（Fresnel）频域传播</a><a class="h3" href="#section-33">9.5 一次 simulate 的完整顺序</a><a class="h2" href="#section-34">10 远场与能量指标的实现</a><a class="h2" href="#section-35">11 误差与收敛需要怎样理解</a><a class="h3" href="#section-36">11.1 三种不同的分辨率问题</a><a class="h3" href="#section-37">11.2 周期窗口与混叠</a><a class="h3" href="#section-38">11.3 当前收敛按钮实际做什么</a><a class="h3" href="#section-39">11.4 当前警告的意义</a><a class="h2" href="#section-40">12 三个案例怎样解读</a><a class="h3" href="#section-41">12.1 单透镜聚焦</a><a class="h3" href="#section-42">12.2 双透镜扩束</a><a class="h3" href="#section-43">12.3 光阑衍射</a><a class="h2" href="#section-44">13 先看懂软件的整体架构</a><a class="h2" href="#section-45">14 数据模型是怎样组织的</a><a class="h3" href="#section-46">14.1 Element 与 Project</a><a class="h3" href="#section-47">14.2 Result 的主要字段</a><a class="h3" href="#section-48">14.3 为什么需要参数快照</a><a class="h3" href="#section-49">14.4 看源码前要认识的 Python 写法</a><a class="h2" href="#section-50">15 界面与线程如何协作</a><a class="h3" href="#section-51">15.1 一次按钮点击的链路</a><a class="h3" href="#section-52">15.2 为什么不用一个按钮执行所有任务</a><a class="h3" href="#section-53">15.3 取消与资源管理</a><a class="h2" href="#section-54">16 三维显示究竟做了什么</a><a class="h2" href="#section-55">17 参数扫描与文件保存</a><a class="h3" href="#section-56">17.1 扫描做了哪些重复工作</a><a class="h3" href="#section-57">17.2 项目 JSON 与扫描 CSV</a><a class="h3" href="#section-58">17.3 白色主题与图片导出</a><a class="h2" href="#section-59">18 文件目录应该怎样读</a><a class="h2" href="#section-60">19 如何证明程序在工作</a><a class="h3" href="#section-61">19.1 测试分工</a><a class="h3" href="#section-62">19.2 解析基准与独立对照</a><a class="h3" href="#section-63">19.3 真实交互与冻结程序</a><a class="h3" href="#section-64">19.4 不应夸大的结论</a><a class="h2" href="#section-65">20 构建 发布与版本管理</a><a class="h3" href="#section-66">20.1 三类启动入口</a><a class="h3" href="#section-67">20.2 为什么可执行文件旁边还有目录</a><a class="h3" href="#section-68">20.3 打包配置为何要排除部分动态库</a><a class="h3" href="#section-69">20.4 Git 和 GitHub 各自负责什么</a><a class="h2" href="#section-70">21 常见问题与定位方法</a><a class="h2" href="#section-71">22 技术自测问答</a><a class="h3" href="#section-72">22.1 项目为什么选择 Python</a><a class="h3" href="#section-73">22.2 解析方法和数值方法为何同时存在</a><a class="h3" href="#section-74">22.3 相位为什么重要</a><a class="h3" href="#section-75">22.4 程序是不是在做几何光线追迹</a><a class="h3" href="#section-76">22.5 三维画面是否意味着三维电磁求解</a><a class="h3" href="#section-77">22.6 透镜外形和厚度如何影响结果</a><a class="h3" href="#section-78">22.7 小孔径为什么有时使远场变宽</a><a class="h3" href="#section-79">22.8 你如何说明精度</a><a class="h3" href="#section-80">22.9 为什么不直接输出 M²</a><a class="h3" href="#section-81">22.10 r86 与 w 为什么不完全相同</a><a class="h3" href="#section-82">22.11 你如何证明多透镜顺序正确</a><a class="h3" href="#section-83">22.12 计算是否在 GPU 上执行</a><a class="h3" href="#section-84">22.13 为什么扫描不会阻塞所有界面操作</a><a class="h3" href="#section-85">22.14 如何保证导出数据与图对应</a><a class="h3" href="#section-86">22.15 为什么同一版本的两个构建摘要可能不同</a><a class="h3" href="#section-87">22.16 是否采用了外部光学库的实现</a><a class="h3" href="#section-88">22.17 是否完成实体实验验证</a><a class="h3" href="#section-89">22.18 项目的不足是什么</a><a class="h3" href="#section-90">22.19 下一步如何扩展</a><a class="h3" href="#section-91">22.20 一分钟如何介绍这个应用</a><a class="h2" href="#section-92">23 学习练习与检查点</a><a class="h2" href="#section-93">24 维护手册与中文规范</a><a class="h2" href="#section-94">附录 逐文件用途清单</a></nav><main><h1>GaussianLab 项目学习手册</h1>
 <p>本手册面向刚开始学习 Python、光学仿真和桌面应用开发的读者。目标是能够运行应用、看懂项目文件、说明计算过程、理解测试证据，并对技术问题给出有依据的解释。</p>
 <p>阅读基线为当前源码与已发布的 V0.1.0。源码注释和文档可以继续更新，既有发行附件和历史验证日志保持版本对应关系。本次文字整理不代表已经重新打包可执行程序。</p>
 <p>当前开发基线为 <code>4179468</code> 的 CPU 数值增强版。CUDA 与参数自动预览试验已于 2026-11-14 回退，当前通过“计算光场”按钮执行计算；过程见 <a href="development-log.md">开发记录 DEV-013</a>。</p>
@@ -519,7 +519,13 @@ docs/：需求、设计、证据和学习资料
 <p>项目 JSON 顶层包含 schema_version、units 和 project。版本用于识别格式，units=SI 表明参数采用国际单位制。当前项目文件不保存三维相机、观察屏或全部光场数组。</p>
 <p>CSV 的字段包括 <code>value_m</code>、<code>min_r86_m</code>、<code>focus_z_m</code>、<code>transmission</code>、<code>theta86_rad</code>、<code>status</code> 和 <code>note</code>。字段名保留英文以保持数据兼容，中文含义可在本手册中查询。</p>
 <p>原始项目保存、扫描任务设置与计算结果是不同对象。将数据快照导出到新文件，比根据当前界面临时拼凑参数更可靠。</p>
-<h2 id="section-58">18 文件目录应该怎样读</h2>
+<h3 id="section-58">17.3 白色主题与图片导出</h3>
+<p>软件窗口、分析图和三维背景均为白色，坐标文字采用深色，光斑与观察屏共用低强度白色的色标。颜色变化只影响显示，不改变光学计算与相对强度数据。</p>
+<p>在右下“导出图像类型”中选择光斑图、剖面强度曲线、强度曲面、包围能量、轴向传播或参数扫描，然后点击“导出图片”。默认“当前分析图”对应右上当前选中的分析标签；导出下方轴向或扫描曲线时直接指定对应类型。无需预先打开目标标签。</p>
+<p>光斑、剖面、曲面与包围能量使用当前观察屏位置；光斑同时遵循“对数光斑”开关。导出读取已完成的结果快照，修改参数但未重算时仍导出原结果。扫描图读取扫描任务快照，尚未扫描时会提示先完成扫描。</p>
+<p>支持 300 dpi PNG 以及 SVG/PDF。图纸、坐标区、图例及强度零值采用白底，并明确关闭透明输出；保存时自动计算图像边界并保留留白，避免标题和坐标被裁切。强度曲面中的二维色块或分位曲线台阶反映已有采样，不通过导出插值虚构更高精度。场景截图沿用“场景截图”按钮，以白底 PNG 保存。</p>
+<p><code>theme.py</code> 管理绘图背景、文本、线条颜色和共享强度色标；<code>charts.py</code> 与 <code>scene.py</code> 使用这些设置，<code>gui.py</code> 负责白色控件及导出类型选择。当前源码含新主题，已发布的旧便携版保持原版本。</p>
+<h2 id="section-59">18 文件目录应该怎样读</h2>
 <p>第一次看源码，可以按 <code>model.py → optics.py → gui.py → charts.py/scene.py → tests/</code> 的顺序。不要先从打包钩子、虚拟环境或三维库内部源码开始。</p>
 <table>
 <thead>
@@ -583,8 +589,8 @@ docs/：需求、设计、证据和学习资料
 </tbody>
 </table>
 <p>附录逐项覆盖受版本管理的文件与本手册新增文件。依赖目录和自动生成目录按类别说明，不逐项解释第三方库的内部文件。截图属于历史证据，其中的界面文字可能与当前源码不同。</p>
-<h2 id="section-59">19 如何证明程序在工作</h2>
-<h3 id="section-60">19.1 测试分工</h3>
+<h2 id="section-60">19 如何证明程序在工作</h2>
+<h3 id="section-61">19.1 测试分工</h3>
 <p><code>test_optics.py</code> 检查物理与数值基准；<code>test_gui.py</code> 检查真实 Qt/VTK 和异步交互；<code>test_project_docs.py</code> 检查文档一致性；<code>test_release.py</code> 检查发行及发布证据；中文规范与手册检查由 <code>test_text_policy.py</code> 完成。</p>
 <p>测试数量会随开发变化，不把旧日志中的数量写成永久指标。最终结果需要同时看断言结果与进程退出码，不能只看“通过了若干测试”。</p>
 <pre><code class="language-powershell">.\.venv\Scripts\python.exe -m pytest tests -q -p no:faulthandler
@@ -592,27 +598,27 @@ docs/：需求、设计、证据和学习资料
 .\.venv\Scripts\python.exe -m pip check
 git diff --check
 </code></pre>
-<h3 id="section-61">19.2 解析基准与独立对照</h3>
+<h3 id="section-62">19.2 解析基准与独立对照</h3>
 <p>可以核对束腰处 w=w0，正负瑞利长度处 w=√2w0，圆孔透过率与解析积分相符，数值自由传播趋近高斯公式，以及多透镜顺序与独立矩阵乘法一致。</p>
 <p>这类测试的依据来自独立关系，比只断言“程序返回了一个正数”更有意义。但有限案例不能证明所有参数组合都正确。</p>
-<h3 id="section-62">19.3 真实交互与冻结程序</h3>
+<h3 id="section-63">19.3 真实交互与冻结程序</h3>
 <p>旧扫描测试直接给 job_done 注入数据，能检查表格填充，却不能证明按钮和线程连接正常。因此又增加真实按钮到工作线程再到两个结果页的回归测试。</p>
 <p>冻结验证在打包程序内部执行，报告应标记 frozen=true，并实际完成计算、场景截图、保存与导出。已发布附件还经过实际下载、摘要与压缩包检查，再运行下载版可执行文件。</p>
-<h3 id="section-63">19.4 不应夸大的结论</h3>
+<h3 id="section-64">19.4 不应夸大的结论</h3>
 <p>当前验证属于解析对照、数值实验和软件检查，没有实体光学平台的实测数据。不能据此宣称已经与真实实验完全一致、具有商业光学设计软件精度，或完成标准 M² 测量。</p>
-<h2 id="section-64">20 构建 发布与版本管理</h2>
-<h3 id="section-65">20.1 三类启动入口</h3>
+<h2 id="section-65">20 构建 发布与版本管理</h2>
+<h3 id="section-66">20.1 三类启动入口</h3>
 <p>源码模式由 <code>__main__.py</code> 调用界面；本机启动脚本帮助定位虚拟环境；冻结发行由 <code>app_entry.py</code> 启动并提供错误日志与冒烟入口。</p>
-<h3 id="section-66">20.2 为什么可执行文件旁边还有目录</h3>
+<h3 id="section-67">20.2 为什么可执行文件旁边还有目录</h3>
 <p>本项目采用 PyInstaller 的目录式打包。可执行文件包含启动引导，<code>_internal</code> 包含 Python、Qt、VTK、数值库和资源。保留独立动态库也便于按第三方许可要求替换兼容库。</p>
-<h3 id="section-67">20.3 打包配置为何要排除部分动态库</h3>
+<h3 id="section-68">20.3 打包配置为何要排除部分动态库</h3>
 <p>构建环境 PATH 中的其他软件可能带入同名但不兼容的动态库。项目曾遇到 Poppler 的 ICU 与 Windows 原生 ICU 接口不一致的问题，已经在配置中排除。无关的 Qt PDF、虚拟键盘和可视化附加模块也被排除。</p>
 <p>这些处理来自真实的部署问题，并不改变光学公式。打包失败、界面失败与数值失败应分别定位。</p>
-<h3 id="section-68">20.4 Git 和 GitHub 各自负责什么</h3>
+<h3 id="section-69">20.4 Git 和 GitHub 各自负责什么</h3>
 <p>Git 保存本地文件历史，commit 对应一次可追踪改动，tag 标识一个版本基线。GitHub 提供远端源码、构建和发行附件。源码仓库、已编译附件与对应源码附件是不同文件，校验值也不可混用。</p>
 <p>本项目使用私有仓库。发布脚本通过标准凭据管理器和官方接口访问，不将凭据写入项目。GitHub Actions 使用远端 Windows 环境构建，解决了本机大附件上传过慢的问题。</p>
 <p>既有 V0.1.0 标签和附件不随文档编辑自动改变。后续功能或界面更新应形成新的经过验证的版本，不应修改旧摘要后仍把它称为原发布文件。</p>
-<h2 id="section-69">21 常见问题与定位方法</h2>
+<h2 id="section-70">21 常见问题与定位方法</h2>
 <table>
 <thead>
 <tr>
@@ -668,49 +674,49 @@ git diff --check
 </tbody>
 </table>
 <p>定位时保留输入、版本、网格、窗口、操作步骤和实际错误。先复现，再提出原因，再用验证区分原因，避免只根据一张图猜测。</p>
-<h2 id="section-70">22 技术自测问答</h2>
-<h3 id="section-71">22.1 项目为什么选择 Python</h3>
+<h2 id="section-71">22 技术自测问答</h2>
+<h3 id="section-72">22.1 项目为什么选择 Python</h3>
 <p>Python 便于将 NumPy/SciPy 数组计算、Qt 桌面界面、Matplotlib 图表和 VTK 三维渲染组合起来，也便于编写独立测试。当前没有实现 MATLAB 版本，因此不能声称已验证两种语言结果一致。</p>
-<h3 id="section-72">22.2 解析方法和数值方法为何同时存在</h3>
+<h3 id="section-73">22.2 解析方法和数值方法为何同时存在</h3>
 <p>解析方法快速、可解释，适合作为理想高斯参考。硬光阑截断破坏严格高斯形式，需要复光场的数值传播。两者还可在无截断条件下相互核对。</p>
-<h3 id="section-73">22.3 相位为什么重要</h3>
+<h3 id="section-74">22.3 相位为什么重要</h3>
 <p>透镜主要施加相位变化，传播通过干涉改变后续强度。若每个面只保留强度而丢掉复光场，就无法保持这条物理关系。</p>
-<h3 id="section-74">22.4 程序是不是在做几何光线追迹</h3>
+<h3 id="section-75">22.4 程序是不是在做几何光线追迹</h3>
 <p>高斯参考使用近轴传递关系，数值分支传播的是复光场。三维轮廓不是逐条光线积分，也不是实体镜片中的完整折射追迹。</p>
-<h3 id="section-75">22.5 三维画面是否意味着三维电磁求解</h3>
+<h3 id="section-76">22.5 三维画面是否意味着三维电磁求解</h3>
 <p>不是。计算对象是二维横截面场和轴向传播，展示层将结果组织成三维场景，并利用圆对称条件生成轮廓。</p>
-<h3 id="section-76">22.6 透镜外形和厚度如何影响结果</h3>
+<h3 id="section-77">22.6 透镜外形和厚度如何影响结果</h3>
 <p>当前显示外形是示意，计算只用薄透镜焦距。厚透镜、材料色散、球差等若要纳入，需要扩展元件模型与传播处理。</p>
-<h3 id="section-77">22.7 小孔径为什么有时使远场变宽</h3>
+<h3 id="section-78">22.7 小孔径为什么有时使远场变宽</h3>
 <p>孔径限制空间分布，对应频域分布扩展。实际结果还受入射光场和透镜影响，应使用同一配置下的计算和指标比较，而不是对所有场景套一句定性结论。</p>
-<h3 id="section-78">22.8 你如何说明精度</h3>
+<h3 id="section-79">22.8 你如何说明精度</h3>
 <p>给出模型假设、独立解析基准、参数和网格设置，以及网格/窗口/轴向采样改变后的指标变化。没有这些证据时，只能说得到一个数值结果，不能给出未经标定的精度等级。</p>
-<h3 id="section-79">22.9 为什么不直接输出 M²</h3>
+<h3 id="section-80">22.9 为什么不直接输出 M²</h3>
 <p>标准光束质量因子涉及明确的二阶矩定义和传播分析。硬截断的长尾会导致有限窗口结果敏感，本项目还没有完成对应规范和稳定性验证。</p>
-<h3 id="section-80">22.10 r86 与 w 为什么不完全相同</h3>
+<h3 id="section-81">22.10 r86 与 w 为什么不完全相同</h3>
 <p>前者按累计能量定义，后者按高斯强度阈值定义。理想高斯下 r86≈0.9915w；非高斯光斑下不能直接换算。</p>
-<h3 id="section-81">22.11 你如何证明多透镜顺序正确</h3>
+<h3 id="section-82">22.11 你如何证明多透镜顺序正确</h3>
 <p>说明元件按 z 排序、同位置保留列表顺序，再展示与独立 ABCD 矩阵连乘的测试。只展示一张扩束图不能证明实现顺序正确。</p>
-<h3 id="section-82">22.12 计算是否在 GPU 上执行</h3>
+<h3 id="section-83">22.12 计算是否在 GPU 上执行</h3>
 <p>当前数值内核使用 NumPy/SciPy 的 CPU 计算。VTK 场景使用图形渲染路径，不代表传播算法已经使用 GPU 加速。</p>
-<h3 id="section-83">22.13 为什么扫描不会阻塞所有界面操作</h3>
+<h3 id="section-84">22.13 为什么扫描不会阻塞所有界面操作</h3>
 <p>较重任务放入 QThread，计算完成后用信号回到主线程更新控件。仍受 CPU、内存和渲染工作量限制，不能承诺所有场景都实时响应。</p>
-<h3 id="section-84">22.14 如何保证导出数据与图对应</h3>
+<h3 id="section-85">22.14 如何保证导出数据与图对应</h3>
 <p>Result 保存参数快照，图表读取该结果；导出数据同步保存生成它的项目配置。扫描使用自己的结果和设置，不能误取后来修改的输入。</p>
-<h3 id="section-85">22.15 为什么同一版本的两个构建摘要可能不同</h3>
+<h3 id="section-86">22.15 为什么同一版本的两个构建摘要可能不同</h3>
 <p>不同机器的打包时间、路径和环境资源可使二进制不同。应区分本机构建清单与远端附件清单，用实际下载文件的摘要核对发布记录。</p>
-<h3 id="section-86">22.16 是否采用了外部光学库的实现</h3>
+<h3 id="section-87">22.16 是否采用了外部光学库的实现</h3>
 <p>项目调研了 RayTracing、LightPipes 和 GaussianBeam，但当前 q 参数和菲涅耳计算内核由本项目编写；使用 NumPy/SciPy 完成数组与变换。外部参考与实际依赖不能混称。</p>
-<h3 id="section-87">22.17 是否完成实体实验验证</h3>
+<h3 id="section-88">22.17 是否完成实体实验验证</h3>
 <p>当前没有实体测量记录。已有证据是解析基准、数值实验、软件测试和独立发行验证；若后续进行实验，应记录仪器、标定、测量误差和对照方法。</p>
-<h3 id="section-88">22.18 项目的不足是什么</h3>
+<h3 id="section-89">22.18 项目的不足是什么</h3>
 <p>当前主要不足包括有限模型范围、局部离散焦点仍有平台与多峰风险、有限窗口误差、没有任意光路精度保证，以及显示状态保存、扫描动画和独立透镜口径等交互功能。多指标收敛、包围能量与独立对照已加入源码，但不能替代实体实验或标准 M² 测量。改进应按影响程度排序并提供验证方法。</p>
-<h3 id="section-89">22.19 下一步如何扩展</h3>
+<h3 id="section-90">22.19 下一步如何扩展</h3>
 <p>可以先完善空白页面引导与局部焦点搜索，再建立多指标收敛检查。加入像差或矢量传播时，应同时扩展数据模型、数值方法和独立测试，不能只在界面增加按钮。</p>
-<h3 id="section-90">22.20 一分钟如何介绍这个应用</h3>
+<h3 id="section-91">22.20 一分钟如何介绍这个应用</h3>
 <p>可以按“问题、方法、实现、验证、限制”组织：应用用于研究简单光路中高斯光束聚焦、扩束和光阑截断；通过 q 参数提供理想参考，通过二维菲涅耳传播计算衍射；桌面界面连接后台任务、三维场景和图表；使用解析基准、数值对照、真实交互与冻结程序验证；当前范围为单色同轴近轴模型，尚无实体实验和标准 M² 验证。</p>
 <p>这段说明的重点是让每个结论都能找到代码和证据，而不是背诵术语。</p>
-<h2 id="section-91">23 学习练习与检查点</h2>
+<h2 id="section-92">23 学习练习与检查点</h2>
 <p>练习一：在不看界面标签的情况下，解释波长、束腰、焦距、光阑直径各自的含义和单位，并找到对应模型字段。</p>
 <p>练习二：从 <code>start_scan()</code> 开始，画出调用到 <code>scan()</code>、再回到表格更新的流程，并指出线程边界。</p>
 <p>练习三：将自由传播设置为无透镜和无光阑，核对束腰处及一个瑞利长度处的半径。保存输入后再解释结果。</p>
@@ -718,14 +724,14 @@ git diff --check
 <p>练习五：分别改变 N、L 和轴向采样数，记录同一定义的指标，解释哪些变化与采样有关。</p>
 <p>练习六：任选一个测试，说明它的独立依据、能发现的错误和不能证明的内容。</p>
 <p>完成后应能回答：哪里是输入、哪里是公式、哪里是离散近似、哪里只是显示、哪里有验证、哪里仍有限制。</p>
-<h2 id="section-92">24 维护手册与中文规范</h2>
+<h2 id="section-93">24 维护手册与中文规范</h2>
 <p>项目自有注释、文档字符串、面向用户的说明和错误解释使用中文。保留函数名、字段、命令、库名和单位，避免修改文件格式和外部接口。第三方许可原文与原始测试输出是证据或法律文本，解释另写中文。</p>
 <p>更新文件后维护 <code>file-roles.json</code>，再运行：</p>
 <pre><code class="language-powershell">.\.venv\Scripts\python.exe scripts/build_handbook.py
 .\.venv\Scripts\python.exe -m pytest tests -q -p no:faulthandler
 </code></pre>
 <p>网页阅读版由 Markdown 源文件生成，提供目录导航，也可在浏览器中打印。不要只修改生成网页而不更新源文件。当前手册是学习与维护文档，不替代库的官方 API 文档或正式物理教材。</p>
-<h2 id="section-93">附录 逐文件用途清单</h2>
+<h2 id="section-94">附录 逐文件用途清单</h2>
 <p>本表由维护脚本生成。可选本机配置可能不出现在其他机器的干净检出中；它们不参与应用功能。</p>
 <!-- FILE_INDEX_START -->
 <table>
@@ -938,11 +944,11 @@ git diff --check
 </tr>
 <tr>
 <td><code>gaussian_lab/charts.py</code></td>
-<td>绘制轴向、光斑、剖面、强度曲面、扫描和包围能量曲线。</td>
+<td>以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。</td>
 </tr>
 <tr>
 <td><code>gaussian_lab/gui.py</code></td>
-<td>构建桌面控件与信号连接，启动后台任务并更新结果、观察屏、扫描与导出。</td>
+<td>构建白色桌面界面、调度后台计算并提供结果、观察屏、扫描及六类图像导出。</td>
 </tr>
 <tr>
 <td><code>gaussian_lab/model.py</code></td>
@@ -959,6 +965,10 @@ git diff --check
 <tr>
 <td><code>gaussian_lab/scene.py</code></td>
 <td>将计算结果转换为三维光路、包络、元件示意及观察面。</td>
+</tr>
+<tr>
+<td><code>gaussian_lab/theme.py</code></td>
+<td>定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。</td>
 </tr>
 <tr>
 <td><code>requirements-build.txt</code></td>

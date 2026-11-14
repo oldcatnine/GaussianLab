@@ -18,25 +18,25 @@ from .scene import OpticalScene
 from .charts import PlotCanvas
 
 STYLE = """
-QMainWindow,QWidget {background:#0b1322;color:#dce8f8;font-family:'Microsoft YaHei';font-size:12px;}
-QGroupBox {border:1px solid #253650;border-radius:9px;margin-top:13px;padding:13px 9px 8px;}
-QGroupBox::title {subcontrol-origin:margin;left:12px;color:#88aacd;}
-QPushButton {background:#1c304b;border:1px solid #314967;border-radius:6px;padding:7px 13px;}
-QPushButton:hover {background:#2c4866;border-color:#68cddd;}
-QPushButton:disabled {color:#53647c;background:#152033;}
-QPushButton#primary {background:#247e91;border-color:#45bbca;color:white;font-weight:bold;}
-QComboBox,QDoubleSpinBox,QSpinBox {background:#142239;border:1px solid #30425d;border-radius:5px;padding:4px;min-height:20px;}
-QComboBox QAbstractItemView {background:#142239;selection-background-color:#276379;}
-QTableWidget {background:#101c2e;gridline-color:#273851;border:1px solid #263b57;selection-background-color:#20536d;}
-QHeaderView::section {background:#192c44;color:#8ba9c9;padding:6px;border:0;}
-QTabWidget::pane {border:1px solid #263851;border-radius:4px;}
-QTabBar::tab {background:#132238;color:#8ba5c5;padding:7px 13px;}
-QTabBar::tab:selected {color:#70dce6;border-bottom:2px solid #57c9d7;background:#1a2c44;}
-QSlider::groove:horizontal {height:5px;background:#284057;border-radius:2px;}
-QSlider::handle:horizontal {background:#6de1e5;width:14px;margin:-5px 0;border-radius:6px;}
-QProgressBar {border:0;border-radius:3px;background:#1a2a40;text-align:center;max-height:15px;}
-QProgressBar::chunk {background:#3bb6c4;}
-QToolTip {background:#24374e;color:white;border:1px solid #6d9ab8;}
+QMainWindow,QWidget {background:#ffffff;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
+QGroupBox {border:1px solid #cbd5e1;border-radius:9px;margin-top:13px;padding:13px 9px 8px;}
+QGroupBox::title {subcontrol-origin:margin;left:12px;color:#1e40af;}
+QPushButton {background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:7px 13px;}
+QPushButton:hover {background:#eff6ff;border-color:#60a5fa;}
+QPushButton:disabled {color:#94a3b8;background:#f1f5f9;}
+QPushButton#primary {background:#2563eb;border-color:#1d4ed8;color:white;font-weight:bold;}
+QComboBox,QDoubleSpinBox,QSpinBox {background:#f8fafc;border:1px solid #cbd5e1;border-radius:5px;padding:4px;min-height:20px;}
+QComboBox QAbstractItemView {background:#f8fafc;selection-background-color:#dbeafe;}
+QTableWidget {background:#ffffff;gridline-color:#e2e8f0;border:1px solid #cbd5e1;selection-background-color:#dbeafe;}
+QHeaderView::section {background:#f1f5f9;color:#334155;padding:6px;border:0;}
+QTabWidget::pane {border:1px solid #cbd5e1;border-radius:4px;}
+QTabBar::tab {background:#f8fafc;color:#475569;padding:7px 13px;}
+QTabBar::tab:selected {color:#1d4ed8;border-bottom:2px solid #2563eb;background:#eff6ff;}
+QSlider::groove:horizontal {height:5px;background:#cbd5e1;border-radius:2px;}
+QSlider::handle:horizontal {background:#2563eb;width:14px;margin:-5px 0;border-radius:6px;}
+QProgressBar {border:0;border-radius:3px;background:#e2e8f0;text-align:center;max-height:15px;}
+QProgressBar::chunk {background:#2563eb;}
+QToolTip {background:#ffffff;color:#1f2937;border:1px solid #94a3b8;}
 """
 
 
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(18, 12, 18, 10)
         root.setSpacing(10)
         toolbar = QHBoxLayout()
-        title = QLabel("GAUSSIAN<span style='color:#64dce6'>LAB</span>  <small>光学传输实验台</small>")
+        title = QLabel("GAUSSIAN<span style='color:#2563eb'>LAB</span>  <small>光学传输实验台</small>")
         title.setStyleSheet("font-size:22px;font-weight:bold;")
         toolbar.addWidget(title)
         toolbar.addStretch()
@@ -171,7 +171,7 @@ class MainWindow(QMainWindow):
         row.addWidget(button("移除选中", self.remove_element))
         el.addLayout(row)
         hint = QLabel("透镜参数为焦距，光阑参数为直径。\n同位置按列表先后执行；元件为理想薄元件。")
-        hint.setStyleSheet("color:#829ab6;font-size:10px;")
+        hint.setStyleSheet("color:#64748b;font-size:10px;")
         el.addWidget(hint)
         left_layout.addWidget(element_box)
         scan_box = QGroupBox("03  单参数扫描")
@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         self.cards = []
         for caption in ("高斯参考束腰 / 全局 z", "衍射最小 r86 / 采样点", "参考 θ / 衍射 θ86", "系统透过率 / 末端"):
             card = QLabel(caption + "\n—")
-            card.setStyleSheet("background:#15243a;border:1px solid #293e59;border-radius:8px;padding:10px;color:#a8c4df;")
+            card.setStyleSheet("background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px;color:#1e3a5f;")
             card.setMinimumHeight(60)
             card.setAlignment(Qt.AlignCenter)
             self.cards.append(card)
@@ -267,17 +267,23 @@ class MainWindow(QMainWindow):
         rv.addWidget(self.bottom, 3)
         exports = QHBoxLayout()
         self.result_state = QLabel("尚未计算")
-        self.result_state.setStyleSheet("color:#92abc8;")
+        self.result_state.setStyleSheet("color:#475569;")
         exports.addWidget(self.result_state, 1)
         exports.addWidget(button("导出 CSV", self.export_data))
-        exports.addWidget(button("导出当前曲线", self.export_plot))
+        self.export_target = QComboBox()
+        self.export_target.setAccessibleName("导出图像类型")
+        for label, key in (("当前分析图", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
+                           ("强度曲面", "surface"), ("包围能量", "energy"), ("轴向传播", "beam"), ("参数扫描", "scan")):
+            self.export_target.addItem(label, key)
+        exports.addWidget(self.export_target)
+        exports.addWidget(button("导出图片", self.export_plot))
         rv.addLayout(exports)
         splitter.addWidget(right)
         splitter.setSizes([340, 1130])
         root.addWidget(splitter, 1)
         self.status = QLabel("标量近轴模型 · 所有数值结果需按网格与窗口验证 · 元件外形为示意")
         self.status.setWordWrap(True)
-        self.status.setStyleSheet("color:#8ba6c5;font-size:11px;")
+        self.status.setStyleSheet("color:#475569;font-size:11px;")
         root.addWidget(self.status)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
@@ -570,18 +576,43 @@ class MainWindow(QMainWindow):
             self.show_error(str(exc))
 
     def export_plot(self):
-        if self.bottom.currentIndex() in (1, 2):
-            plot = self.scan_plot
-        elif self.tabs.currentIndex() == 3:
-            plot = self.energy_plot
-        else:
-            plot = self.beam_plot
-        if plot.ax is None:
-            return
-        path = self.choose_path("导出当前定量曲线", "curve.png", "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")
-        if path:
-            plot.figure.savefig(path, dpi=180, facecolor=plot.figure.get_facecolor())
-            self.status.setText("已导出曲线：" + path)
+        """按明确选择导出结果快照，支持未打开过的分析标签和白底矢量图。"""
+        try:
+            key = self.export_target.currentData()
+            if key == "current":
+                key = ("spot", "profile", "surface", "energy")[self.tabs.currentIndex()]
+            labels = {"spot": "光斑图", "profile": "剖面强度曲线", "surface": "强度曲面",
+                      "energy": "包围能量", "beam": "轴向传播", "scan": "参数扫描"}
+            if key == "scan":
+                if not self.scan_rows:
+                    raise ValueError("请先完成参数扫描")
+                kind = self.scan_project.elements[self.scan_options[0]].kind
+                self.scan_plot.scanning(self.scan_rows, kind)
+                plot = self.scan_plot
+            else:
+                if self.result is None:
+                    raise ValueError("请先完成光场计算")
+                r = self.result
+                index = min(self.plane_slider.value(), len(r.z) - 1)
+                plot = {"spot": self.spot_plot, "profile": self.profile_plot, "surface": self.surface_plot,
+                        "energy": self.energy_plot, "beam": self.beam_plot}[key]
+                if key == "spot":
+                    plot.spot(r, index, self.log_scale.isChecked())
+                else:
+                    method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
+                    getattr(plot, method)(r, index)
+            path = self.choose_path("导出" + labels[key], key + ".png", "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")
+            if path:
+                labels_to_keep = []
+                for axes in plot.figure.axes:
+                    labels_to_keep.extend((axes.xaxis.label, axes.yaxis.label, axes.title))
+                    if hasattr(axes, "zaxis"):
+                        labels_to_keep.append(axes.zaxis.label)
+                plot.figure.savefig(path, dpi=300, facecolor="white", edgecolor="white", transparent=False,
+                                    bbox_inches="tight", pad_inches=.15, bbox_extra_artists=labels_to_keep)
+                self.status.setText("已导出白底" + labels[key] + "：" + path)
+        except Exception as exc:
+            self.show_error(str(exc))
 
     def screenshot(self):
         if self.result is None:

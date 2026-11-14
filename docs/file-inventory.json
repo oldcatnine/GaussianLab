@@ -251,12 +251,12 @@
   },
   {
     "path": "gaussian_lab/charts.py",
-    "purpose": "绘制轴向、光斑、剖面、强度曲面、扫描和包围能量曲线。",
+    "purpose": "以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
     "optional_local": false
   },
   {
     "path": "gaussian_lab/gui.py",
-    "purpose": "构建桌面控件与信号连接，启动后台任务并更新结果、观察屏、扫描与导出。",
+    "purpose": "构建白色桌面界面、调度后台计算并提供结果、观察屏、扫描及六类图像导出。",
     "optional_local": false
   },
   {
@@ -277,6 +277,11 @@
   {
     "path": "gaussian_lab/scene.py",
     "purpose": "将计算结果转换为三维光路、包络、元件示意及观察面。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/theme.py",
+    "purpose": "定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。",
     "optional_local": false
   },
   {

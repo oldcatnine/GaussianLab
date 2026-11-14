@@ -2,12 +2,13 @@
 import numpy as np
 import pyvista as pv
 from pyvistaqt import QtInteractor
+from .theme import BACKGROUND, TEXT, INTENSITY_CMAP
 
 
 class OpticalScene(QtInteractor):
     def __init__(self, parent=None):
         super().__init__(parent, auto_update=False)
-        self.set_background("#080e1d", top="#15243b")
+        self.set_background(BACKGROUND)
         self.scale_transverse = 25
         self.result = None
         self.screen_actor = None
@@ -26,40 +27,40 @@ class OpticalScene(QtInteractor):
         hh = radii[:, None] * np.sin(aa)
         mesh = pv.StructuredGrid(zz, yy, hh)
         mesh["energy"] = np.broadcast_to(result.transmission[:, None], zz.shape).ravel(order="F")
-        self.add_mesh(mesh, color="#55ddec", opacity=.23, smooth_shading=True,
+        self.add_mesh(mesh, color="#0284c7", opacity=.23, smooth_shading=True,
                       show_edges=False, name="energy_envelope")
         for fraction, opacity in ((.68, .15), (.32, .25)):
             core = pv.StructuredGrid(zz, yy*fraction, hh*fraction)
-            self.add_mesh(core, color="#92f8ff", opacity=opacity, lighting=False)
+            self.add_mesh(core, color="#0369a1", opacity=opacity, lighting=False)
         floor = pv.Plane(center=(p.length*500, 0, -36), direction=(0, 0, 1),
                          i_size=p.length*1100, j_size=140, i_resolution=32, j_resolution=12)
-        self.add_mesh(floor, color="#1c4057", style="wireframe", opacity=.35, line_width=.7)
-        self.add_mesh(pv.Line((0, 0, 0), (p.length * 1e3, 0, 0)), color="#6b8fa7", opacity=.5)
+        self.add_mesh(floor, color="#94a3b8", style="wireframe", opacity=.35, line_width=.7)
+        self.add_mesh(pv.Line((0, 0, 0), (p.length * 1e3, 0, 0)), color="#64748b", opacity=.5)
         for e in p.ordered():
             center = (e.z * 1e3, 0, 0)
             if e.kind == "lens":
                 self.add_mesh(pv.Cylinder(center=center, direction=(1, 0, 0), radius=22, height=3,
-                                          resolution=80), color="#79bfff", opacity=.3,
+                                          resolution=80), color="#60a5fa", opacity=.3,
                               smooth_shading=True)
                 ring = pv.Disc(center=center, inner=21.5, outer=23, normal=(1, 0, 0), c_res=80)
-                self.add_mesh(ring, color="#b7d8f2", opacity=.8)
+                self.add_mesh(ring, color="#3b82f6", opacity=.8)
             else:
                 hole = max(e.value * 1e3 / 2 * self.scale_transverse, .3)
                 disc = pv.Disc(center=center, inner=hole, outer=max(hole+5, 24),
                                normal=(1, 0, 0), c_res=100)
-                self.add_mesh(disc, color="#8e9caf", metallic=.7, roughness=.4)
+                self.add_mesh(disc, color="#64748b", metallic=.7, roughness=.4)
             self.add_point_labels([(center[0], 0, 30)], [e.label], font_size=13,
-                                  text_color="#dbe7ff", point_size=0, shape=None, always_visible=True)
+                                  text_color=TEXT, point_size=0, shape=None, always_visible=True)
             self.add_mesh(pv.Cylinder(center=(center[0], 0, -29), direction=(0, 0, 1),
-                                      radius=1.5, height=12), color="#5d7797")
+                                      radius=1.5, height=12), color="#475569")
             self.add_mesh(pv.Cube(center=(center[0], 0, -36), x_length=14, y_length=26,
-                                  z_length=2), color="#344b68")
+                                  z_length=2), color="#334155")
         focus = result.focus_index
-        self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#ffd17a",
+        self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#c2410c",
                       ambient=.7, name="focus")
-        self.add_axes(xlabel="z", ylabel="x", zlabel="y", line_width=2)
+        self.add_axes(xlabel="z", ylabel="x", zlabel="y", line_width=2, color=TEXT)
         self.add_text("r86 | x25",
-                      position="upper_left", font_size=10, color="#8ca7c7", name="scale_label")
+                      position="upper_left", font_size=10, color=TEXT, name="scale_label")
         self.setToolTip("三维轮廓表示 r86；横向放大 25 倍，光学元件外形为示意。")
         self.reset_view()
 
@@ -83,7 +84,7 @@ class OpticalScene(QtInteractor):
         image = r.intensity[index][np.ix_(mask, mask)][::step, ::step]
         peak = max(float(image.max()), 1e-30)
         plane["Intensity"] = (image / peak).ravel(order="F")
-        self.screen_actor = self.add_mesh(plane, scalars="Intensity", cmap="inferno", clim=(0, 1),
+        self.screen_actor = self.add_mesh(plane, scalars="Intensity", cmap=INTENSITY_CMAP, clim=(0, 1),
                                           opacity=.92, lighting=False, show_scalar_bar=False,
                                           name="observation_screen", reset_camera=False)
         self.render()

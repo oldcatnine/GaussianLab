@@ -177,3 +177,67 @@ def test_parameters_remain_accessible_at_minimum_window_height(window, app):
     viewport = window.parameter_scroll.viewport()
     position = window.convergence_button.mapTo(viewport, window.convergence_button.rect().center())
     assert viewport.rect().contains(position)
+
+
+
+def test_all_plot_types_export_white_images_without_switching_tabs(window, app, monkeypatch, tmp_path):
+    """逐类检查导出、白底和结果快照，包含未打开过的分析标签。"""
+    import numpy as np
+    from PIL import Image
+    from gaussian_lab.theme import INTENSITY_CMAP
+    p = window.result.project
+    rows = scan(p, 0, .1, .14, 3)
+    window.job = Job("scan", p, (0, .1, .14, 3))
+    window.job_done(rows)
+    window.tabs.setCurrentIndex(0)
+    window.plane_slider.setValue(0)
+    window.waist.setValue(1.2)
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    for key in ("spot", "profile", "surface", "energy", "beam", "scan"):
+        window.export_target.setCurrentIndex(window.export_target.findData(key))
+        path = tmp_path / (key + ".png")
+        monkeypatch.setattr(window, "choose_path", lambda *args, selected=path, **kwargs: str(selected))
+        window.export_plot()
+        assert path.is_file(), (key, errors)
+        with Image.open(path) as image:
+            rgba = image.convert("RGBA")
+            for point in ((0, 0), (image.width-1, 0), (0, image.height-1), (image.width-1, image.height-1)):
+                assert rgba.getpixel(point) == (255, 255, 255, 255), key
+            pixels = np.array(rgba)
+            for edge in (pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]):
+                assert np.all(edge == 255), (key, "文字或图形不应触及图片边界")
+        assert window.tabs.currentIndex() == 0
+    assert not errors
+    np.testing.assert_allclose(INTENSITY_CMAP(0)[:3], [1, 1, 1])
+    np.testing.assert_allclose(window.scene.background_color.float_rgb, [1, 1, 1])
+    np.testing.assert_allclose(window.profile_plot.figure.get_facecolor(), [1, 1, 1, 1])
+    intensity = window.result.intensity[0]
+    np.testing.assert_allclose(window.profile_plot.ax.lines[0].get_ydata(), intensity[p.grid//2] / intensity.max())
+    assert window.result.project.waist == p.waist
+
+
+@pytest.mark.parametrize("suffix", ["svg", "pdf"])
+def test_white_vector_plot_exports(window, monkeypatch, tmp_path, suffix):
+    path = tmp_path / ("energy." + suffix)
+    window.export_target.setCurrentIndex(window.export_target.findData("energy"))
+    monkeypatch.setattr(window, "choose_path", lambda *args, **kwargs: str(path))
+    window.export_plot()
+    assert path.is_file() and path.stat().st_size > 1000
+    if suffix == "svg":
+        text = path.read_text(encoding="utf-8")
+        assert "#ffffff" in text and "<svg" in text
+    else:
+        assert path.read_bytes().startswith(b"%PDF")
+
+
+def test_plot_export_reports_missing_scan_and_cancel_does_not_write(window, monkeypatch, tmp_path):
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.export_target.setCurrentIndex(window.export_target.findData("scan"))
+    window.export_plot()
+    assert errors == ["请先完成参数扫描"]
+    window.export_target.setCurrentIndex(window.export_target.findData("profile"))
+    monkeypatch.setattr(window, "choose_path", lambda *args, **kwargs: "")
+    window.export_plot()
+    assert not list(tmp_path.iterdir())

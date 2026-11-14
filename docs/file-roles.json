@@ -14,9 +14,9 @@
   "gaussian_lab/__main__.py":"响应 python -m gaussian_lab 并调用桌面界面入口。",
   "gaussian_lab/model.py":"定义光源、元件和项目数据，负责参数校验、排序、复制、预置和 JSON 保存加载。",
   "gaussian_lab/optics.py":"实现解析参考、预分配菲涅耳传播、焦区细化、多指标收敛、包围能量及结果证据导出。",
-  "gaussian_lab/gui.py":"构建桌面控件与信号连接，启动后台任务并更新结果、观察屏、扫描与导出。",
+  "gaussian_lab/gui.py":"构建白色桌面界面、调度后台计算并提供结果、观察屏、扫描及六类图像导出。",
   "gaussian_lab/scene.py":"将计算结果转换为三维光路、包络、元件示意及观察面。",
-  "gaussian_lab/charts.py":"绘制轴向、光斑、剖面、强度曲面、扫描和包围能量曲线。",
+  "gaussian_lab/charts.py":"以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
   "gaussian_lab/release_smoke.py":"在冻结程序内部验证实际计算、三维渲染、配置与导出是否正常。",
   "scripts/build_release.ps1":"串联打包器与发行整理脚本，任一步失败即停止。",
   "scripts/prepare_release.py":"整理便携包、示例与许可，下载核验对应源码并生成压缩附件及摘要清单。",
@@ -60,5 +60,6 @@
   "tests/test_independent_optics.py":"使用固定版本 LightPipes 卷积传播对照自由传播、单透镜及光阑与透镜案例。",
   "docs/validation-v2.md":"数值增强的当前验收入口，解释焦区、多指标收敛、独立对照、孔径取舍和适用限制。",
   "docs/numerical-validation-v2.json":"数值增强的实际输入、输出、环境、源码摘要、孔径加密和峰值内存证据。",
-  "docs/numerical-validation-v2.png":"基于实际数值记录生成的孔径取舍与加密对照图。"
+  "docs/numerical-validation-v2.png":"基于实际数值记录生成的孔径取舍与加密对照图。",
+  "gaussian_lab/theme.py":"定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。"
 }

@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ProjectDocsTests(unittest.TestCase):
     def test_user_requirements_are_recorded(self):
         text = (ROOT / "docs/requirements.md").read_text(encoding="utf-8")
-        for requirement in range(1, 11):
+        for requirement in range(1, 12):
             self.assertIn(f"R{requirement:02d}：", text)
         for term in ("Python", "透镜焦距", "光阑", "距离", "束腰位置", "远场发散角", "聚焦光斑尺寸曲线", "GUI"):
             self.assertIn(term, text)
@@ -34,7 +34,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_development_journal_is_linked_and_traceable(self):
         journal = ROOT / "docs/development-log.md"
         text = journal.read_text(encoding="utf-8")
-        for index in range(1, 14):
+        for index in range(1, 15):
             self.assertIn(f"### DEV-{index:03d}｜", text)
         for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
             self.assertIn(commit, text)
