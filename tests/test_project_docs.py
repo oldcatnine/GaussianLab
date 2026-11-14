@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class ProjectDocsTests(unittest.TestCase):
     def test_user_requirements_are_recorded(self):
         text = (ROOT / "docs/requirements.md").read_text(encoding="utf-8")
-        for requirement in range(1, 8):
+        for requirement in range(1, 11):
             self.assertIn(f"R{requirement:02d}：", text)
         for term in ("Python", "透镜焦距", "光阑", "距离", "束腰位置", "远场发散角", "聚焦光斑尺寸曲线", "GUI"):
             self.assertIn(term, text)
@@ -20,6 +20,16 @@ class ProjectDocsTests(unittest.TestCase):
         self.assertEqual(len(links), 3)
         for link in links:
             self.assertTrue((ROOT / link).is_file(), link)
+
+    def test_confirmed_scope_and_3d_design_are_recorded(self):
+        requirements = (ROOT / "docs/requirements.md").read_text(encoding="utf-8")
+        for term in ("多片薄透镜", "单透镜聚焦", "双透镜扩束", "随焦距、光阑变化", "3D"):
+            self.assertIn(term, requirements)
+        design = (ROOT / "docs/product-design.md").read_text(encoding="utf-8")
+        for term in ("横向视觉放大", "强度曲面", "观察屏", "PyVistaQt", "三维电磁仿真", "旧结果"):
+            self.assertIn(term, design)
+        research = (ROOT / "docs/research.md").read_text(encoding="utf-8")
+        self.assertIn("https://github.com/pyvista/pyvistaqt", research)
 
     def test_research_has_traceable_primary_sources_and_limits(self):
         text = (ROOT / "docs/research.md").read_text(encoding="utf-8")
