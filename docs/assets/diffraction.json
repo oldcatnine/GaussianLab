@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "units": "SI",
+  "project": {
+    "name": "光阑衍射",
+    "wavelength": 6.328e-07,
+    "waist": 0.00065,
+    "waist_z": 0.0,
+    "length": 0.4,
+    "window": 0.006,
+    "grid": 512,
+    "samples": 65,
+    "elements": [
+      {
+        "kind": "aperture",
+        "z": 0.06,
+        "value": 0.0009,
+        "label": "A1",
+        "enabled": true
+      },
+      {
+        "kind": "lens",
+        "z": 0.1,
+        "value": 0.12,
+        "label": "L1",
+        "enabled": true
+      }
+    ]
+  }
+}

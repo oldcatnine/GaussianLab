@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "units": "SI",
+  "project": {
+    "name": "单透镜聚焦",
+    "wavelength": 6.328e-07,
+    "waist": 0.00045,
+    "waist_z": 0.0,
+    "length": 0.4,
+    "window": 0.006,
+    "grid": 512,
+    "samples": 65,
+    "elements": [
+      {
+        "kind": "lens",
+        "z": 0.1,
+        "value": 0.12,
+        "label": "L1",
+        "enabled": true
+      }
+    ]
+  }
+}

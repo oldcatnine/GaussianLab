@@ -69,7 +69,7 @@ class ProjectDocsTests(unittest.TestCase):
         for term in ("讨论稿", "半角", "r86", "θ86", "收敛", "SI", "参数快照"):
             self.assertIn(term, text)
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("尚未实现计算内核和 GUI", readme)
+        self.assertIn("启动软件.cmd", readme)
 
 
 if __name__ == "__main__":

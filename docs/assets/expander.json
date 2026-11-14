@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "units": "SI",
+  "project": {
+    "name": "双透镜扩束",
+    "wavelength": 6.328e-07,
+    "waist": 0.00025,
+    "waist_z": 0.0,
+    "length": 0.5,
+    "window": 0.008,
+    "grid": 512,
+    "samples": 65,
+    "elements": [
+      {
+        "kind": "lens",
+        "z": 0.06,
+        "value": -0.05,
+        "label": "L1",
+        "enabled": true
+      },
+      {
+        "kind": "lens",
+        "z": 0.16,
+        "value": 0.15,
+        "label": "L2",
+        "enabled": true
+      }
+    ]
+  }
+}

@@ -13,7 +13,7 @@
 - 引用文件、提交、命令和结果，区分“提出”“调研”“实现”“验证通过”。读取 skill 不等于已采用其全部流程，搜索命中不等于安装或运行成功。
 - 当前提交用唯一主题关联，提交后由 Git 查询哈希；下一次工作可补齐上一条记录的哈希，避免修改文档记录自身哈希造成循环提交。
 - 图表、实验与截图在真实生成后记录路径、输入参数、算法版本、环境、单位和结论；不存在的证据不提前填写为已完成。
-- 本轮建立记录规范不等于产品已实现；当前只有设计文档和文档验证测试。
+- 本文件建档时只有设计与文档测试；后续实现与验证进展以阶段记录和当前总览为准。
 
 ## 2. 当前阶段总览
 
@@ -23,9 +23,9 @@
 | 需求 | Python、多透镜、两个预置案例、轴向及焦距/光阑扫描、优先 3D 已记录 |
 | 开源调研 | 已完成首轮仓库、部分源码、发布与许可检查，未运行第三方实现 |
 | 产品设计 | V1.0 汇总稿完成，计算路线与部分技术选型仍为建议 |
-| 计算内核/GUI/3D | 尚未实现 |
-| 验证 | 已进行文档测试、协作规则验证、Git 格式检查；尚无物理实验、性能数据或软件截图 |
-| 环境 | `python --version` 返回 3.15.2；`py --list` 返回无已安装 Python 的提示，两者不能混同；拟议 Python 3.12 环境尚未建立 |
+| 计算内核/GUI/3D | V0.1 已实现，正在完成全量回归和插件验证 |
+| 验证 | 已通过首轮数值及 Qt/VTK 冒烟验证，已生成真实截图和数值记录；当前仍非任意光路精度保证 |
+| 环境 | 默认 Python 3.15.2 保留；发现已有 Python 3.10.11，并在项目 .venv 内安装隔离依赖，未安装原计划的 Python 3.12 |
 
 ## 3. 实际使用的能力、工具与方法
 
@@ -44,7 +44,7 @@
 | 版本控制与格式检查 | git init、add、diff --check、commit、status、log | 已执行；写入索引时使用执行环境的受控权限机制 |
 | 写作参考能力检查 | 汇总设计方案时读取 write-like-me 的 SKILL.md | 仅查看说明，未检索用户写作样本、未完成风格匹配，不作为已应用成果 |
 
-候选但尚未实际用于开发的能力：matplotlib skill、PySide6、NumPy/SciPy 光学计算、LightPipes、PyVista/VTK、PyVistaQt、pytest、PyInstaller。计划采用不等于安装成功或测试通过。
+建档时上述科学计算与桌面库均为候选；截至 DEV-006，已实际使用 NumPy/SciPy、PySide6、Matplotlib、PyVista/VTK、PyVistaQt、pytest 和 computer-use 插件，具体版本及用途见该条目。matplotlib skill、LightPipes、PyInstaller 尚未实际采用，不能把候选与安装/运行结果混同。
 
 ## 4. 阶段记录
 
@@ -107,8 +107,26 @@
 - 问题与处理：当前提交的自身哈希尚未生成，使用唯一提交主题关联，避免为回填自身哈希产生无限提交。
 - 关联文件：本文件、agents.md、README.md、tests/test_project_docs.py、tests/Test-Agents.ps1。
 - 关联提交主题：`docs: establish continuous development and methods journal`。
+- 后续核实的提交：`c122c38`。
 - 报告素材：研发过程追踪、工具辅助开发方法、质量保证与成果可追溯性。
 - 下一步：若进入开发，先完成独立环境与最小 Qt+3D 原型验证，并按模板继续更新。
+
+### DEV-006｜2026-11-14｜首个可运行版本 V0.1
+
+- 目标：开发 Python 计算与 3D 桌面第一版，使用插件操作软件自测。
+- 操作与变更：新增 gaussian_lab 模型、ABCD 解析、二维 Fresnel FFT、包围能量与角谱、参数扫描、Qt 界面、VTK 场景、Matplotlib 图表、配置与导出；提供启动脚本、锁定依赖、数值/GUI 测试、证据生成脚本及第三方说明。
+- 工具与方法：复用前轮 GitHub 调研；PowerShell 检查本机解释器，venv 隔离依赖，pip 安装；apply_patch；NumPy/SciPy 数值计算；PySide6/Qt 工作线程；PyVista/VTK 三维渲染；Matplotlib；pytest；computer-use Skill 的 node_repl + @oai/sky 桌面插件；Git。
+- 环境处理：原计划 Python 3.12 未安装；采用已有 3.10.11 创建项目环境。沙箱安装依赖曾发生代理连接拒绝，经受控网络权限后完成；未修改用户旧环境。版本快照见 requirements-lock.txt。
+- 当前结果：23 项数值测试、4 项 GUI 测试、7 项文档测试合计 34 项通过；默认及关闭 faulthandler 的对照运行均核对退出码 0。规则脚本 PASS，pip check 无冲突。已生成 docs/assets 内三个案例的桌面/场景截图与输入 JSON，以及 docs/validation-v0.1.json；详细证据见 [V0.1 验证与交付记录](validation-v0.1.md)。
+- 插件操作：通过 list_windows 选择实际窗口，读取截图/可访问性树；选择并加载双透镜案例，执行 9 点焦距扫描，切换强度曲面，拖动旋转 3D 场景并改变观察屏。实际观察到扩束结果、扫描完成和观察屏由 160.00 mm 变化到 406.25 mm。初次插件窗口访问审批超时，后续重试成功；初次窗口被 Codex 遮挡，通过点击目标标题栏恢复前景。
+- 最终插件复核：更新版本成功加载光阑衍射，透过率 61.66%，并完成 0.45—1.35 mm、9 点孔径扫描；透过率轴范围修复在真实窗口中可见。一次弹出菜单截图提示 no monitor found，重新枚举窗口并绑定后恢复。
+- 问题与处理：透过率图自动轴把浮点误差放大，改为 0—105% 并添加回归断言；扫描状态明确说明主场景保留上次光场；增加内存上限与收敛检查分批释放；初次 Start-Process 后台启动未形成持续窗口，使用前台 Python 进程成功运行，提供命令行启动器。
+- 测试环境诊断：Qt/VTK 的 pytest 运行出现 Windows 0x8001010d faulthandler 输出；关闭其他测试窗口后仍可复现，不能归因为插件并发。随后全量测试发现断言通过但进程退出码 -1073740791，不能算通过。修复 fixture 的 QApplication/窗口清理顺序，显式处理 DeferredDelete 后，默认和对照运行都达到 34 项通过、退出码 0。查阅 PyVistaQt 原仓库 issue #13、pytest-qt issue #426；记录仍可能出现的 COM 诊断，不宣称修复底层 COM 问题。
+- 证据与限制：当前为有限周期窗口的标量近轴模型；焦点为离散采样搜索；末端 r86 收敛检查不是全光路精度证明。三维包络来自 r86，内层亮芯为视觉辅助。尚未制作 EXE，未实现透镜独立有效口径、相机状态保存及扫描动画播放。
+- 关联文件：gaussian_lab/、tests/test_optics.py、tests/test_gui.py、scripts/validate_v1.py、[验证数据](validation-v0.1.json)、[第三方说明](third-party.md)。
+- 关联提交主题：`feat: deliver GaussianLab v0.1 desktop optics simulator`。
+- 报告素材：计算方法、模块实现、数值验证、3D 科学可视化、人机交互、测试发现和版本局限。
+- 下一步：后续完善焦区/远场收敛、扫描动画、透镜有效口径与打包。
 
 ## 5. 毕业设计报告素材映射
 
