@@ -84,3 +84,9 @@
 先查阅 [CuPy 原仓库](https://github.com/cupy/cupy)、[发布版本](https://github.com/cupy/cupy/releases)、[FFT 实现](https://github.com/cupy/cupy/blob/main/cupy/fft/_fft.py)及 [官方安装说明](https://docs.cupy.dev/en/stable/install.html)。CuPy 为 MIT 许可，提供 NumPy 风格数组与 cuFFT，Windows 有 CUDA 12/13 预编译轮子；本次固定 CuPy 14.2.0 和 CUDA 12.9 组件，不从最新主分支复制算法。
 
 沿用物理模型，借鉴可选数组/FFT 后端，不引入另一套光学求解器。实际发现 NVIDIA 路径查找器按 site 安装前缀发现组件；独立运行库除加入 sys.path 外还注册 site.PREFIXES，不修改第三方函数。ASCII 独立目录避免前次中文编译路径兼容层；没有设备或依赖时回退 CPU。本机已实际执行 CUDA，不把成功安装、GPU 渲染或回退 CPU 的运行当作 CUDA 验证。性能、可移植边界及源码启动说明见 [加速说明](acceleration.md)。
+
+## V3 便携 CUDA 组件
+
+补读 [CUDA 12.9 官方 EULA](https://docs.nvidia.com/cuda/archive/12.9.1/eula/index.html)的运行库/头文件分发清单和 [CuPy 官方安装说明](https://docs.cupy.dev/en/stable/install.html)。V3 随包采用 cudart、NVRTC、cuFFT、nvJitLink 运行 DLL、CuPy 与 cuda-pathfinder，保留原始许可；不打包系统驱动。只保留可再分发头文件时实际无法满足 CuPy 的 cudart 目录检测，完整编译头文件改为首次从 NVIDIA 官方 PyPI 固定 wheel 在本机补充，URL、版本、字节数与 SHA-256 固定，不把所有 Toolkit 开发文件混入分发目录。
+
+外置 CuPy 的 Cython 扩展动态导入 graphlib，单靠静态 AST 分析遗漏；实际 CUDA 加载模块记录用于补齐冻结依赖，并以隔离 EXE 实测验收。源码测试通过与 EXE 可运行仍是不同证据。

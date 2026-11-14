@@ -1,6 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_data_files, copy_metadata, get_package_paths
 from pathlib import Path
+import ast
+import sys
+import json
+from gaussian_lab import __version__
+
+# 外置 CuPy 由发行目录加载；显式收集其标准库引用，避免冻结分析遗漏 graphlib 等惰性依赖。
+cuda_stdlib = set()
+for source in (Path('build') / ('v' + __version__) / 'cuda_runtime').rglob('*.py'):
+    try:
+        tree = ast.parse(source.read_text(encoding='utf-8'))
+    except (SyntaxError, UnicodeError):
+        continue
+    for node in ast.walk(tree):
+        names = [item.name for item in node.names] if isinstance(node, ast.Import) else [node.module] if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module else []
+        cuda_stdlib.update(name for name in names if name.split('.')[0] in sys.stdlib_module_names)
 
 datas = collect_data_files('pyvista') + collect_data_files('pyvistaqt')
 for package in ('pyvista', 'pyvistaqt', 'scipy', 'matplotlib'):
@@ -11,7 +26,8 @@ a = Analysis(
     hiddenimports=['vtkmodules.qt.QVTKRenderWindowInteractor', 'vtkmodules.vtkInteractionStyle',
                    'vtkmodules.vtkRenderingOpenGL2', 'vtkmodules.vtkRenderingFreeType',
                    'matplotlib.backends.backend_qtagg', 'matplotlib.backends.backend_svg',
-                   'matplotlib.backends.backend_pdf', 'scipy.fft._pocketfft'],
+                   'matplotlib.backends.backend_pdf', 'scipy.fft._pocketfft',
+                   'numpy.typing', 'scipy.special', 'scipy.linalg', 'scipy.sparse.csgraph', 'graphlib'] + sorted(cuda_stdlib) + json.loads(Path('packaging/cuda-hiddenimports.json').read_text(encoding='utf-8')),
     hookspath=[], hooksconfig={'matplotlib': {'backends': ['QtAgg']}}, runtime_hooks=[],
     excludes=['PyQt5', 'PyQt6', 'PySide2', 'tkinter', 'pytest', 'IPython',
               'PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineQuick',

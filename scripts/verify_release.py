@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 import zipfile
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -51,6 +52,8 @@ def verify_archives(release, destination):
                                  "THIRD_PARTY_LICENSES/CPython/LICENSE.txt"):
                     if prefix + required not in names:
                         raise RuntimeError("便携包缺少：" + required)
+                if __version__.startswith("3.") and prefix + "_internal/cuda_runtime/RUNTIME-MANIFEST.json" not in names:
+                    raise RuntimeError("V3 运行附件缺少随包 CUDA 组件")
                 if not any(item.endswith("/LGPL-3.0-only.txt") for item in names):
                     raise RuntimeError("便携包缺少原始 LGPL 许可")
                 forbidden = {"icuuc.dll", "qtvirtualkeyboardplugin.dll", "qpdf.dll", "Qt6DataVisualization.dll"}
@@ -62,15 +65,21 @@ def verify_archives(release, destination):
     return checked, destination / f"GaussianLab-{TAG}-Windows-x64"
 
 
-def run_frozen_smoke(bundle, output):
+def run_frozen_smoke(bundle, output, backend="cpu"):
     """移除开发环境路径，在独立工作目录运行随包 EXE。"""
     bundle, output = Path(bundle).resolve(), Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
     environment = dict(os.environ)
     system = Path(environment.get("SystemRoot", "C:/Windows"))
     environment["PATH"] = str(system / "System32") + os.pathsep + str(system)
-    for name in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML2_IMPORT_PATH"):
+    for name in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV", "QT_PLUGIN_PATH", "QT_QPA_PLATFORM_PLUGIN_PATH", "QML2_IMPORT_PATH", "GAUSSIANLAB_CUDA_PATH"):
         environment.pop(name, None)
+    environment["GAUSSIANLAB_SMOKE_BACKEND"] = backend
+    if backend == "cpu":
+        environment["GAUSSIANLAB_DISABLE_CUDA"] = "1"
+    else:
+        environment.pop("GAUSSIANLAB_DISABLE_CUDA", None)
+        environment["GAUSSIANLAB_CUDA_CACHE"] = str(Path(tempfile.gettempdir()) / ("GL3-" + str(time.time_ns())))
     environment["PYTHONNOUSERSITE"] = "1"
     result = subprocess.run([str(bundle / "GaussianLab.exe"), "--smoke-test", str(output)],
                             cwd=output, env=environment, capture_output=True, timeout=240)
@@ -84,6 +93,11 @@ def run_frozen_smoke(bundle, output):
     report["exit_code"] = result.returncode
     report["environment"] = "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量"
     report["executable_sha256"] = digest(bundle / "GaussianLab.exe")
+    if backend == "cuda":
+        report["isolated_cuda_cache"] = environment["GAUSSIANLAB_CUDA_CACHE"]
+        report["headers_download_verified"] = any(Path(environment["GAUSSIANLAB_CUDA_CACHE"]).rglob(".headers-ready"))
+        if not report["headers_download_verified"]:
+            raise RuntimeError("CUDA 冻结验证没有完成独立缓存的官方头文件补充")
     return report
 
 
@@ -92,15 +106,17 @@ def main():
     parser.add_argument("--release-dir", type=Path, default=ROOT / "releases" / TAG)
     parser.add_argument("--extract-to", type=Path)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--backend", choices=["cpu", "cuda", "both"], default="both")
     args = parser.parse_args()
     destination = args.extract_to or ROOT / "outputs" / f"portable-{TAG}-{time.time_ns()}"
     assets, bundle = verify_archives(args.release_dir, destination)
     report = {"version": __version__, "assets": assets, "bundle_name": bundle.name,
               "executable_sha256": digest(bundle / "GaussianLab.exe")}
     if args.smoke:
-        smoke = run_frozen_smoke(bundle, destination / "smoke-output")
+        backends = ("cpu", "cuda") if args.backend == "both" else (args.backend,)
+        smoke = {kind: run_frozen_smoke(bundle, destination / (kind + "-smoke"), kind) for kind in backends}
         (ROOT / f"docs/release-smoke-{TAG}.json").write_text(json.dumps(smoke, ensure_ascii=False, indent=2), encoding="utf-8")
-        report["frozen_smoke"] = "passed"
+        report["frozen_smoke"] = {kind: "passed" for kind in backends}
     (ROOT / f"docs/release-artifacts-{TAG}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"version": __version__, "bundle": str(bundle), "assets": assets,
                       "smoke": report.get("frozen_smoke", "未执行")}, ensure_ascii=True))

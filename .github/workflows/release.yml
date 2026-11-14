@@ -5,7 +5,7 @@ on:
       release_tag:
         description: 需要构建的现有源码标签
         required: true
-        default: v2.0.0
+        default: v3.0.0
 permissions:
   contents: write
 jobs:
@@ -33,9 +33,11 @@ jobs:
       - name: 构建便携程序与许可说明
         shell: pwsh
         run: |
-          .\scripts\build_release.ps1
+          .\.venv\Scripts\python.exe -m pip install --target build/cuda-input --no-deps -r requirements-cuda.txt
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\.venv\Scripts\python.exe scripts/verify_release.py
+          .\scripts\build_release.ps1 -CudaRuntime (Join-Path $PWD 'build/cuda-input')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\.venv\Scripts\python.exe scripts/verify_release.py --smoke --backend cpu
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: 上传附件并发布版本
         shell: pwsh

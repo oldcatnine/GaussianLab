@@ -2,13 +2,13 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-稳定发行版为 **V2.0.0**，本机便携包保留于 `releases/v2.0.0/`。当前 `feature/cuda-responsive-preview` 分支开发可选 CUDA、区段频谱复用和自动预览，算法标识为 `fresnel-segments-v3`；尚未替换稳定版 EXE。开发分支操作及实测见 [加速与交互说明](docs/acceleration.md)。
+当前版本为 **V3.0.0**，将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
 源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。可选安装脚本为 `scripts/install_cuda_runtime.ps1`，不会修改系统驱动。
 
 ## 启动
 
-**便携版运行：** 将 `releases/v2.0.0/GaussianLab-v2.0.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V2.0.0 便携版指南](docs/USER_GUIDE-v2.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本；本次没有上传新的 GitHub Release。历史 V0.1.0 仍可按其原发布记录追溯。
+**便携版运行：** 将 `releases/v3.0.0/GaussianLab-v3.0.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.0.0 便携版指南](docs/USER_GUIDE-v3.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本；发布状态见同版本验证记录。历史版本按其原记录追溯。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
@@ -83,7 +83,8 @@ test_optics.py 为数值和数据验证；test_independent_optics.py 为可选�
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+& .\scripts\install_cuda_runtime.ps1
 & .\scripts\build_release.ps1
 ```
 
-输出位于当前版本的 `releases/v2.0.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
+输出位于当前版本的 `releases/v3.0.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。

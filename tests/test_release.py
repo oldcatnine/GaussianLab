@@ -70,16 +70,16 @@ def test_published_private_release_has_verified_frozen_evidence():
 
 
 
-def test_v2_versions_and_export_backends_are_consistent():
+def test_current_versions_and_export_backends_are_consistent():
     from gaussian_lab import __version__
-    assert __version__ == "2.0.0"
+    assert __version__ == "3.0.0"
     text = (ROOT / "packaging/windows-version-info.txt").read_text(encoding="utf-8")
-    assert "filevers=(2, 0, 0, 0)" in text and "prodvers=(2, 0, 0, 0)" in text
-    assert "StringStruct('ProductVersion', '2.0.0')" in text
+    assert "filevers=(3, 0, 0, 0)" in text and "prodvers=(3, 0, 0, 0)" in text
+    assert "StringStruct('ProductVersion', '3.0.0')" in text
     spec = (ROOT / "GaussianLab.spec").read_text(encoding="utf-8")
     assert "packaging/windows-version-info.txt" in spec
     assert "matplotlib.backends.backend_svg" in spec and "matplotlib.backends.backend_pdf" in spec
-    for name in ("USER_GUIDE-v2.0.0.md", "release-notes-v2.0.0.md"):
+    for name in ("USER_GUIDE-v3.0.0.md", "release-notes-v3.0.0.md"):
         assert (ROOT / "docs" / name).is_file()
 
 
@@ -96,8 +96,8 @@ def test_release_verification_rejects_tampered_archive(tmp_path):
     from scripts.verify_release import verify_archives
     import hashlib
     import pytest
-    names = ["GaussianLab-v2.0.0-Windows-x64.zip", "GaussianLab-v2.0.0-Qt-Corresponding-Source.zip",
-             "GaussianLab-v2.0.0-Application-Source.zip"]
+    names = ["GaussianLab-v3.0.0-Windows-x64.zip", "GaussianLab-v3.0.0-Qt-Corresponding-Source.zip",
+             "GaussianLab-v3.0.0-Application-Source.zip"]
     original = b"original bytes"
     for name in names:
         (tmp_path / name).write_bytes(original)
@@ -116,3 +116,45 @@ def test_application_source_can_be_repacked_without_git_metadata(tmp_path):
     names = ["gaussian_lab/__init__.py", "GaussianLab.spec", "requirements-build.txt"]
     (docs / "file-inventory.json").write_text(json.dumps([{"path": name} for name in names]), encoding="utf-8")
     assert application_source_names(tmp_path) == sorted(names)
+
+
+def test_packaged_runtime_cache_validates_files_and_is_reusable(tmp_path):
+    from gaussian_lab.backend import bundled_runtime
+    import hashlib
+    import pytest
+    source = tmp_path / "中文运行库"
+    source.mkdir()
+    payload = source / "library.txt"
+    payload.write_bytes(b"known-runtime")
+    manifest = {"files": [{"path": "library.txt", "sha256": hashlib.sha256(payload.read_bytes()).hexdigest()}]}
+    (source / "RUNTIME-MANIFEST.json").write_text(json.dumps(manifest), encoding="utf-8")
+    cache = tmp_path / "cache"
+    target = bundled_runtime(source, cache)
+    assert (target / "library.txt").read_bytes() == b"known-runtime"
+    assert bundled_runtime(source, cache) == target
+    payload.write_bytes(b"corrupt")
+    (source / "RUNTIME-MANIFEST.json").write_text(json.dumps(manifest) + " ", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="校验失败"):
+        bundled_runtime(source, cache)
+
+
+def test_cuda_headers_hash_failure_never_extracts(tmp_path, monkeypatch):
+    from gaussian_lab.backend import ensure_cuda_headers
+    import requests
+    import pytest
+    class Response:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def raise_for_status(self):
+            pass
+        def iter_content(self, size):
+            yield b"bad"
+    monkeypatch.setattr(requests, "get", lambda *args, **kwargs: Response())
+    record = {"url": "https://files.pythonhosted.org/example.whl", "bytes": 3, "sha256": "0"*64}
+    (tmp_path / "CUDA-HEADERS.json").write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="摘要不匹配"):
+        ensure_cuda_headers(tmp_path)
+    assert not (tmp_path / ".headers-ready").exists()
+    assert not list(tmp_path.glob("*.whl"))

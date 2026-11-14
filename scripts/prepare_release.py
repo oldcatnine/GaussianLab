@@ -152,11 +152,22 @@ def stage(cache=None):
             raise RuntimeError("发行暂存路径不符合预期")
         shutil.rmtree(bundle)
     shutil.copytree(ROOT / "dist" / TAG / "GaussianLab", bundle, dirs_exist_ok=True)
+    if __version__.startswith("3.") and not (bundle / "_internal/cuda_runtime/RUNTIME-MANIFEST.json").is_file():
+        raise RuntimeError("V3 运行包缺少随包 CUDA 组件，拒绝把 CPU 包标为完整发行")
     # 拒绝混入可能覆盖 Windows 系统 ICU 的外部环境动态库。
     forbidden = [p for p in bundle.rglob('*.dll') if p.name.lower().startswith(('icudt', 'icuuc', 'icuin'))]
     if forbidden:
         raise RuntimeError('发行目录中存在非预期的外部 ICU 动态库，请按当前配置重新构建')
     notices(bundle, sources)
+    if (bundle / "_internal/cuda_runtime").is_dir():
+        cuda_licenses = bundle / "THIRD_PARTY_LICENSES" / "CUDA"
+        cuda_licenses.mkdir(parents=True, exist_ok=True)
+        for info in (bundle / "_internal/cuda_runtime").glob("*.dist-info"):
+            for path in info.rglob("*"):
+                if path.is_file() and ("license" in str(path).lower() or "notice" in path.name.lower()):
+                    dest = cuda_licenses / info.name / path.relative_to(info)
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(path, dest)
     guide = (ROOT / f"docs/USER_GUIDE-{TAG}.md").read_text(encoding="utf-8")
     guide = guide.replace("](USER_GUIDE.md)", "](docs/USER_GUIDE.md)").replace("](项目学习手册.html)", "](docs/项目学习手册.html)")
     (bundle / "使用说明.md").write_text(guide, encoding="utf-8")
@@ -168,7 +179,7 @@ def stage(cache=None):
     for name in ("focus", "expander", "diffraction"):
         shutil.copy2(ROOT / f"docs/assets/{name}.json", examples)
     (bundle / "版本信息.txt").write_text(f"GaussianLab {__version__}\nWindows 64 位便携目录版本\n"
-        "解压整个文件夹，双击 GaussianLab.exe，无需安装 Python。\nQt/PySide6 使用 LGPLv3 动态库；详见 THIRD-PARTY-NOTICES.md。\n", encoding="utf-8")
+        "解压整个文件夹，双击 GaussianLab.exe，无需安装 Python。\n随附 CUDA 组件；需要兼容 NVIDIA 驱动，否则自动使用 CPU。\nQt/PySide6 使用 LGPLv3 动态库；详见 THIRD-PARTY-NOTICES.md。\n", encoding="utf-8")
     with zipfile.ZipFile(RELEASE / f"GaussianLab-{TAG}-Windows-x64.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zip_out:
         for path in sorted(bundle.rglob("*")):
             if path.is_file():

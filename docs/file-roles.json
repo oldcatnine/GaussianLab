@@ -81,5 +81,15 @@
   "docs/acceleration.md":"CUDA 与响应式预览分支的使用方法、设计、性能证据与限制。",
   "docs/acceleration-validation.json":"V2.0.0、优化 CPU、实际 CUDA 与预览的配置、逐次计时及数值偏差。",
   "docs/interaction-validation.json":"真实 CUDA 窗口的连续改参、完整计算、缓存耗时及心跳证据。",
-  "docs/assets/cuda-preview-desktop.png":"CUDA 开发分支真实窗口截图，显示实际后端、光学场景与分析曲线。"
+  "docs/assets/cuda-preview-desktop.png":"CUDA 开发分支真实窗口截图，显示实际后端、光学场景与分析曲线。",
+  "packaging/cuda-headers-wheel.json":"固定 NVIDIA 官方 PyPI 头文件轮子来源、字节数和 SHA-256，供首次 CUDA 初始化核验。",
+  "packaging/cuda-hiddenimports.json":"根据实际 CUDA 计算加载模块记录冻结所需的标准库及 NumPy/SciPy 动态依赖。",
+  "scripts/stage_cuda_runtime.py":"从固定已安装轮子整理随包 CuPy、CUDA 运行组件及许可，排除系统驱动并生成摘要清单。",
+  "docs/USER_GUIDE-v3.0.0.md":"V3 便携版启动、首次 CUDA 联网补充、缓存、CPU 回退、自动预览及导出说明。",
+  "docs/release-notes-v3.0.0.md":"V3 CUDA 与交互优化发行的功能、附件和适用限制。",
+  "docs/release-validation-v3.0.0.md":"V3 构建、冻结环境修复、双后端验证和远端发布证据说明。",
+  "docs/release-artifacts-v3.0.0.json":"V3 本机最终发行附件的字节数、SHA-256、CRC 与 CPU/CUDA 冻结验证状态。",
+  "docs/release-smoke-v3.0.0.json":"V3 本机解压 EXE 的 CPU 与实际 CUDA 案例、交互预览和导出检查。",
+  "docs/github-release-v3.0.0.json":"V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
+  "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。"
 }

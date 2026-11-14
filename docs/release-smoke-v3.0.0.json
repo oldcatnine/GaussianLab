@@ -1,0 +1,162 @@
+{
+  "cpu": {
+    "version": "3.0.0",
+    "frozen": true,
+    "cases": [
+      {
+        "name": "单透镜聚焦",
+        "seconds": 2.363125600000785,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000007
+      },
+      {
+        "name": "双透镜扩束",
+        "seconds": 2.0587383000020054,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000007
+      },
+      {
+        "name": "光阑衍射",
+        "seconds": 2.008890400000382,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 0.6166232881766698
+      }
+    ],
+    "preview": {
+      "quality": "preview",
+      "grid": 256,
+      "backend": {
+        "requested": "cpu",
+        "used": "cpu",
+        "device": "CPU",
+        "reason": "兼容 CPU 计算",
+        "precision": "complex128 / float64"
+      }
+    },
+    "scan_points": 3,
+    "scan_statuses": [
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "exported_plots": [
+      "spot",
+      "profile",
+      "surface",
+      "energy",
+      "beam",
+      "scan"
+    ],
+    "formats": [
+      "png",
+      "svg",
+      "pdf"
+    ],
+    "theme": "white",
+    "window_title": "GaussianLab · 高斯光束传输与光斑分析 V3.0.0",
+    "status": "passed",
+    "backend": "cpu",
+    "exit_code": 0,
+    "environment": "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量",
+    "executable_sha256": "d5e97c300a19a9fc6d8191e880a30edbf643a2e93b771154ca2174b56cd228d9"
+  },
+  "cuda": {
+    "version": "3.0.0",
+    "frozen": true,
+    "cases": [
+      {
+        "name": "单透镜聚焦",
+        "seconds": 26.394863900000928,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000007
+      },
+      {
+        "name": "双透镜扩束",
+        "seconds": 0.9714099999982864,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000013
+      },
+      {
+        "name": "光阑衍射",
+        "seconds": 1.1131819000001997,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 0.61662328817667
+      }
+    ],
+    "preview": {
+      "quality": "preview",
+      "grid": 256,
+      "backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    "scan_points": 3,
+    "scan_statuses": [
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "exported_plots": [
+      "spot",
+      "profile",
+      "surface",
+      "energy",
+      "beam",
+      "scan"
+    ],
+    "formats": [
+      "png",
+      "svg",
+      "pdf"
+    ],
+    "theme": "white",
+    "window_title": "GaussianLab · 高斯光束传输与光斑分析 V3.0.0",
+    "status": "passed",
+    "backend": "cuda",
+    "exit_code": 0,
+    "environment": "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量",
+    "executable_sha256": "d5e97c300a19a9fc6d8191e880a30edbf643a2e93b771154ca2174b56cd228d9",
+    "isolated_cuda_cache": "C:\\Users\\11795\\AppData\\Local\\Temp\\GL3-1794671191242149800",
+    "headers_download_verified": true
+  }
+}

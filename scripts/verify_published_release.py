@@ -32,6 +32,7 @@ def download(client, asset, target):
 def main():
     parser = argparse.ArgumentParser(description="下载并核验明确指定的已发布版本，不创建或覆盖远端发行")
     parser.add_argument("--tag", default="v" + __version__)
+    parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
     client = session()
     repo = api(client, 'GET', '/repos/oldcatnine/GaussianLab')
@@ -70,6 +71,14 @@ def main():
     report={'repository':repo['html_url'],'private':repo['private'],'tag':release['tag_name'],
             'release':release['html_url'],'draft':release['draft'],'assets':checked,
             'verification':'已下载，SHA-256 与发布清单一致，压缩包完整性检查通过'}
+    if args.smoke:
+        if args.tag != "v" + __version__:
+            raise RuntimeError("冻结验证要求当前源码版本与下载版本一致")
+        from verify_release import run_frozen_smoke
+        bundle = destination / f"GaussianLab-{args.tag}-Windows-x64"
+        smoke = {kind: run_frozen_smoke(bundle, folder / (kind + "-smoke"), kind) for kind in ("cpu", "cuda")}
+        (ROOT/f'docs/github-release-smoke-{args.tag}.json').write_text(json.dumps(smoke,ensure_ascii=False,indent=2),encoding='utf-8')
+        report['frozen_smoke'] = {kind: 'passed' for kind in smoke}
     (ROOT/f'docs/github-release-{args.tag}.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(report,ensure_ascii=False,indent=2))
 

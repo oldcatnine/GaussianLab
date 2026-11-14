@@ -80,6 +80,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/USER_GUIDE-v3.0.0.md",
+    "purpose": "V3 便携版启动、首次 CUDA 联网补充、缓存、CPU 回退、自动预览及导出说明。",
+    "optional_local": false
+  },
+  {
     "path": "docs/USER_GUIDE.md",
     "purpose": "当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。",
     "optional_local": false
@@ -215,6 +220,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-artifacts-v3.0.0.json",
+    "purpose": "V3 本机最终发行附件的字节数、SHA-256、CRC 与 CPU/CUDA 冻结验证状态。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-notes-v0.1.0.md",
     "purpose": "首版发布说明，列出功能、附件、平台和已知限制。",
     "optional_local": false
@@ -222,6 +232,11 @@
   {
     "path": "docs/release-notes-v2.0.0.md",
     "purpose": "V2.0.0 新增能力、三类源码/运行附件、目标平台与限制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-notes-v3.0.0.md",
+    "purpose": "V3 CUDA 与交互优化发行的功能、附件和适用限制。",
     "optional_local": false
   },
   {
@@ -235,6 +250,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-smoke-v3.0.0.json",
+    "purpose": "V3 本机解压 EXE 的 CPU 与实际 CUDA 案例、交互预览和导出检查。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-validation-v0.1.0.md",
     "purpose": "独立可执行版本的构建、摘要、解压与运行验证说明。",
     "optional_local": false
@@ -242,6 +262,11 @@
   {
     "path": "docs/release-validation-v2.0.0.md",
     "purpose": "V2.0.0 构建、后端补齐、独立解压和隔离运行验证的过程与边界。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-validation-v3.0.0.md",
+    "purpose": "V3 构建、冻结环境修复、双后端验证和远端发布证据说明。",
     "optional_local": false
   },
   {
@@ -350,6 +375,16 @@
     "optional_local": false
   },
   {
+    "path": "packaging/cuda-headers-wheel.json",
+    "purpose": "固定 NVIDIA 官方 PyPI 头文件轮子来源、字节数和 SHA-256，供首次 CUDA 初始化核验。",
+    "optional_local": false
+  },
+  {
+    "path": "packaging/cuda-hiddenimports.json",
+    "purpose": "根据实际 CUDA 计算加载模块记录冻结所需的标准库及 NumPy/SciPy 动态依赖。",
+    "optional_local": false
+  },
+  {
     "path": "packaging/qt-source-manifest.json",
     "purpose": "Qt/PySide6 对应源码的固定官方来源与 SHA-256，用于缓存复核和下载校验。",
     "optional_local": false
@@ -407,6 +442,11 @@
   {
     "path": "scripts/publish_github.py",
     "purpose": "经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/stage_cuda_runtime.py",
+    "purpose": "从固定已安装轮子整理随包 CuPy、CUDA 运行组件及许可，排除系统驱动并生成摘要清单。",
     "optional_local": false
   },
   {

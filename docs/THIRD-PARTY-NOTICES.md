@@ -10,7 +10,7 @@ GaussianLab 使用 CPython、NumPy、SciPy、Matplotlib、PySide6、Shiboken6、
 
 Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户可以替换为兼容的修改版本并运行应用；为调试这些 LGPL 库的修改而进行逆向工程的权利不受本项目额外限制。替换时应保持二进制兼容性与目录结构。同一版本的 Application-Source.zip 提供应用源码、依赖版本与打包配置，以支持重新构建和链接；仓库标签用于追溯。
 
-对应 Qt 组件的完整、未修改源码，包括 qtbase、qtsvg、qtimageformats、pyside-setup 及其中的 Shiboken，以 GaussianLab-v2.0.0-Qt-Corresponding-Source.zip 附件提供。SOURCE-MANIFEST.json 记录原始下载地址和经核验的 SHA-256。源码归档包含上游构建说明，与可执行附件和应用源码附件一起提供。
+对应 Qt 组件的完整、未修改源码，包括 qtbase、qtsvg、qtimageformats、pyside-setup 及其中的 Shiboken，以 GaussianLab-v3.0.0-Qt-Corresponding-Source.zip 附件提供。SOURCE-MANIFEST.json 记录原始下载地址和经核验的 SHA-256。源码归档包含上游构建说明，与可执行附件和应用源码附件一起提供。
 
 本应用使用 Qt Widgets，不需要的 Qt PDF、DataVisualization、VirtualKeyboard 插件已从发行包排除。
 
@@ -25,6 +25,8 @@ Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户�
 
 本声明不为用户原创应用代码选择新的许可证，源码可见不自动等同于采用某一开源许可。第三方组件按随附的 BSD、MIT、PSF、Matplotlib 等许可证及 PyInstaller 引导程序例外条款使用，其权利、条件和免责声明保持有效。
 
-## CUDA 开发分支可选组件
+## V3 CUDA 可选组件
 
-feature/cuda-responsive-preview 使用可选 CuPy 14.2.0（MIT），NVIDIA cuda-pathfinder（Apache-2.0）及 NVIDIA CUDA 12.9 运行组件（按各轮子随附的 NVIDIA 许可/EULA）。固定版本见 requirements-cuda.txt，组件通过官方 PyPI 轮子独立安装，不复制第三方算法源码。现有 V2.0.0 运行包不含这些新增库；未来制作 GPU 分发包时必须重新核对可再分发组件、保留其完整许可，不将当前 Qt 源码附件误作 CUDA 对应许可。
+V3 使用 CuPy 14.2.0（MIT）、NVIDIA cuda-pathfinder（Apache-2.0）及 CUDA 12.9（各轮子随附 NVIDIA 许可/EULA）。运行包私有目录保留 CuPy/cuda-pathfinder 原文件和许可，仅选择 cudart、NVRTC、cuFFT、nvJitLink 运行 DLL 及再分发清单头文件，不包含系统驱动。原始许可位于 THIRD_PARTY_LICENSES/CUDA，完整来源摘要位于 _internal/cuda_runtime/RUNTIME-MANIFEST.json。
+
+CuPy 的完整编译头文件由首次 CUDA 初始化从 NVIDIA 在 PyPI 发布的固定 wheel 下载，核对 SHA-256 后仅提取到本机应用私有缓存，不改写第三方代码。下载来源、字节数与摘要见 packaging/cuda-headers-wheel.json（随包 CUDA-HEADERS.json）；许可原文仍适用。对应源码附件提供应用代码及重建配置，Qt 对应源码附件不代替 CUDA 许可。V2.0.0 历史包不含这些新增组件。

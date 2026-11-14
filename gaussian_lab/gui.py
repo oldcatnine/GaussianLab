@@ -105,7 +105,7 @@ def spin(value, low, high, decimals=3, suffix=""):
 class MainWindow(QMainWindow):
     def __init__(self, auto_compute=True):
         super().__init__()
-        self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__} · CUDA 开发版")
+        self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__}")
         self.resize(1520, 980)
         self.setMinimumSize(1180, 780)
         self.result = None
@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
         self.backend_choice = QComboBox()
         for text, key in (("自动选择", "auto"), ("CPU 兼容模式", "cpu"), ("CUDA 优先", "cuda")):
             self.backend_choice.addItem(text, key)
-        self.backend_choice.setToolTip("CUDA 不可用时自动回退 CPU；自动模式的小网格优先 CPU。")
+        self.backend_choice.setToolTip("CUDA 不可用时回退 CPU；自动模式小网格优先 CPU。便携版首次 CUDA 需联网补充约 3.6 MB 头文件并建立缓存。")
         self.backend_choice.currentIndexChanged.connect(self.mark_dirty)
         performance_form.addRow("计算后端", self.backend_choice)
         self.auto_preview = QCheckBox("改参后自动预览")
