@@ -37,9 +37,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\scripts\build_release.ps1 -CudaRuntime (Join-Path $PWD 'build/cuda-input')
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          .\.venv\Scripts\python.exe scripts/verify_release.py --smoke --backend cpu
+          .\.venv\Scripts\python.exe scripts/verify_release.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: 上传附件并发布版本
+      - name: 上传附件并保留草稿
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,6 +47,4 @@ jobs:
         run: |
           $releaseFolder = "releases/$env:RELEASE_TAG"
           gh release upload $env:RELEASE_TAG "$releaseFolder/GaussianLab-$env:RELEASE_TAG-Windows-x64.zip" "$releaseFolder/GaussianLab-$env:RELEASE_TAG-Qt-Corresponding-Source.zip" "$releaseFolder/GaussianLab-$env:RELEASE_TAG-Application-Source.zip" "$releaseFolder/SHA256SUMS.txt" --repo $env:GITHUB_REPOSITORY
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          gh release edit $env:RELEASE_TAG --draft=false --repo $env:GITHUB_REPOSITORY
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

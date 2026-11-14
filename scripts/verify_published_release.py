@@ -33,11 +33,13 @@ def main():
     parser = argparse.ArgumentParser(description="下载并核验明确指定的已发布版本，不创建或覆盖远端发行")
     parser.add_argument("--tag", default="v" + __version__)
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--allow-draft", action="store_true")
     args = parser.parse_args()
     client = session()
     repo = api(client, 'GET', '/repos/oldcatnine/GaussianLab')
-    release = api(client, 'GET', '/repos/oldcatnine/GaussianLab/releases/tags/' + args.tag)
-    assert repo['private'] and not release['draft']
+    releases = api(client, 'GET', '/repos/oldcatnine/GaussianLab/releases')
+    release = next(item for item in releases if item['tag_name'] == args.tag)
+    assert repo['private'] and (args.allow_draft or not release['draft'])
     assets = {a['name']:a for a in release['assets']}
     expected_assets = {f'GaussianLab-{args.tag}-Windows-x64.zip',
                        f'GaussianLab-{args.tag}-Qt-Corresponding-Source.zip', 'SHA256SUMS.txt'}

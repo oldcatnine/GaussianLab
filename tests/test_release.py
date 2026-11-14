@@ -158,3 +158,12 @@ def test_cuda_headers_hash_failure_never_extracts(tmp_path, monkeypatch):
         ensure_cuda_headers(tmp_path)
     assert not (tmp_path / ".headers-ready").exists()
     assert not list(tmp_path.glob("*.whl"))
+
+
+def test_remote_build_keeps_draft_until_downloaded_binary_is_verified():
+    text = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    assert "--draft=false" not in text
+    assert "gh release upload" in text
+    assert "requirements-cuda.txt" in text
+    verifier = (ROOT / "scripts/verify_published_release.py").read_text(encoding="utf-8")
+    assert "--allow-draft" in verifier and "--smoke" in verifier
