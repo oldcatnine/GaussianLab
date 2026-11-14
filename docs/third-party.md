@@ -14,4 +14,4 @@
 | VTK | BSD | 三维渲染 |
 | pytest | MIT | 自动测试 |
 
-当前交付为源码与本机独立环境，未制作二进制安装包。分发 EXE 前需逐项核对打包使用的 Qt 模块、许可证与必要声明，整理随包许可证；本表不替代完整的二进制分发许可清单。
+V0.1.0 已准备 Windows onedir 二进制发行：所需动态库与原始许可随运行包保存，Qt/PySide6 对应源码以独立附件提供。Qt PDF、DataVisualization、VirtualKeyboard 等非必需模块和插件排除。完整说明见 [发行第三方声明](THIRD-PARTY-NOTICES.md)；实际收集清单位于运行包 THIRD_PARTY_LICENSES/INDEX.json。本表不替代包内原始许可文本。

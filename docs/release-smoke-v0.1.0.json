@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "frozen": true,
+  "cases": [
+    {
+      "name": "单透镜聚焦",
+      "seconds": 2.2789186000009067,
+      "transmission": 1.0000000000000175
+    },
+    {
+      "name": "双透镜扩束",
+      "seconds": 2.0622922999991715,
+      "transmission": 1.000000000000016
+    },
+    {
+      "name": "光阑衍射",
+      "seconds": 2.037948099999994,
+      "transmission": 0.6166232881766799
+    }
+  ],
+  "scan_points": 3,
+  "status": "passed"
+}

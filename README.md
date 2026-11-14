@@ -6,6 +6,8 @@
 
 ## 启动
 
+**发给老师：** 下载 [V0.1.0 Release](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0) 的 `GaussianLab-v0.1.0-Windows-x64.zip`，完整解压后双击 `GaussianLab.exe`，无需 Python。保留 `_internal` 文件夹。仓库当前按私有创建，直接在线访问需要授权；也可下载 ZIP 后转发。详见 [便携版使用说明](docs/USER_GUIDE-v0.1.0.md)。
+
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
 ```powershell
@@ -22,7 +24,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m gaussian_lab
 ```
 
-requirements-lock.txt 是本次 Windows/Python 3.10 的完整版本快照；requirements.txt 是直接依赖范围。未制作独立 EXE，其他 Python/系统组合尚未验证。
+requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照；requirements.txt 是直接依赖范围。Windows EXE 采用 PyInstaller 文件夹模式，构建依赖见 requirements-build.txt；其他 Python/系统组合尚未验证。
 
 ## 使用与边界
 
@@ -33,7 +35,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的完整版本快照；requ
 - 所有图形基于单色同轴、标量近轴、理想薄透镜与圆孔模型。解析 w 为高斯参考；衍射 r86 为 86% 包围能量半径，二者定义不同。
 - **本版是可验证的首版，不是任意光路的高精度保证**：Fresnel FFT 使用有限周期窗口，焦点为轴向离散搜索；高 NA、复杂像差与 M² 不在当前范围。“收敛检查”仅比较末端 r86，不能替代焦区、能量和远场的全面验证。
 - 三维横向尺寸放大 25 倍，透镜外形及支座为示意；透明包络是 r86 轮廓，内部亮芯为展示辅助，不能当作三维强度测量。
-- 光阑目前为独立元件；透镜有效口径、光路行拖动排序、扫描动画播放及独立 EXE 留待后续版本。
+- 光阑目前为独立元件；透镜有效口径、光路行拖动排序和扫描动画播放留待后续版本。
 
 ## 项目文档
 
@@ -56,3 +58,12 @@ git diff --check
 test_optics.py 为数值和数据验证；test_gui.py 为真实 Qt/VTK 冒烟测试，需可用桌面与渲染环境；test_project_docs.py 为文档验证。Windows 上 pytest faulthandler 可能打印 COM 0x8001010d 诊断，复核方式与本次结果见后续验证记录；不要仅据该行或隐藏诊断判断成功，需检查退出码和断言。
 
 源码与测试由本项目编写，第三方依赖及参考见 [第三方说明](docs/third-party.md)。
+
+## 构建 Windows 便携版
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+& .\scripts\build_release.ps1
+```
+
+输出位于 `releases/v0.1.0/`，不进入源码 Git。构建脚本下载并校验 Qt 对应源码，需要联网；Release 将运行包、对应源码包和 SHA-256 清单作为独立附件。构建和发布过程见 [开发记录](docs/development-log.md)。

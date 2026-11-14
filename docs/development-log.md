@@ -128,6 +128,21 @@
 - 报告素材：计算方法、模块实现、数值验证、3D 科学可视化、人机交互、测试发现和版本局限。
 - 下一步：后续完善焦区/远场收敛、扫描动画、透镜有效口径与打包。
 
+### DEV-007｜2026-11-14｜Windows EXE 与 GitHub 首版发布
+
+- 目标：老师无需安装 Python 即可运行，整理 V0.1.0 到 GitHub。
+- 操作与变更：新增 PyInstaller 入口/spec、冻结 EXE 冒烟测试、构建/发布脚本、使用说明、版本说明和第三方声明；采用 onedir ZIP，保留可替换的 Qt 动态库和独立对应源码附件。
+- 工具与方法：复用光学调研；补查 PyInstaller/Qt 官方文档与 hooks-contrib 原仓库；pip 安装 PyInstaller 6.22.3 与 hooks-contrib 2026.10；官方 Qt 源码下载与 SHA-256 校验；pefile 检查 DLL 导入导出；Git Credential Manager 非交互读取及 GitHub 官方 REST API；未输出或保存凭据。
+- 结果：创建私有仓库 https://github.com/oldcatnine/GaussianLab，用户随后明确确认私有。GitHub 插件仅支持部分仓库读写，不支持创建仓库与 Release 二进制上传，因此改用官方 API 和 Git。最终运行 ZIP 约 175.8 MiB，第三方对应源码 ZIP 约 70.2 MiB。
+- 问题与处理：首次冻结程序 QtCore DLL 加载失败。检查到 PyInstaller 从本机 Poppler PATH 误收集 icuuc.dll，其缺少 Qt 使用的 Windows ICU 无版本后缀符号；排除后使用 System32 ICU。另把包根目录较旧的 Python MSVC 运行库统一到 Qt wheel 附带版本，规则写入 spec。
+- 验证证据：37 项测试通过，退出码 0，规则脚本和 pip check 通过。最终 ZIP 的 SHA-256/CRC 校验通过，解压至全新 outputs/portable-check 目录，再以仅含 Windows 系统目录的 PATH 运行 EXE；frozen=true，三个案例、Qt/VTK 截图、配置往返、三点孔径扫描及 CSV 均通过，退出码 0。结果见 release-smoke-v0.1.0.json、release-artifacts-v0.1.0.json。已通过 computer-use 插件绑定实际 GaussianLab.exe 路径检查窗口，首屏计算与三维渲染正常；新 EXE 首次访问超时，重新绑定后成功。
+- 第三方处理：初次 hook 带入未使用的 Qt PDF/VirtualKeyboard/DataVisualization，已排除；下载并验证 qtbase/qtsvg/qtimageformats/pyside-setup 6.12.0，随发行提供完整对应源码与上游许可证文本。
+- 最终插件复核：绑定从最终 ZIP 解压的 GaussianLab.exe，点击传播播放，观察屏从 218.75 mm 移动到 275.00 mm，r86 联动变化，随后暂停。打包版与源码版窗口身份分别核对。
+- 关联文件：GaussianLab.spec、app_entry.py、gaussian_lab/release_smoke.py、scripts/prepare_release.py、scripts/publish_github.py、docs/USER_GUIDE-v0.1.0.md、docs/THIRD-PARTY-NOTICES.md。
+- 关联提交主题：`build: package Windows v0.1.0 and prepare GitHub release`。
+- 报告素材：部署方案、冻结依赖、动态库冲突排查、二进制验证、版本发布与许可证整理。
+- 下一步：提交标签并推送首版 Release，发布成功后另补录 GitHub 返回的附件与版本信息。
+
 ## 5. 毕业设计报告素材映射
 
 | 报告部分 | 当前已有素材 | 后续需补证据 |

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "GaussianLab-v0.1.0-Qt-Corresponding-Source.zip",
+    "bytes": 73624348,
+    "sha256": "fc36f89beec403e133a307b74aefda0affbbb5f4479486593049a6eb7e4960d8",
+    "zip_crc": "passed"
+  },
+  {
+    "name": "GaussianLab-v0.1.0-Windows-x64.zip",
+    "bytes": 184378224,
+    "sha256": "4efc79be64c08c64e9d49500a325ea17e0f4a4a6209243f04f6c89cf836cb488",
+    "zip_crc": "passed"
+  }
+]
