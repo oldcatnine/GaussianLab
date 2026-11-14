@@ -150,6 +150,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/project-review-2026-11-14.md",
+    "purpose": "项目阶段检查，记录数值采样对照、证据限制、改进优先级及后续验收建议。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-artifacts-v0.1.0.json",
     "purpose": "早期本机构建附件的大小与摘要历史记录，不是远端重建文件的摘要。",
     "optional_local": false

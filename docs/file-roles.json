@@ -52,5 +52,6 @@
   "docs/github-release-v0.1.0.json":"已发布私有版本的地址、附件大小与服务器摘要核验记录。",
   "docs/github-release-smoke-v0.1.0.json":"实际下载的远端可执行版本的冻结运行验证结果。",
   "docs/test-results-v0.1.txt":"初版测试命令的原始输出，用于追溯当时的验证情况。",
-  "docs/test-results-release-v0.1.0.txt":"首版发布阶段测试命令的原始输出，不代表后续测试数量。"
+  "docs/test-results-release-v0.1.0.txt":"首版发布阶段测试命令的原始输出，不代表后续测试数量。",
+  "docs/project-review-2026-11-14.md":"项目阶段检查，记录数值采样对照、证据限制、改进优先级及后续验收建议。"
 }

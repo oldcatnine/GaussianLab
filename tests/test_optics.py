@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from gaussian_lab.model import Project, Element, preset, save_project, load_project
 from gaussian_lab.optics import (analytic, output_gaussian, simulate, scan, convergence,
-                                 fresnel, coordinates, initial_field, Cancelled, export_csv)
+                                 fresnel, coordinates, initial_field, encircled_radius, Cancelled, export_csv)
 
 
 def small(**kwargs):
@@ -151,3 +151,14 @@ def test_result_snapshot_survives_input_edits():
     r = simulate(p)
     p.waist *= 2
     assert r.project.waist != p.waist
+
+
+@pytest.mark.parametrize("fraction", [.5, .86, .95])
+def test_encircled_radius_against_gaussian_energy_integral(fraction):
+    """用独立的圆对称高斯能量积分验证半径定义，避免将 w 直接等同于 r86。"""
+    p = small(grid=512)
+    _, r2 = coordinates(p)
+    intensity = np.exp(-2 * r2 / p.waist**2)
+    expected = p.waist * np.sqrt(-np.log(1 - fraction) / 2)
+    measured = encircled_radius(intensity, np.sqrt(r2), fraction)
+    assert abs(measured - expected) <= p.window / p.grid

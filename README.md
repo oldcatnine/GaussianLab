@@ -48,6 +48,8 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 - [V0.1 验证与交付记录](docs/validation-v0.1.md)：自动化测试、插件自测、数值结果、实际截图和首版局限。
 - [V0.1.0 EXE 与 GitHub 发布验证](docs/release-validation-v0.1.0.md)：便携包、GitHub 构建及最终下载版 EXE 的复测证据。
 
+- [项目检查与改进建议](docs/project-review-2026-11-14.md)：阶段评价、焦区采样复核、问题优先级与后续验证建议。
+
 ## 验证
 
 ```powershell
