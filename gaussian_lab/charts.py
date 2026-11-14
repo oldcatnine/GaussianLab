@@ -36,10 +36,15 @@ class PlotCanvas(FigureCanvasQTAgg):
         return self.ax
 
     def beam(self, r, index):
+        if getattr(self, "beam_result", None) is r and self.ax is not None:
+            self.beam_cursor.set_xdata([r.z[index] * 1e3] * 2)
+            self.draw_idle()
+            return
         ax = self.reset()
+        self.beam_result = r
         ax.plot(r.z * 1e3, r.gaussian_w * 1e6, color=BLUE, lw=1.7, label="理想高斯参考 w")
         ax.plot(r.z * 1e3, r.r86 * 1e6, color=ORANGE, lw=1.5, label="衍射 r86")
-        ax.axvline(r.z[index] * 1e3, color="#64748b", ls="--", lw=.9)
+        self.beam_cursor = ax.axvline(r.z[index] * 1e3, color="#64748b", ls="--", lw=.9)
         for e in r.project.ordered():
             ax.axvline(e.z * 1e3, color="#94a3b8", alpha=.5, lw=.7)
         ax.set(xlabel="传播位置 z / mm", ylabel="半径 / μm")

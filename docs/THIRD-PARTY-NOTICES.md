@@ -24,3 +24,7 @@ Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户�
 ## 应用代码与其他组件
 
 本声明不为用户原创应用代码选择新的许可证，源码可见不自动等同于采用某一开源许可。第三方组件按随附的 BSD、MIT、PSF、Matplotlib 等许可证及 PyInstaller 引导程序例外条款使用，其权利、条件和免责声明保持有效。
+
+## CUDA 开发分支可选组件
+
+feature/cuda-responsive-preview 使用可选 CuPy 14.2.0（MIT），NVIDIA cuda-pathfinder（Apache-2.0）及 NVIDIA CUDA 12.9 运行组件（按各轮子随附的 NVIDIA 许可/EULA）。固定版本见 requirements-cuda.txt，组件通过官方 PyPI 轮子独立安装，不复制第三方算法源码。现有 V2.0.0 运行包不含这些新增库；未来制作 GPU 分发包时必须重新核对可再分发组件、保留其完整许可，不将当前 Qt 源码附件误作 CUDA 对应许可。

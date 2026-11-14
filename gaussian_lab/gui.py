@@ -17,6 +17,8 @@ from .model import Project, Element, preset, load_project, save_project
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
 from .scene import OpticalScene
 from .charts import PlotCanvas
+from .backend import preview_project
+from .session import ResultCache
 
 STYLE = """
 QMainWindow,QWidget {background:#ffffff;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
@@ -46,19 +48,35 @@ class Job(QThread):
     failed = Signal(str)
     progress = Signal(int)
 
-    def __init__(self, kind, project, options=None):
+    def __init__(self, kind, project, options=None, backend="cpu", revision=None, cache=None):
         super().__init__()
         self.kind, self.project, self.options = kind, project, options
+        self.backend, self.revision, self.cache = backend, revision, cache
+        self.request_project = project.clone()
+        self.cache_hit = False
         self.cancel = threading.Event()
 
     def run(self):
         try:
             if self.kind == "scan":
-                result = scan(self.project, *self.options, cancel=self.cancel, progress=self.progress.emit)
+                result = scan(self.project, *self.options, cancel=self.cancel, progress=self.progress.emit, backend=self.backend)
             elif self.kind == "convergence":
-                result = convergence(self.project, self.cancel)
+                result = convergence(self.project, self.cancel, backend=self.backend)
             else:
-                result = simulate(self.project, self.cancel, self.progress.emit)
+                key = self.cache.key(self.request_project, self.backend, self.kind == "preview") if self.cache else None
+                result = self.cache.get(key) if self.cache else None
+                self.cache_hit = result is not None
+                if result is None:
+                    result = simulate(self.project, self.cancel, self.progress.emit, backend=self.backend)
+                    if self.kind == "preview":
+                        result.provenance["quality"] = "preview"
+                        result.provenance["requested_project"] = asdict(self.request_project)
+                    else:
+                        result.provenance["quality"] = "full"
+                    if self.cache and not self.cancel.is_set():
+                        self.cache.put(key, result)
+                if self.cancel.is_set():
+                    raise Cancelled()
             self.completed.emit(result)
         except Cancelled:
             self.failed.emit("计算已取消；保留上一次完成的结果")
@@ -80,14 +98,14 @@ def spin(value, low, high, decimals=3, suffix=""):
     widget.setDecimals(decimals)
     widget.setValue(value)
     widget.setSuffix(suffix)
-    widget.setKeyboardTracking(False)
+    widget.setKeyboardTracking(True)
     return widget
 
 
 class MainWindow(QMainWindow):
     def __init__(self, auto_compute=True):
         super().__init__()
-        self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__}")
+        self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__} · CUDA 开发版")
         self.resize(1520, 980)
         self.setMinimumSize(1180, 780)
         self.result = None
@@ -95,6 +113,19 @@ class MainWindow(QMainWindow):
         self.job = None
         self.loading = False
         self.dirty = True
+        self.revision = 0
+        self.pending_preview = False
+        self.pending_full = False
+        self.closing = False
+        self.result_cache = ResultCache()
+        self.preview_timer = QTimer(self)
+        self.preview_timer.setSingleShot(True)
+        self.preview_timer.setInterval(400)
+        self.preview_timer.timeout.connect(self.request_preview)
+        self.plane_timer = QTimer(self)
+        self.plane_timer.setSingleShot(True)
+        self.plane_timer.setInterval(40)
+        self.plane_timer.timeout.connect(self.draw_plane)
         self.play_timer = QTimer(self)
         self.play_timer.setInterval(200)
         self.play_timer.timeout.connect(self.advance_plane)
@@ -155,6 +186,20 @@ class MainWindow(QMainWindow):
             else:
                 widget.valueChanged.connect(self.mark_dirty)
         left_layout.addWidget(source_box)
+        performance_box = QGroupBox("计算与交互")
+        performance_form = QFormLayout(performance_box)
+        self.backend_choice = QComboBox()
+        for text, key in (("自动选择", "auto"), ("CPU 兼容模式", "cpu"), ("CUDA 优先", "cuda")):
+            self.backend_choice.addItem(text, key)
+        self.backend_choice.setToolTip("CUDA 不可用时自动回退 CPU；自动模式的小网格优先 CPU。")
+        self.backend_choice.currentIndexChanged.connect(self.mark_dirty)
+        performance_form.addRow("计算后端", self.backend_choice)
+        self.auto_preview = QCheckBox("改参后自动预览")
+        self.auto_preview.setChecked(auto_compute)
+        self.auto_preview.setToolTip("停止输入 400 ms 后更新；预览最多 256 网格、33 个轴向点，不进行焦区细化。")
+        self.auto_preview.toggled.connect(self.preview_toggled)
+        performance_form.addRow(self.auto_preview)
+        left_layout.addWidget(performance_box)
         element_box = QGroupBox("02  光路元件 · 按位置传播")
         el = QVBoxLayout(element_box)
         self.table = QTableWidget(0, 5)
@@ -247,7 +292,7 @@ class MainWindow(QMainWindow):
         self.plane_slider = QSlider(Qt.Horizontal)
         self.plane_slider.setRange(0, 64)
         self.plane_slider.setAccessibleName("观察屏位置")
-        self.plane_slider.valueChanged.connect(self.draw_plane)
+        self.plane_slider.valueChanged.connect(self.request_plane_draw)
         observer.addWidget(self.plane_slider, 1)
         self.plane_label = QLabel("— mm")
         self.plane_label.setMinimumWidth(155)
@@ -293,13 +338,35 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         self.fill_project(preset("单透镜聚焦"))
         if auto_compute:
-            QTimer.singleShot(300, self.compute)
+            self.preview_timer.start()
 
     def mark_dirty(self, *_):
         if not self.loading:
+            self.revision += 1
             self.dirty = True
             if hasattr(self, "result_state"):
-                self.result_state.setText("参数已修改 · 当前图为上次结果，请重新计算")
+                self.result_state.setText("参数已修改 · 当前图为上次结果")
+            if hasattr(self, "auto_preview") and self.auto_preview.isChecked():
+                self.pending_preview = True
+                self.preview_timer.start()
+                if self.job and self.job.isRunning() and self.job.kind in ("simulate", "preview"):
+                    self.job.cancel.set()
+
+    def preview_toggled(self, enabled):
+        if enabled:
+            self.mark_dirty()
+        else:
+            self.preview_timer.stop()
+            self.pending_preview = False
+            if self.job and self.job.isRunning() and self.job.kind == "preview":
+                self.job.cancel.set()
+
+    def request_preview(self):
+        if self.closing or not self.auto_preview.isChecked():
+            return
+        self.pending_preview = True
+        if not self.job or not self.job.isRunning():
+            self.launch_job("preview", automatic=True)
 
     def fill_project(self, p):
         self.loading = True
@@ -383,7 +450,7 @@ class MainWindow(QMainWindow):
         self.fill_project(preset(self.presets.currentText()))
         self.compute()
 
-    def launch_job(self, kind, options=None):
+    def launch_job(self, kind, options=None, automatic=False):
         if self.job and self.job.isRunning():
             return
         self.play_timer.stop()
@@ -391,22 +458,37 @@ class MainWindow(QMainWindow):
         try:
             p = self.read_project()
         except Exception as exc:
-            self.show_error(str(exc))
+            if automatic:
+                self.status.setText("等待有效参数：" + str(exc))
+                self.pending_preview = False
+            else:
+                self.show_error(str(exc))
             return
-        self.job = Job(kind, p, options)
+        self.preview_timer.stop()
+        self.pending_preview = False
+        self.pending_full = False
+        actual = preview_project(p) if kind == "preview" else p
+        self.job = Job(kind, actual, options, self.backend_choice.currentData(), self.revision, self.result_cache)
+        self.job.request_project = p
         self.job.completed.connect(self.job_done)
         self.job.failed.connect(self.job_failed)
         self.job.progress.connect(self.progress.setValue)
         self.job.finished.connect(self.job_finished)
-        self.run_button.setEnabled(False)
+        self.run_button.setEnabled(kind == "preview")
         self.scan_button.setEnabled(False)
         self.convergence_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.progress.setValue(0)
-        self.status.setText("计算中 · 可旋转场景 · 参数修改后须重新计算")
+        self.status.setText("预览更新中 · 可继续修改参数" if kind == "preview" else "完整任务计算中 · 可继续操作视图")
         self.job.start()
 
     def compute(self):
+        self.preview_timer.stop()
+        self.pending_preview = False
+        if self.job and self.job.isRunning():
+            self.pending_full = True
+            self.job.cancel.set()
+            return
         self.launch_job("simulate")
 
     def start_scan(self):
@@ -417,6 +499,8 @@ class MainWindow(QMainWindow):
         self.launch_job("convergence")
 
     def cancel_job(self):
+        self.preview_timer.stop()
+        self.pending_preview = self.pending_full = False
         if self.job:
             self.job.cancel.set()
 
@@ -425,15 +509,22 @@ class MainWindow(QMainWindow):
         self.scan_button.setEnabled(True)
         self.convergence_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+        if not self.closing:
+            if self.pending_full:
+                QTimer.singleShot(0, self.compute)
+            elif self.pending_preview and self.auto_preview.isChecked() and not self.preview_timer.isActive():
+                self.preview_timer.start(1)
 
     def job_failed(self, message):
         self.status.setText(message)
-        if "已取消" not in message:
+        if "已取消" not in message and self.job.kind != "preview":
             self.show_error(message)
 
     def job_done(self, result):
+        if self.job.kind in ("simulate", "preview") and self.job.revision is not None and self.job.revision != self.revision:
+            return
         try:
-            self.dirty = self.read_project() != self.job.project
+            self.dirty = self.read_project() != self.job.request_project
         except ValueError:
             self.dirty = True
         if self.job.kind == "scan":
@@ -462,8 +553,10 @@ class MainWindow(QMainWindow):
             Path("outputs").mkdir(exist_ok=True)
             Path("outputs/convergence.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         else:
+            changed = self.result is not result
             self.result = result
-            self.scene.set_result(result)
+            if changed:
+                self.scene.set_result(result)
             ref = result.reference
             k = result.focus_index
             self.cards[0].setText(f"高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
@@ -471,9 +564,12 @@ class MainWindow(QMainWindow):
             self.cards[1].setToolTip(f"焦区细化 {result.focus['levels']} 级；括区宽 {result.focus['axial_bracket_width_m']*1e3:.4f} mm。横向分位平台仍需复核。")
             self.cards[2].setText(f"参考 θ / 衍射 θ86\n{ref['divergence']*1e3:.2f} / {result.theta86*1e3:.2f} mrad")
             self.cards[3].setText(f"系统透过率 / 末端\n{result.transmission[-1]*100:.2f} %")
-            self.plane_slider.setRange(0, len(result.z)-1)
-            self.plane_slider.setValue(k)
-            self.draw_plane()
+            if changed:
+                self.plane_slider.blockSignals(True)
+                self.plane_slider.setRange(0, len(result.z)-1)
+                self.plane_slider.setValue(k)
+                self.plane_slider.blockSignals(False)
+                self.draw_plane()
             self.status.setText("；".join(result.warnings) if result.warnings else
                                 "计算完成 · 采样诊断无明显异常；尚需网格与窗口收敛验证 · 高斯与 r86 指标不同")
             self.bottom.setCurrentIndex(0)
@@ -482,8 +578,12 @@ class MainWindow(QMainWindow):
         elif self.job.kind == "convergence":
             self.result_state.setText("收敛检查使用独立参数快照 · 主场景仍为上次光场结果")
         else:
+            backend = result.provenance.get("backend", {})
+            quality = "快速预览 · 未完成精度验证" if self.job.kind == "preview" else "完整计算"
             self.result_state.setText("参数已修改 · 显示任务快照结果" if self.dirty else
-                                      f"任务完成 · N={self.job.project.grid} · 标量近轴 / 轴向离散采样")
+                f"{quality} · N={result.project.grid} · {backend.get('used', 'cpu').upper()}" +
+                (" · 复用缓存" if self.job.cache_hit else ""))
+            self.result_state.setToolTip(backend.get("reason", ""))
         self.progress.setValue(100)
 
     def draw_plane(self, *_):
@@ -502,6 +602,17 @@ class MainWindow(QMainWindow):
         else:
             self.energy_plot.energy(r, i)
         self.beam_plot.beam(r, i)
+
+    def request_plane_draw(self, *_):
+        if self.result is None:
+            return
+        i = min(self.plane_slider.value(), len(self.result.z) - 1)
+        self.plane_label.setText(f"{self.result.z[i]*1e3:.2f} mm · r86={self.result.r86[i]*1e6:.1f} μm")
+        if self.plane_slider.isSliderDown():
+            if not self.plane_timer.isActive():
+                self.plane_timer.start()
+        else:
+            self.draw_plane()
 
     def locate_focus(self):
         if self.result is not None:
@@ -559,7 +670,10 @@ class MainWindow(QMainWindow):
                 raise ValueError("当前扫描页没有结果，请先完成扫描")
             if not is_scan and self.result is None:
                 raise ValueError("请先完成计算")
-            path = self.choose_path("导出计算快照数据", "scan.csv" if is_scan else "propagation.csv", "CSV (*.csv)")
+            snapshot = self.result
+            preview = snapshot is not None and snapshot.provenance.get("quality") == "preview"
+            filename = "scan.csv" if is_scan else "propagation-preview.csv" if preview else "propagation.csv"
+            path = self.choose_path("导出计算快照数据", filename, "CSV (*.csv)")
             if path:
                 if is_scan:
                     export_csv(self.scan_rows, path)
@@ -571,7 +685,7 @@ class MainWindow(QMainWindow):
                         "metric": "末片透镜后粗搜索与局部细化的最小 r86；警告点需复核"},
                         ensure_ascii=False, indent=2), encoding="utf-8")
                 else:
-                    export_result(self.result, path, getattr(self, "last_convergence", None))
+                    export_result(snapshot, path, getattr(self, "last_convergence", None))
                 self.status.setText("已导出数据和对应参数快照：" + path)
         except Exception as exc:
             self.show_error(str(exc))
@@ -579,6 +693,7 @@ class MainWindow(QMainWindow):
     def export_plot(self):
         """按明确选择导出结果快照，支持未打开过的分析标签和白底矢量图。"""
         try:
+            preview = False
             key = self.export_target.currentData()
             if key == "current":
                 key = ("spot", "profile", "surface", "energy")[self.tabs.currentIndex()]
@@ -588,12 +703,15 @@ class MainWindow(QMainWindow):
                 if not self.scan_rows:
                     raise ValueError("请先完成参数扫描")
                 kind = self.scan_project.elements[self.scan_options[0]].kind
-                self.scan_plot.scanning(self.scan_rows, kind)
+                scan_rows = self.scan_rows
+                self.scan_plot.scanning(scan_rows, kind)
                 plot = self.scan_plot
             else:
                 if self.result is None:
                     raise ValueError("请先完成光场计算")
                 r = self.result
+                preview = r.provenance.get("quality") == "preview"
+                logarithmic = self.log_scale.isChecked()
                 index = min(self.plane_slider.value(), len(r.z) - 1)
                 plot = {"spot": self.spot_plot, "profile": self.profile_plot, "surface": self.surface_plot,
                         "energy": self.energy_plot, "beam": self.beam_plot}[key]
@@ -602,15 +720,31 @@ class MainWindow(QMainWindow):
                 else:
                     method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
                     getattr(plot, method)(r, index)
-            path = self.choose_path("导出" + labels[key], key + ".png", "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")
+            path = self.choose_path("导出" + labels[key], key + ("-preview.png" if preview else ".png"), "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")
             if path:
+                # 文件对话框打开期间允许自动预览继续，导出使用独立画布固定调用时的快照。
+                plot = PlotCanvas(surface=key == "surface")
+                if key == "scan":
+                    plot.scanning(scan_rows, kind)
+                elif key == "spot":
+                    plot.spot(r, index, logarithmic)
+                else:
+                    method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
+                    getattr(plot, method)(r, index)
+                snapshot_title = plot.figure.suptitle(f"快速预览 · N={r.project.grid} · 未完成精度验证") if preview else None
                 labels_to_keep = []
                 for axes in plot.figure.axes:
                     labels_to_keep.extend((axes.xaxis.label, axes.yaxis.label, axes.title))
                     if hasattr(axes, "zaxis"):
                         labels_to_keep.append(axes.zaxis.label)
-                plot.figure.savefig(path, dpi=300, facecolor="white", edgecolor="white", transparent=False,
-                                    bbox_inches="tight", pad_inches=.15, bbox_extra_artists=labels_to_keep)
+                if snapshot_title is not None:
+                    labels_to_keep.append(snapshot_title)
+                try:
+                    plot.figure.savefig(path, dpi=300, facecolor="white", edgecolor="white", transparent=False,
+                                        bbox_inches="tight", pad_inches=.15, bbox_extra_artists=labels_to_keep)
+                finally:
+                    plot.close()
+                    plot.deleteLater()
                 self.status.setText("已导出白底" + labels[key] + "：" + path)
         except Exception as exc:
             self.show_error(str(exc))
@@ -624,6 +758,9 @@ class MainWindow(QMainWindow):
             self.status.setText("已保存场景：" + path)
 
     def closeEvent(self, event):
+        self.closing = True
+        self.preview_timer.stop()
+        self.plane_timer.stop()
         self.play_timer.stop()
         if self.job and self.job.isRunning():
             self.job.cancel.set()

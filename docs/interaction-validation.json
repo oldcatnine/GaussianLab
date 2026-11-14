@@ -1,0 +1,20 @@
+{
+  "backend": {
+    "requested": "cuda",
+    "used": "cuda",
+    "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "reason": "CUDA 光场与 FFT",
+    "precision": "complex128 / float64"
+  },
+  "preview_grid": 256,
+  "last_edit_to_preview_seconds": 2.3797903999948176,
+  "full_click_to_display_seconds": 0.9949893000011798,
+  "warm_edit_to_preview_seconds": 0.6589520999987144,
+  "cached_click_to_display_seconds": 0.01381530000071507,
+  "heartbeat_count": 41,
+  "max_heartbeat_gap_seconds": 0.8703965000022436,
+  "errors": [],
+  "status": "passed",
+  "screenshot": "assets/cuda-preview-desktop.png",
+  "note": "真实窗口计时含 400ms 防抖、计算、信号处理和场景/图表更新；不是纯内核计时，首次 CUDA 可能含初始化。"
+}

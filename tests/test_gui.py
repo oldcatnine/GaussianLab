@@ -3,6 +3,7 @@ import pytest
 import gc
 import json
 import time
+import numpy as np
 from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
@@ -241,3 +242,127 @@ def test_plot_export_reports_missing_scan_and_cancel_does_not_write(window, monk
     monkeypatch.setattr(window, "choose_path", lambda *args, **kwargs: "")
     window.export_plot()
     assert not list(tmp_path.iterdir())
+
+
+def wait_until(app, predicate, seconds=10):
+    deadline = time.monotonic() + seconds
+    while not predicate() and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)
+    app.processEvents()
+    assert predicate()
+
+
+def test_auto_preview_coalesces_edits_and_reuses_identical_result(window, app, monkeypatch):
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.auto_preview.setChecked(True)
+    for value in (.6, .7):
+        window.waist.setValue(value)
+    window.waist.lineEdit().setFocus()
+    window.waist.lineEdit().selectAll()
+    QTest.keyClicks(window.waist.lineEdit(), "0.8")
+    revision = window.revision
+    wait_until(app, lambda: window.result.project.waist == .0008 and not window.job.isRunning())
+    assert window.job.revision == revision and window.job.kind == "preview"
+    assert "快速预览" in window.result_state.text()
+    assert window.result.provenance["quality"] == "preview"
+    window.compute()
+    wait_until(app, lambda: window.job.kind == "simulate" and not window.job.isRunning())
+    assert "完整计算" in window.result_state.text()
+    window.compute()
+    wait_until(app, lambda: not window.job.isRunning())
+    assert window.job.cache_hit and "复用缓存" in window.result_state.text()
+    assert not errors
+
+
+def test_late_preview_cannot_overwrite_newer_inputs(window):
+    previous = window.result
+    old = window.read_project()
+    revision = window.revision
+    window.waist.setValue(.9)
+    window.job = Job("preview", old, revision=revision)
+    window.job_done(simulate(old))
+    assert window.result is previous
+    assert window.dirty
+
+
+def test_running_preview_is_cancelled_and_only_latest_inputs_are_presented(window, app, monkeypatch):
+    import gaussian_lab.gui as gui
+    import threading
+    entered = threading.Event()
+    release = threading.Event()
+    original = gui.simulate
+    def delayed(p, cancel, progress, backend):
+        if not entered.is_set():
+            entered.set()
+            release.wait(5)
+        return original(p, cancel, progress, backend=backend)
+    monkeypatch.setattr(gui, "simulate", delayed)
+    window.auto_preview.setChecked(True)
+    window.request_preview()
+    try:
+        wait_until(app, entered.is_set)
+        old = window.job
+        window.waist.setValue(.85)
+        assert old.cancel.is_set()
+    finally:
+        release.set()
+    wait_until(app, lambda: window.result.project.waist == .00085 and not window.job.isRunning())
+    assert window.job is not old and window.job.revision == window.revision
+
+
+def test_invalid_auto_input_waits_without_dialog_and_can_be_disabled(window, app, monkeypatch):
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.auto_preview.setChecked(True)
+    window.table.item(0, 2).setText("")
+    window.request_preview()
+    assert "等待有效参数" in window.status.text()
+    assert not errors
+    window.auto_preview.setChecked(False)
+    assert not window.preview_timer.isActive() and not window.pending_preview
+
+
+def test_observer_reuses_beam_axes_and_unchanged_scene_plane(window):
+    axes = window.beam_plot.ax
+    window.plane_slider.setValue(0)
+    assert window.beam_plot.ax is axes
+    actor = window.scene.screen_actor
+    window.draw_plane()
+    assert window.scene.screen_actor is actor
+
+
+def test_source_edits_reuse_scene_geometry_and_preserve_camera(window):
+    camera = np.array(list(window.scene.camera_position), dtype=float)
+    p = window.result.project.clone()
+    p.waist *= 1.2
+    p.focus_refinement = 0
+    first = simulate(p)
+    window.scene.set_result(first)
+    actor = window.scene.actors["energy_envelope"]
+    old_points = window.scene.envelope_meshes[0][0].points.copy()
+    p.waist *= 1.2
+    window.scene.set_result(simulate(p))
+    assert window.scene.actors["energy_envelope"] is actor
+    assert not np.array_equal(old_points, window.scene.envelope_meshes[0][0].points)
+    np.testing.assert_allclose(list(window.scene.camera_position), camera)
+
+
+def test_preview_vector_export_carries_quality_label(window, app, monkeypatch, tmp_path):
+    window.auto_preview.setChecked(True)
+    window.request_preview()
+    wait_until(app, lambda: window.result.provenance.get("quality") == "preview" and not window.job.isRunning())
+    target = tmp_path / "preview.svg"
+    def choose_while_new_result_arrives(*args, **kwargs):
+        p = window.read_project()
+        p.grid = 256
+        window.job = Job("simulate", p)
+        window.job_done(simulate(p))
+        return str(target)
+    monkeypatch.setattr(window, "choose_path", choose_while_new_result_arrives)
+    window.export_target.setCurrentIndex(window.export_target.findData("profile"))
+    window.export_plot()
+    exported = target.read_text(encoding="utf-8")
+    assert "快速预览" in exported and "N=128" in exported
+    assert window.result.project.grid == 256

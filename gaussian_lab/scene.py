@@ -14,9 +14,18 @@ class OpticalScene(QtInteractor):
         self.screen_actor = None
 
     def set_result(self, result):
+        previous = self.suppress_rendering
+        self.suppress_rendering = True
+        try:
+            self._set_result(result)
+        finally:
+            self.suppress_rendering = previous
+        self.render()
+
+    def _set_result(self, result):
+        camera = self.camera_position if self.result is not None and self.result.project.length == result.project.length else None
         self.result = result
-        self.clear()
-        self.screen_actor = None
+        self.plane_index = None
         p = result.project
         z = result.z * 1e3
         angle = np.linspace(0, 2 * np.pi, 48)
@@ -25,12 +34,26 @@ class OpticalScene(QtInteractor):
         radii = result.r86 * 1e3 * self.scale_transverse
         yy = radii[:, None] * np.cos(aa)
         hh = radii[:, None] * np.sin(aa)
+        signature = (p.length, len(z), tuple((e.kind, e.z, e.value if e.kind == "aperture" else None, e.label)
+                                            for e in p.ordered()))
+        if getattr(self, "geometry_signature", None) == signature:
+            for mesh, fraction in self.envelope_meshes:
+                mesh.points = np.column_stack((zz.ravel(order="F"), (yy*fraction).ravel(order="F"),
+                                               (hh*fraction).ravel(order="F")))
+            self.envelope_meshes[0][0]["energy"] = np.broadcast_to(result.transmission[:, None], zz.shape).ravel(order="F")
+            self.focus_actor.SetPosition(float(z[result.focus_index] - self.focus_origin_z), 0, 0)
+            return
+        self.geometry_signature = signature
+        self.clear()
+        self.screen_actor = None
         mesh = pv.StructuredGrid(zz, yy, hh)
+        self.envelope_meshes = [(mesh, 1.0)]
         mesh["energy"] = np.broadcast_to(result.transmission[:, None], zz.shape).ravel(order="F")
         self.add_mesh(mesh, color="#0284c7", opacity=.23, smooth_shading=True,
                       show_edges=False, name="energy_envelope")
         for fraction, opacity in ((.68, .15), (.32, .25)):
             core = pv.StructuredGrid(zz, yy*fraction, hh*fraction)
+            self.envelope_meshes.append((core, fraction))
             self.add_mesh(core, color="#0369a1", opacity=opacity, lighting=False)
         floor = pv.Plane(center=(p.length*500, 0, -36), direction=(0, 0, 1),
                          i_size=p.length*1100, j_size=140, i_resolution=32, j_resolution=12)
@@ -56,20 +79,28 @@ class OpticalScene(QtInteractor):
             self.add_mesh(pv.Cube(center=(center[0], 0, -36), x_length=14, y_length=26,
                                   z_length=2), color="#334155")
         focus = result.focus_index
-        self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#c2410c",
+        self.focus_origin_z = z[focus]
+        self.focus_actor = self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#c2410c",
                       ambient=.7, name="focus")
         self.add_axes(xlabel="z", ylabel="x", zlabel="y", line_width=2, color=TEXT)
         self.add_text("r86 | x25",
                       position="upper_left", font_size=10, color=TEXT, name="scale_label")
         self.setToolTip("三维轮廓表示 r86；横向放大 25 倍，光学元件外形为示意。")
-        self.reset_view()
+        if camera is None:
+            self.reset_view()
+        else:
+            self.camera_position = camera
+            self.render()
 
     def set_plane(self, index):
         r = self.result
         if r is None:
             return
+        if getattr(self, "plane_index", None) == index:
+            return
+        self.plane_index = index
         if self.screen_actor is not None:
-            self.remove_actor(self.screen_actor, reset_camera=False)
+            self.remove_actor(self.screen_actor, reset_camera=False, render=False)
         # 裁剪显示切片，使观察屏相对于纵向光路保持可读尺寸。
         crop = max(float(r.r86[index] * 1.7), .25e-3)
         mask = np.abs(r.x) <= min(crop, r.project.window * .48)
@@ -86,7 +117,7 @@ class OpticalScene(QtInteractor):
         plane["Intensity"] = (image / peak).ravel(order="F")
         self.screen_actor = self.add_mesh(plane, scalars="Intensity", cmap=INTENSITY_CMAP, clim=(0, 1),
                                           opacity=.92, lighting=False, show_scalar_bar=False,
-                                          name="observation_screen", reset_camera=False)
+                                          name="observation_screen", reset_camera=False, render=False)
         self.render()
 
     def reset_view(self):

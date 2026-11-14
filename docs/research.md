@@ -78,3 +78,9 @@
 沿用已有 PyInstaller 目录模式与 Qt 动态库分发方案，再读取 [PyInstaller 原仓库](https://github.com/pyinstaller/pyinstaller)和 [6.22.3 使用说明](https://pyinstaller.org/en/stable/usage.html)，本次继续使用已锁定的 6.22.3。EXE 版本资源、分版本输出目录和固定摘要的 Qt 缓存用于保证版本可辨识及构建可追溯。
 
 [Qt 6.12 Windows 支持说明](https://doc.qt.io/qt-6/windows.html)列出 Windows 10 1809 及以后版本、Windows 11 的 x86_64 支持。本项目以 Windows 10/11 x64 为目标，实际只记录本机与隔离运行结果；这不是对全部 Qt 支持平台、显卡或其他实体设备的验证承诺。冻结测试还需覆盖实际 SVG/PDF 导出，源码环境通过不等于打包后相关后端一定存在。
+
+## CUDA 分支重新调研（2026-11-14）
+
+先查阅 [CuPy 原仓库](https://github.com/cupy/cupy)、[发布版本](https://github.com/cupy/cupy/releases)、[FFT 实现](https://github.com/cupy/cupy/blob/main/cupy/fft/_fft.py)及 [官方安装说明](https://docs.cupy.dev/en/stable/install.html)。CuPy 为 MIT 许可，提供 NumPy 风格数组与 cuFFT，Windows 有 CUDA 12/13 预编译轮子；本次固定 CuPy 14.2.0 和 CUDA 12.9 组件，不从最新主分支复制算法。
+
+沿用物理模型，借鉴可选数组/FFT 后端，不引入另一套光学求解器。实际发现 NVIDIA 路径查找器按 site 安装前缀发现组件；独立运行库除加入 sys.path 外还注册 site.PREFIXES，不修改第三方函数。ASCII 独立目录避免前次中文编译路径兼容层；没有设备或依赖时回退 CPU。本机已实际执行 CUDA，不把成功安装、GPU 渲染或回退 CPU 的运行当作 CUDA 验证。性能、可移植边界及源码启动说明见 [加速说明](acceleration.md)。

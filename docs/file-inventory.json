@@ -85,6 +85,21 @@
     "optional_local": false
   },
   {
+    "path": "docs/acceleration-validation.json",
+    "purpose": "V2.0.0、优化 CPU、实际 CUDA 与预览的配置、逐次计时及数值偏差。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/acceleration.md",
+    "purpose": "CUDA 与响应式预览分支的使用方法、设计、性能证据与限制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/cuda-preview-desktop.png",
+    "purpose": "CUDA 开发分支真实窗口截图，显示实际后端、光学场景与分析曲线。",
+    "optional_local": false
+  },
+  {
     "path": "docs/assets/diffraction-desktop.png",
     "purpose": "光阑衍射历史应用界面截图，用于追溯界面与数值展示。",
     "optional_local": false
@@ -157,6 +172,11 @@
   {
     "path": "docs/github-release-v0.1.0.json",
     "purpose": "已发布私有版本的地址、附件大小与服务器摘要核验记录。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/interaction-validation.json",
+    "purpose": "真实 CUDA 窗口的连续改参、完整计算、缓存耗时及心跳证据。",
     "optional_local": false
   },
   {
@@ -285,6 +305,11 @@
     "optional_local": false
   },
   {
+    "path": "gaussian_lab/backend.py",
+    "purpose": "惰性检测可选 CUDA，提供数组与 FFT 后端、CPU 回退和预览配置。",
+    "optional_local": false
+  },
+  {
     "path": "gaussian_lab/charts.py",
     "purpose": "以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
     "optional_local": false
@@ -315,6 +340,11 @@
     "optional_local": false
   },
   {
+    "path": "gaussian_lab/session.py",
+    "purpose": "按完整输入、后端和质量分级保存体积受限的会话结果缓存。",
+    "optional_local": false
+  },
+  {
     "path": "gaussian_lab/theme.py",
     "purpose": "定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。",
     "optional_local": false
@@ -332,6 +362,11 @@
   {
     "path": "requirements-build.txt",
     "purpose": "在运行依赖快照之上固定打包器、打包钩子和手册网页生成库的版本。",
+    "optional_local": false
+  },
+  {
+    "path": "requirements-cuda.txt",
+    "purpose": "固定独立可选 CUDA 组件和 CuPy 版本，不替换基础环境。",
     "optional_local": false
   },
   {
@@ -360,6 +395,11 @@
     "optional_local": false
   },
   {
+    "path": "scripts/install_cuda_runtime.ps1",
+    "purpose": "将可选显卡库安装到独立英文目录并实际运行 CUDA 自检，不修改驱动。",
+    "optional_local": false
+  },
+  {
     "path": "scripts/prepare_release.py",
     "purpose": "按应用版本整理便携目录、文档、许可、固定摘要的 Qt 源码和应用源码压缩包。",
     "optional_local": false
@@ -367,6 +407,16 @@
   {
     "path": "scripts/publish_github.py",
     "purpose": "经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/validate_acceleration.py",
+    "purpose": "从本地稳定标签读取旧内核，对照优化 CPU 与实际 CUDA 的重复计时和数值差异。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/validate_interaction.py",
+    "purpose": "真实 Qt/VTK 窗口验证连续改参、CUDA 预览、完整计算、缓存和界面心跳。",
     "optional_local": false
   },
   {
@@ -392,6 +442,11 @@
   {
     "path": "tests/Test-Agents.ps1",
     "purpose": "检查项目规则是否包含提交、测试和持续记录要求。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_acceleration.py",
+    "purpose": "验证区段传播、后端回退、取消、预览、缓存与实际 CPU/CUDA 一致性。",
     "optional_local": false
   },
   {

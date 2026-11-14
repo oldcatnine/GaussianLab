@@ -16,16 +16,19 @@ from . import __version__
 import numpy as np
 from scipy.fft import fft2, ifft2, fftfreq, fftshift
 from .model import Project
+from .backend import Backend, array_module, select_backend, invalidate_cuda
+from bisect import bisect_right
+from functools import lru_cache
 
 
-ALGORITHM_VERSION = "fresnel-focus-v2"
+ALGORITHM_VERSION = "fresnel-segments-v3"
 
 
 def source_fingerprint():
     """记录加载时的源码摘要；冻结程序可能没有独立源文件，明确返回未知。"""
     digest = hashlib.sha256()
     try:
-        for name in ("optics.py", "model.py"):
+        for name in ("optics.py", "model.py", "backend.py"):
             digest.update((Path(__file__).parent / name).read_bytes())
     except OSError:
         return None
@@ -88,10 +91,11 @@ def coordinates(p):
 
 
 def initial_field(p, r2):
+    xp = array_module(r2)
     q = q_initial(p)
     w = radius(q, p.wavelength)
     # 复光场的相位表示与高斯 q 参数的符号约定相配套。
-    return np.exp(-r2 / w**2 + 1j * np.pi / p.wavelength * (1 / q).real * r2)
+    return xp.exp(-r2 / w**2 + 1j * np.pi / p.wavelength * (1 / q).real * r2)
 
 
 def fresnel(field, wavelength, dx, distance):
@@ -105,15 +109,16 @@ def fresnel(field, wavelength, dx, distance):
 
 
 def encircled_radius(intensity, radii, fraction=.86, order=None):
-    energy = np.asarray(intensity).ravel()
-    if not np.isfinite(energy).all() or energy.sum() <= 0:
+    xp = array_module(intensity)
+    energy = xp.asarray(intensity).ravel()
+    if not bool(xp.isfinite(energy).all()) or float(energy.sum()) <= 0:
         raise ValueError("光场能量为零或无效，请检查光阑与采样")
     if not 0 < fraction < 1:
         raise ValueError("包围能量比例须在 0 与 1 之间")
     if order is None:
-        order = np.argsort(radii.ravel())
-    cumulative = np.cumsum(energy[order])
-    i = np.searchsorted(cumulative, fraction * cumulative[-1])
+        order = xp.argsort(radii.ravel())
+    cumulative = xp.cumsum(energy[order])
+    i = int(xp.searchsorted(cumulative, fraction * cumulative[-1]))
     return float(radii.ravel()[order[min(i, len(order) - 1)]])
 
 
@@ -144,30 +149,63 @@ class Result:
 
 
 
-def field_at(project, z, r2, cancel=None):
+class Propagation:
+    """每个光学区段缓存起点频谱；任意观察面与焦区只做一次逆 FFT。"""
+
+    def __init__(self, project, r2, backend=None, cancel=None):
+        self.p, self.r2 = project, r2
+        self.backend = backend or Backend()
+        self.xp, self.fft = self.backend.xp, self.backend.fft
+        self.cancel = cancel
+        self.starts = [0.0]
+        value = initial_field(project, r2)
+        self.fields = [value]
+        self.spectra = [None]
+        self.warnings = []
+        dx = project.window / project.grid
+        f = self.fft.fftfreq(project.grid, dx)
+        self.phase_rate = -1j * np.pi * project.wavelength * (f[:, None]**2 + f[None, :]**2)
+        for element in project.ordered():
+            check_cancel(cancel)
+            value = self.at(element.z)
+            if element.kind == "lens":
+                illuminated = self.xp.sqrt(r2)[abs(value)**2 > abs(value).max()**2 * 1e-5]
+                if illuminated.size and float(illuminated.max()) * 2 * dx > project.wavelength * abs(element.value):
+                    self.warnings.append(f"{element.label} 透镜相位采样偏粗：请加密网格")
+                value *= self.xp.exp(-1j * np.pi * r2 / (project.wavelength * element.value))
+            else:
+                if element.value / dx < 12:
+                    self.warnings.append(f"{element.label} 孔径不足 12 像素：请加密网格")
+                value *= r2 <= (element.value / 2)**2
+            self.starts.append(element.z)
+            self.fields.append(value)
+            self.spectra.append(None)
+
+    def at(self, z):
+        check_cancel(self.cancel)
+        i = bisect_right(self.starts, z) - 1
+        if i < 0:
+            raise ValueError("传播距离不能为负")
+        distance = z - self.starts[i]
+        if abs(distance) < 1e-14:
+            return self.fields[i].copy()
+        if self.spectra[i] is None:
+            self.spectra[i] = self.fft.fft2(self.fields[i])
+        return self.fft.ifft2(self.spectra[i] * self.xp.exp(self.phase_rate * distance))
+
+
+def field_at(project, z, r2, cancel=None, propagation=None):
     """从入口独立传播到任意观察面，确保跨越光阑和同位置元件时执行顺序一致。"""
-    value, last = initial_field(project, r2), 0.0
-    for element in project.ordered():
-        check_cancel(cancel)
-        if element.z > z:
-            break
-        value = fresnel(value, project.wavelength, project.window / project.grid, element.z - last)
-        if element.kind == "lens":
-            value *= np.exp(-1j * np.pi * r2 / (project.wavelength * element.value))
-        else:
-            value *= r2 <= (element.value / 2)**2
-        last = element.z
-    check_cancel(cancel)
-    return fresnel(value, project.wavelength, project.window / project.grid, z - last)
+    return (propagation or Propagation(project, r2, cancel=cancel)).at(z)
 
 
-def refine_focus(p, zs, sizes, r2, order, cancel):
+def refine_focus(p, zs, sizes, r2, order, cancel, propagation=None):
     """用实际衍射半径细化粗最小区间；高斯束腰仅作额外探测点，不替代数值答案。"""
     start = max((e.z for e in p.ordered() if e.kind == "lens"), default=0.0)
     indices = np.flatnonzero(zs >= start)
     coarse = int(indices[np.argmin(sizes[indices])])
     points = {float(zs[i]): float(sizes[i]) for i in indices}
-    radii = np.sqrt(r2)
+    radii = array_module(r2).sqrt(r2)
     evaluations = 0
 
     def measure(z):
@@ -175,7 +213,7 @@ def refine_focus(p, zs, sizes, r2, order, cancel):
         check_cancel(cancel)
         z = float(z)
         if z not in points:
-            value = field_at(p, z, r2, cancel)
+            value = field_at(p, z, r2, cancel, propagation)
             points[z] = encircled_radius(abs(value)**2, radii, order=order)
             evaluations += 1
         return points[z]
@@ -218,8 +256,9 @@ def refine_focus(p, zs, sizes, r2, order, cancel):
             "note": "局部离散细化；括区与横向像素不是严格误差上界，多峰和硬孔径仍需收敛复核"}
 
 
-def calculation_provenance():
-    """记录计算发生时的源码版本；便携环境没有 Git 时明确标注未知。"""
+@lru_cache(maxsize=1)
+def source_revision():
+    """会话首次计算时记录仓库状态，避免每次预览启动两个 Git 子进程。"""
     root = Path(__file__).resolve().parents[1]
     revision, dirty = None, None
     try:
@@ -231,54 +270,65 @@ def calculation_provenance():
         dirty = bool(changes.strip())
     except (OSError, subprocess.SubprocessError):
         pass
-    return {"source_sha256": SOURCE_SHA256, "calculated_at": datetime.now().astimezone().isoformat(), "source_revision": revision,
-            "source_dirty": dirty, "algorithm_version": ALGORITHM_VERSION,
+    return {"source_revision": revision, "source_dirty": dirty,
+            "source_state_captured_at": datetime.now().astimezone().isoformat()}
+
+
+def calculation_provenance():
+    """记录每次计算时间、已加载源码摘要和会话首次捕获的仓库状态。"""
+    return {"source_sha256": SOURCE_SHA256, "calculated_at": datetime.now().astimezone().isoformat(), **source_revision(),
+            "algorithm_version": ALGORITHM_VERSION,
             "software_version": __version__, "python": platform.python_version(),
             "numpy": np.__version__, "scipy": scipy.__version__}
 
-def simulate(project, cancel=None, progress=None):
+def simulate(project, cancel=None, progress=None, backend="cpu"):
+    """按所选后端执行；仅 CUDA 执行错误回退，不吞掉参数错误或取消。"""
+    project.validate()
+    engine = select_backend(backend, project.grid)
+    try:
+        return _simulate(project, cancel, progress, engine)
+    except Cancelled:
+        raise
+    except Exception as exc:
+        if engine.name != "cuda" or not type(exc).__module__.startswith(("cupy", "cupy_backends")):
+            raise
+        invalidate_cuda(exc)
+        check_cancel(cancel)
+        cpu = Backend(requested=backend, reason=f"CUDA 执行失败，重新使用 CPU；{type(exc).__name__}: {exc}")
+        return _simulate(project, cancel, progress, cpu)
+
+
+def _simulate(project, cancel, progress, engine):
     p = project.clone().validate()
+    xp, transforms = engine.xp, engine.fft
     x, r2 = coordinates(p)
-    rr = np.sqrt(r2)
+    r2 = xp.asarray(r2)
+    rr = xp.sqrt(r2)
     field = initial_field(p, r2)
-    input_energy = float(np.sum(abs(field)**2))
+    input_energy = float(xp.sum(abs(field)**2))
     dx = p.window / p.grid
     zs = np.unique(np.r_[np.linspace(0, p.length, p.samples), [e.z for e in p.ordered()]])
     images = np.empty((len(zs) + 1, p.grid, p.grid), dtype=np.float32)
-    sizes, powers, warnings = [], [], []
-    order = np.argsort(rr.ravel())
-    border = np.ones(r2.shape, bool)
+    propagation = Propagation(p, r2, engine, cancel)
+    sizes, powers, warnings = [], [], list(propagation.warnings)
+    order = xp.argsort(rr.ravel())
+    border = xp.ones(r2.shape, bool)
     border[8:-8, 8:-8] = False
-    elements, index, last_z = p.ordered(), 0, 0.0
-    last_element_field = field.copy()
+    last_element_field = propagation.fields[-1]
     for i, z in enumerate(zs):
         check_cancel(cancel)
-        field = fresnel(field, p.wavelength, dx, z - last_z)
-        while index < len(elements) and elements[index].z <= z + 1e-14:
-            e = elements[index]
-            if e.kind == "lens":
-                illuminated = rr[abs(field)**2 > abs(field).max()**2 * 1e-5]
-                if illuminated.size and 2 * np.pi * illuminated.max() * dx / (p.wavelength * abs(e.value)) > np.pi:
-                    warnings.append(f"{e.label} 透镜相位采样偏粗：请加密网格")
-                field *= np.exp(-1j * np.pi * r2 / (p.wavelength * e.value))
-            else:
-                if e.value / dx < 12:
-                    warnings.append(f"{e.label} 孔径不足 12 像素：请加密网格")
-                field *= r2 <= (e.value / 2)**2
-            index += 1
-            last_element_field = field.copy()
+        field = propagation.at(float(z))
         intensity = abs(field)**2
-        images[i] = intensity
+        images[i] = engine.host(intensity)
         sizes.append(encircled_radius(intensity, rr, order=order))
         powers.append(float(intensity.sum() / input_energy))
-        if intensity[border].sum() / max(intensity.sum(), 1e-300) > .005:
+        if float(intensity[border].sum()) / max(float(intensity.sum()), 1e-300) > .005:
             warnings.append("边界能量超过 0.5%：可能发生窗口截断/周期回绕，请扩大窗口并复核")
-        last_z = z
         if progress:
             progress(int((i + 1) / len(zs) * 80))
-    frequencies = fftshift(fftfreq(p.grid, dx)) * p.wavelength
-    angular_r = np.sqrt(frequencies[:, None]**2 + frequencies[None, :]**2)
-    angular_i = abs(fftshift(fft2(last_element_field)))**2
+    frequencies = transforms.fftshift(transforms.fftfreq(p.grid, dx)) * p.wavelength
+    angular_r = xp.sqrt(frequencies[:, None]**2 + frequencies[None, :]**2)
+    angular_i = abs(transforms.fftshift(transforms.fft2(last_element_field)))**2
     theta = encircled_radius(angular_i, angular_r)
     if theta > .7 * p.wavelength / (2 * dx):
         warnings.append("远场角谱接近采样边界：θ86 可能欠采样")
@@ -286,21 +336,22 @@ def simulate(project, cancel=None, progress=None):
     if not 0 <= reference["waist_z"] <= p.length:
         warnings.append("理想高斯参考束腰位于显示区间之外（可能为回推束腰）")
     sizes = np.asarray(sizes)
-    focus = refine_focus(p, zs, sizes, r2, order, cancel)
+    focus = refine_focus(p, zs, sizes, r2, order, cancel, propagation)
     selected = focus["z_m"]
     if not np.any(zs == selected):
         j = int(np.searchsorted(zs, selected))
         for k in range(len(zs), j, -1):
             images[k] = images[k - 1]
-        selected_intensity = abs(field_at(p, selected, r2, cancel))**2
-        images[j] = selected_intensity
-        if selected_intensity[border].sum() / selected_intensity.sum() > .005:
+        selected_intensity = abs(propagation.at(selected))**2
+        images[j] = engine.host(selected_intensity)
+        if float(selected_intensity[border].sum() / selected_intensity.sum()) > .005:
             warnings.append("细化焦区边界能量超过 0.5%：请扩大窗口并复核")
         zs = np.insert(zs, j, selected)
         sizes = np.insert(sizes, j, focus["r86_m"])
         powers = np.insert(powers, j, float(selected_intensity.sum() / input_energy))
     result = Result(p, zs, x, images[:len(zs)], analytic(p, zs), sizes, np.asarray(powers),
                     theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
+    result.provenance["backend"] = engine.information()
     if focus["boundary_minimum"]:
         result.warnings.append("最小 r86 平台接触搜索区间边界；可能没有内部焦点，请检查传播范围")
     if sizes.min() < 3 * dx:
@@ -310,7 +361,7 @@ def simulate(project, cancel=None, progress=None):
     return result
 
 
-def scan(project, element_index, low, high, count=11, cancel=None, progress=None):
+def scan(project, element_index, low, high, count=11, cancel=None, progress=None, backend="cpu"):
     if not 0 <= element_index < len(project.elements):
         raise ValueError("请选择被扫描的元件")
     if not project.elements[element_index].enabled:
@@ -325,16 +376,19 @@ def scan(project, element_index, low, high, count=11, cancel=None, progress=None
         p = project.clone()
         p.elements[element_index].value = float(value)
         try:
-            r = simulate(p, cancel)
+            r = simulate(p, cancel, backend=backend)
             k = r.focus_index
             rows.append({"value_m": float(value), "min_r86_m": float(r.r86[k]), "focus_z_m": float(r.z[k]),
                          "transmission": float(r.transmission[-1]), "theta86_rad": r.theta86,
                          "focus_bracket_m": r.focus["axial_bracket_width_m"],
+                         "backend": r.provenance["backend"]["used"],
+                         "backend_reason": r.provenance["backend"]["reason"],
                          "status": "warning" if r.warnings else "ok", "note": "；".join(r.warnings)})
         except ValueError as exc:
             rows.append({"value_m": float(value), "min_r86_m": float("nan"), "focus_z_m": float("nan"),
                          "transmission": float("nan"), "theta86_rad": float("nan"),
-                         "focus_bracket_m": float("nan"), "status": "error", "note": str(exc)})
+                         "focus_bracket_m": float("nan"), "backend": "not_run", "backend_reason": "参数或能量无效",
+                         "status": "error", "note": str(exc)})
         if progress:
             progress(int((i + 1) / count * 100))
     return rows
@@ -369,7 +423,7 @@ def result_summary(result):
             "warnings": result.warnings, "project": asdict(p)}
 
 
-def convergence(project, cancel=None):
+def convergence(project, cancel=None, backend="cpu"):
     """分别改变横向网格、窗口与轴向分辨率；报告多指标变化，不自动宣称通过。"""
     project.validate()
     if project.grid > 512 or project.focus_refinement >= 4:
@@ -391,7 +445,7 @@ def convergence(project, cancel=None):
     summaries = {}
     for name, p in variants.items():
         check_cancel(cancel)
-        result = simulate(p, cancel)
+        result = simulate(p, cancel, backend=backend)
         summaries[name] = result_summary(result)
         del result
     base = summaries["base"]

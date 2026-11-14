@@ -12,7 +12,7 @@
     </style></head><body><nav><strong>GaussianLab 项目学习手册</strong><a class="h2" href="#section-1">1 项目解决什么问题</a><a class="h2" href="#section-2">2 建议的学习顺序</a><a class="h2" href="#section-3">3 如何运行应用</a><a class="h3" href="#section-4">3.1 使用便携版</a><a class="h3" href="#section-5">3.2 从源码运行</a><a class="h3" href="#section-6">3.3 找不到模块时</a><a class="h2" href="#section-7">4 看懂界面与一轮操作</a><a class="h3" href="#section-8">4.1 各区域的职责</a><a class="h3" href="#section-9">4.2 完成第一次计算</a><a class="h3" href="#section-10">4.3 为什么两个扫描页可能为空</a><a class="h3" href="#section-11">4.4 完成第一次图片导出</a><a class="h2" href="#section-12">5 光学基础词汇</a><a class="h3" href="#section-13">5.1 波长与相干光</a><a class="h3" href="#section-14">5.2 光场与光强</a><a class="h3" href="#section-15">5.3 束腰与瑞利长度</a><a class="h3" href="#section-16">5.4 薄透镜与焦距</a><a class="h3" href="#section-17">5.5 光阑、截断与衍射</a><a class="h2" href="#section-18">6 单位与符号对照</a><a class="h2" href="#section-19">7 正确理解输出指标</a><a class="h3" href="#section-20">7.1 高斯半径 w 与直径 2w</a><a class="h3" href="#section-21">7.2 包围能量半径 r86</a><a class="h3" href="#section-22">7.3 发散半角与远场能量角</a><a class="h3" href="#section-23">7.4 数值焦点与透过率</a><a class="h2" href="#section-24">8 解析高斯传播如何计算</a><a class="h3" href="#section-25">8.1 q 参数的作用</a><a class="h3" href="#section-26">8.2 自由传播与薄透镜</a><a class="h3" href="#section-27">8.3 ABCD 矩阵与执行顺序</a><a class="h3" href="#section-28">8.4 从末端参数求束腰</a><a class="h2" href="#section-29">9 数值衍射如何计算</a><a class="h3" href="#section-30">9.1 建立二维网格</a><a class="h3" href="#section-31">9.2 构造入射场</a><a class="h3" href="#section-32">9.3 透镜与光阑作用</a><a class="h3" href="#section-33">9.4 菲涅耳（Fresnel）频域传播</a><a class="h3" href="#section-34">9.5 一次 simulate 的完整顺序</a><a class="h2" href="#section-35">10 远场与能量指标的实现</a><a class="h2" href="#section-36">11 误差与收敛需要怎样理解</a><a class="h3" href="#section-37">11.1 三种不同的分辨率问题</a><a class="h3" href="#section-38">11.2 周期窗口与混叠</a><a class="h3" href="#section-39">11.3 当前收敛按钮实际做什么</a><a class="h3" href="#section-40">11.4 当前警告的意义</a><a class="h2" href="#section-41">12 三个案例怎样解读</a><a class="h3" href="#section-42">12.1 单透镜聚焦</a><a class="h3" href="#section-43">12.2 双透镜扩束</a><a class="h3" href="#section-44">12.3 光阑衍射</a><a class="h2" href="#section-45">13 先看懂软件的整体架构</a><a class="h2" href="#section-46">14 数据模型是怎样组织的</a><a class="h3" href="#section-47">14.1 Element 与 Project</a><a class="h3" href="#section-48">14.2 Result 的主要字段</a><a class="h3" href="#section-49">14.3 为什么需要参数快照</a><a class="h3" href="#section-50">14.4 看源码前要认识的 Python 写法</a><a class="h2" href="#section-51">15 界面与线程如何协作</a><a class="h3" href="#section-52">15.1 一次按钮点击的链路</a><a class="h3" href="#section-53">15.2 为什么不用一个按钮执行所有任务</a><a class="h3" href="#section-54">15.3 取消与资源管理</a><a class="h2" href="#section-55">16 三维显示究竟做了什么</a><a class="h2" href="#section-56">17 参数扫描与文件保存</a><a class="h3" href="#section-57">17.1 扫描做了哪些重复工作</a><a class="h3" href="#section-58">17.2 项目 JSON 与扫描 CSV</a><a class="h3" href="#section-59">17.3 白色主题与图片导出</a><a class="h2" href="#section-60">18 文件目录应该怎样读</a><a class="h2" href="#section-61">19 如何证明程序在工作</a><a class="h3" href="#section-62">19.1 测试分工</a><a class="h3" href="#section-63">19.2 解析基准与独立对照</a><a class="h3" href="#section-64">19.3 真实交互与冻结程序</a><a class="h3" href="#section-65">19.4 不应夸大的结论</a><a class="h2" href="#section-66">20 构建 发布与版本管理</a><a class="h3" href="#section-67">20.1 三类启动入口</a><a class="h3" href="#section-68">20.2 为什么可执行文件旁边还有目录</a><a class="h3" href="#section-69">20.3 打包配置为何要排除部分动态库</a><a class="h3" href="#section-70">20.4 Git 和 GitHub 各自负责什么</a><a class="h2" href="#section-71">21 常见问题与定位方法</a><a class="h2" href="#section-72">22 技术自测问答</a><a class="h3" href="#section-73">22.1 项目为什么选择 Python</a><a class="h3" href="#section-74">22.2 解析方法和数值方法为何同时存在</a><a class="h3" href="#section-75">22.3 相位为什么重要</a><a class="h3" href="#section-76">22.4 程序是不是在做几何光线追迹</a><a class="h3" href="#section-77">22.5 三维画面是否意味着三维电磁求解</a><a class="h3" href="#section-78">22.6 透镜外形和厚度如何影响结果</a><a class="h3" href="#section-79">22.7 小孔径为什么有时使远场变宽</a><a class="h3" href="#section-80">22.8 你如何说明精度</a><a class="h3" href="#section-81">22.9 为什么不直接输出 M²</a><a class="h3" href="#section-82">22.10 r86 与 w 为什么不完全相同</a><a class="h3" href="#section-83">22.11 你如何证明多透镜顺序正确</a><a class="h3" href="#section-84">22.12 计算是否在 GPU 上执行</a><a class="h3" href="#section-85">22.13 为什么扫描不会阻塞所有界面操作</a><a class="h3" href="#section-86">22.14 如何保证导出数据与图对应</a><a class="h3" href="#section-87">22.15 为什么同一版本的两个构建摘要可能不同</a><a class="h3" href="#section-88">22.16 是否采用了外部光学库的实现</a><a class="h3" href="#section-89">22.17 是否完成实体实验验证</a><a class="h3" href="#section-90">22.18 项目的不足是什么</a><a class="h3" href="#section-91">22.19 下一步如何扩展</a><a class="h3" href="#section-92">22.20 一分钟如何介绍这个应用</a><a class="h2" href="#section-93">23 学习练习与检查点</a><a class="h2" href="#section-94">24 维护手册与中文规范</a><a class="h2" href="#section-95">附录 逐文件用途清单</a></nav><main><h1>GaussianLab 项目学习手册</h1>
 <p>本手册面向刚开始学习 Python、光学仿真和桌面应用开发的读者。目标是能够运行应用、看懂项目文件、说明计算过程、理解测试证据，并对技术问题给出有依据的解释。</p>
 <p>当前应用版本为 V2.0.0；白色主题与图像导出来源为 <code>853e9b3</code>，数值增强来源为 <code>4179468</code>。V2.0.0 便携包包含上述能力，运行与验证见 <a href="USER_GUIDE-v2.0.0.md">便携指南</a> 和 <a href="release-validation-v2.0.0.md">发行验证</a>。V0.1.0 保留为历史版本，旧记录中的结果和界面按原版本阅读。快速操作见 <a href="USER_GUIDE.md">当前源码版使用说明</a>。</p>
-<p>当前源码在 CPU 数值增强版上加入白色界面与六类图像导出。CUDA 与参数自动预览试验已于 2026-11-14 回退，当前通过“计算光场”按钮执行计算；过程见 <a href="development-log.md">开发记录 DEV-013</a>。</p>
+<p>稳定 V2.0.0 包含 CPU 数值增强、白色界面和六类图像导出。前次 CUDA 试验回退见 <a href="development-log.md">开发记录 DEV-013</a>；当前 <code>feature/cuda-responsive-preview</code> 分支重新开发可选 CUDA、区段频谱复用、自动预览和会话缓存，稳定 EXE 不变。实现、性能证据及边界见 <a href="acceleration.md">加速说明</a>。</p>
 <h2 id="section-1">1 项目解决什么问题</h2>
 <p>GaussianLab 是一个简单光学系统中的高斯光束传播与光斑分析应用。用户设置光源、透镜、光阑和距离，应用计算光束沿光路的变化，并通过三维光路、二维光斑、剖面、曲线和数据表展示结果。</p>
 <p>可以把一次计算理解为四个步骤：准备光源和光路；按照位置依次传播光场；从光场提取半径、能量和远场指标；把结果交给界面显示和导出。</p>
@@ -147,7 +147,7 @@
 <li>移动观察屏，观察二维光斑、剖面和曲线游标共同变化。</li>
 <li>将透镜焦距从 120 mm 改成另一合理值，点击“计算光场”，再比较结果。</li>
 </ol>
-<p>改动输入后，旧图仍可保留供观察，但界面会提示参数已修改。需要重新计算，才能把结果对应到新输入。</p>
+<p>改动输入后，旧图仍保留并标为旧参数；开发分支默认停止输入 400 ms 后计算快速预览。预览最多 N=256、33 个轴向点且不做焦区细化；完整结果需要点击“计算光场”。连续输入取消旧光场任务，旧版本完成信号不会覆盖新输入；扫描和收敛仍手动触发。</p>
 <h3 id="section-10">4.3 为什么两个扫描页可能为空</h3>
 <p>顶部“计算光场”只计算当前一组参数。左侧“开始扫描”才会读取扫描元件、起点、终点和点数，执行多个参数点。“检查多指标收敛”也不是参数扫描。</p>
 <p>例如选择 L1，起点 60 mm、终点 180 mm、9 点，再点击“开始扫描”。等待“扫描完成”后，曲线和数据表才会生成。V0.1.0 在首次扫描前缺少引导，这是界面可发现性的限制，不能据此断言计算模块不存在。</p>
@@ -527,6 +527,8 @@ docs/：需求、设计、证据和学习资料
   → job_done() 更新扫描图和表格
 </code></pre>
 <p><code>progress</code> 信号更新进度，<code>failed</code> 显示错误或取消结果，<code>finished</code> 恢复按钮。后台线程只计算，Qt 控件和图形更新放在界面线程。</p>
+<p>开发分支的 Job 还区分 preview 与 simulate，携带原始输入快照、实际预览配置、后端和输入修订号；单个工作线程完成后才处理最新请求。session.py 的会话 LRU 缓存按完整参数、预览/完整类型与请求后端区分，预算 128 MiB，不保存到磁盘。Git 仓库状态在会话首次计算时捕获并注明捕获时间，避免每次预览启动两个子进程；实际计算时间仍逐次记录。</p>
+<p>Propagation 为每个元件之后的区段缓存复光场及起点频谱。任意观察面乘传递函数后做逆 FFT，焦区细化复用同一组区段，不再从入口重复执行光路。同位置元件仍按列表顺序执行；不使用取整距离或近似复光场。CUDA 和 CPU 均保持 complex128/float64；返回图像仍沿用 float32。图形优化包括观察面拖动合并、轴向曲线仅移动游标、相同观察面不重建 VTK 网格，以及光路外形与采样面数量相同时复用元件/支架/标签并更新包络点。</p>
 <h3 id="section-53">15.2 为什么不用一个按钮执行所有任务</h3>
 <p>单次计算、扫描和收敛检查的工作量与含义不同。将它们分开，可以让用户明确选择任务，也避免每次改动都触发大量重复计算。当前不足是旧版没有在空白扫描页明确解释这一点。</p>
 <h3 id="section-54">15.3 取消与资源管理</h3>
@@ -725,7 +727,7 @@ git diff --check
 <h3 id="section-83">22.11 你如何证明多透镜顺序正确</h3>
 <p>说明元件按 z 排序、同位置保留列表顺序，再展示与独立 ABCD 矩阵连乘的测试。只展示一张扩束图不能证明实现顺序正确。</p>
 <h3 id="section-84">22.12 计算是否在 GPU 上执行</h3>
-<p>当前数值内核使用 NumPy/SciPy 的 CPU 计算。VTK 场景使用图形渲染路径，不代表传播算法已经使用 GPU 加速。</p>
+<p>稳定 V2.0.0 使用 NumPy/SciPy CPU。开发分支可选 CuPy CUDA 数值后端，实际 used 字段和设备型号写入 provenance；不可用时自动回退 CPU。自动模式小网格使用 CPU。VTK 场景渲染仍与数值求解分开；不能只凭看到三维图判断 CUDA 已启用。</p>
 <h3 id="section-85">22.13 为什么扫描不会阻塞所有界面操作</h3>
 <p>较重任务放入 QThread，计算完成后用信号回到主线程更新控件。仍受 CPU、内存和渲染工作量限制，不能承诺所有场景都实时响应。</p>
 <h3 id="section-86">22.14 如何保证导出数据与图对应</h3>
@@ -839,6 +841,18 @@ git diff --check
 <td>当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。</td>
 </tr>
 <tr>
+<td><code>docs/acceleration-validation.json</code></td>
+<td>V2.0.0、优化 CPU、实际 CUDA 与预览的配置、逐次计时及数值偏差。</td>
+</tr>
+<tr>
+<td><code>docs/acceleration.md</code></td>
+<td>CUDA 与响应式预览分支的使用方法、设计、性能证据与限制。</td>
+</tr>
+<tr>
+<td><code>docs/assets/cuda-preview-desktop.png</code></td>
+<td>CUDA 开发分支真实窗口截图，显示实际后端、光学场景与分析曲线。</td>
+</tr>
+<tr>
 <td><code>docs/assets/diffraction-desktop.png</code></td>
 <td>光阑衍射历史应用界面截图，用于追溯界面与数值展示。</td>
 </tr>
@@ -897,6 +911,10 @@ git diff --check
 <tr>
 <td><code>docs/github-release-v0.1.0.json</code></td>
 <td>已发布私有版本的地址、附件大小与服务器摘要核验记录。</td>
+</tr>
+<tr>
+<td><code>docs/interaction-validation.json</code></td>
+<td>真实 CUDA 窗口的连续改参、完整计算、缓存耗时及心跳证据。</td>
 </tr>
 <tr>
 <td><code>docs/numerical-validation-v2.json</code></td>
@@ -999,6 +1017,10 @@ git diff --check
 <td>响应 python -m gaussian_lab 并调用桌面界面入口。</td>
 </tr>
 <tr>
+<td><code>gaussian_lab/backend.py</code></td>
+<td>惰性检测可选 CUDA，提供数组与 FFT 后端、CPU 回退和预览配置。</td>
+</tr>
+<tr>
 <td><code>gaussian_lab/charts.py</code></td>
 <td>以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。</td>
 </tr>
@@ -1023,6 +1045,10 @@ git diff --check
 <td>将计算结果转换为三维光路、包络、元件示意及观察面。</td>
 </tr>
 <tr>
+<td><code>gaussian_lab/session.py</code></td>
+<td>按完整输入、后端和质量分级保存体积受限的会话结果缓存。</td>
+</tr>
+<tr>
 <td><code>gaussian_lab/theme.py</code></td>
 <td>定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。</td>
 </tr>
@@ -1037,6 +1063,10 @@ git diff --check
 <tr>
 <td><code>requirements-build.txt</code></td>
 <td>在运行依赖快照之上固定打包器、打包钩子和手册网页生成库的版本。</td>
+</tr>
+<tr>
+<td><code>requirements-cuda.txt</code></td>
+<td>固定独立可选 CUDA 组件和 CuPy 版本，不替换基础环境。</td>
 </tr>
 <tr>
 <td><code>requirements-lock.txt</code></td>
@@ -1059,12 +1089,24 @@ git diff --check
 <td>串联打包器与发行整理脚本，任一步失败即停止。</td>
 </tr>
 <tr>
+<td><code>scripts/install_cuda_runtime.ps1</code></td>
+<td>将可选显卡库安装到独立英文目录并实际运行 CUDA 自检，不修改驱动。</td>
+</tr>
+<tr>
 <td><code>scripts/prepare_release.py</code></td>
 <td>按应用版本整理便携目录、文档、许可、固定摘要的 Qt 源码和应用源码压缩包。</td>
 </tr>
 <tr>
 <td><code>scripts/publish_github.py</code></td>
 <td>经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。</td>
+</tr>
+<tr>
+<td><code>scripts/validate_acceleration.py</code></td>
+<td>从本地稳定标签读取旧内核，对照优化 CPU 与实际 CUDA 的重复计时和数值差异。</td>
+</tr>
+<tr>
+<td><code>scripts/validate_interaction.py</code></td>
+<td>真实 Qt/VTK 窗口验证连续改参、CUDA 预览、完整计算、缓存和界面心跳。</td>
 </tr>
 <tr>
 <td><code>scripts/validate_numerics.py</code></td>
@@ -1085,6 +1127,10 @@ git diff --check
 <tr>
 <td><code>tests/Test-Agents.ps1</code></td>
 <td>检查项目规则是否包含提交、测试和持续记录要求。</td>
+</tr>
+<tr>
+<td><code>tests/test_acceleration.py</code></td>
+<td>验证区段传播、后端回退、取消、预览、缓存与实际 CPU/CUDA 一致性。</td>
 </tr>
 <tr>
 <td><code>tests/test_gui.py</code></td>

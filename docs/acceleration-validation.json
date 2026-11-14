@@ -1,0 +1,362 @@
+{
+  "baseline": "v2.0.0",
+  "algorithm_version": "fresnel-segments-v3",
+  "source_sha256": "4dd236245ef39e2dc3c63b5a364873788d14d9b9a301f57fea3a08ed5cea82d1",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.10.11",
+  "numpy": "2.2.6",
+  "engine": {
+    "requested": "cuda",
+    "used": "cuda",
+    "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "reason": "CUDA 光场与 FFT",
+    "precision": "complex128 / float64"
+  },
+  "cupy": "14.2.0",
+  "probe_seconds": 1.2529696999990847,
+  "note": "同一进程内每种形状先预热，再重复三次取中位数；未清除磁盘内核缓存，不代表首次安装冷启动。计时含结果传回内存，不含界面绘制。",
+  "cases": [
+    {
+      "project": {
+        "name": "单透镜聚焦",
+        "wavelength": 6.328e-07,
+        "waist": 0.00045,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 512,
+        "samples": 65,
+        "elements": [
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 2
+      },
+      "baseline_seconds": [
+        2.2910307999991346,
+        2.3877888999995776,
+        2.2621600000056787
+      ],
+      "cpu_seconds": [
+        1.1471023999984027,
+        1.1605433000004268,
+        1.1738943999953335
+      ],
+      "cuda_seconds": [
+        0.30430799999885494,
+        0.1511575999975321,
+        0.14639139999781037
+      ],
+      "preview_seconds": [
+        0.1110871999990195,
+        0.1130468999981531,
+        0.12318729999969946
+      ],
+      "cpu_speedup": 1.974101957245621,
+      "cuda_speedup_vs_v2": 15.156570361242437,
+      "cuda_speedup_vs_cpu": 7.67770393297707,
+      "cpu_vs_baseline_max_absolute_intensity": 7.105427357601002e-15,
+      "cuda_vs_cpu_max_absolute_intensity": 7.105427357601002e-15,
+      "max_r86_difference_m": 0.0,
+      "preview_project": {
+        "name": "单透镜聚焦",
+        "wavelength": 6.328e-07,
+        "waist": 0.00045,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 256,
+        "samples": 33,
+        "elements": [
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 0
+      },
+      "actual_backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    {
+      "project": {
+        "name": "双透镜扩束",
+        "wavelength": 6.328e-07,
+        "waist": 0.00025,
+        "waist_z": 0.0,
+        "length": 0.5,
+        "window": 0.008,
+        "grid": 512,
+        "samples": 65,
+        "elements": [
+          {
+            "kind": "lens",
+            "z": 0.06,
+            "value": -0.05,
+            "label": "L1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.16,
+            "value": 0.15,
+            "label": "L2",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 2
+      },
+      "baseline_seconds": [
+        2.5492479000022286,
+        2.5967081999988295,
+        2.5367187000010745
+      ],
+      "cpu_seconds": [
+        1.17740749999939,
+        1.1623484000010649,
+        1.1827894000016386
+      ],
+      "cuda_seconds": [
+        0.38589430000138236,
+        0.15691269999661017,
+        0.1479650999972364
+      ],
+      "preview_seconds": [
+        0.11525039999833098,
+        0.11267550000047777,
+        0.11476419999962673
+      ],
+      "cpu_speedup": 2.165136454459097,
+      "cuda_speedup_vs_v2": 16.246281531433088,
+      "cuda_speedup_vs_cpu": 7.503583202792545,
+      "cpu_vs_baseline_max_absolute_intensity": 2.2737367544323206e-13,
+      "cuda_vs_cpu_max_absolute_intensity": 3.552713678800501e-15,
+      "max_r86_difference_m": 0.0,
+      "preview_project": {
+        "name": "双透镜扩束",
+        "wavelength": 6.328e-07,
+        "waist": 0.00025,
+        "waist_z": 0.0,
+        "length": 0.5,
+        "window": 0.008,
+        "grid": 256,
+        "samples": 33,
+        "elements": [
+          {
+            "kind": "lens",
+            "z": 0.06,
+            "value": -0.05,
+            "label": "L1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.16,
+            "value": 0.15,
+            "label": "L2",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 0
+      },
+      "actual_backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    {
+      "project": {
+        "name": "光阑衍射",
+        "wavelength": 6.328e-07,
+        "waist": 0.00065,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 512,
+        "samples": 65,
+        "elements": [
+          {
+            "kind": "aperture",
+            "z": 0.06,
+            "value": 0.0009,
+            "label": "A1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 2
+      },
+      "baseline_seconds": [
+        2.4527736000018194,
+        2.3646492999978364,
+        2.4987312000012025
+      ],
+      "cpu_seconds": [
+        1.2871563999942737,
+        1.1962692000015522,
+        1.164829599998484
+      ],
+      "cuda_seconds": [
+        0.4299962000004598,
+        0.14619349999702536,
+        0.15224719999969238
+      ],
+      "preview_seconds": [
+        0.10897239999758312,
+        0.10631130000547273,
+        0.10616859999572625
+      ],
+      "cpu_speedup": 2.0503525460645786,
+      "cuda_speedup_vs_v2": 16.11046771307962,
+      "cuda_speedup_vs_cpu": 7.857413469699077,
+      "cpu_vs_baseline_max_absolute_intensity": 7.275957614183426e-12,
+      "cuda_vs_cpu_max_absolute_intensity": 7.275957614183426e-12,
+      "max_r86_difference_m": 0.0,
+      "preview_project": {
+        "name": "光阑衍射",
+        "wavelength": 6.328e-07,
+        "waist": 0.00065,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 256,
+        "samples": 33,
+        "elements": [
+          {
+            "kind": "aperture",
+            "z": 0.06,
+            "value": 0.0009,
+            "label": "A1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 0
+      },
+      "actual_backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    {
+      "project": {
+        "name": "光阑衍射",
+        "wavelength": 6.328e-07,
+        "waist": 0.00065,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 1024,
+        "samples": 33,
+        "elements": [
+          {
+            "kind": "aperture",
+            "z": 0.06,
+            "value": 0.0009,
+            "label": "A1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 2
+      },
+      "baseline_seconds": [
+        8.079444900002272,
+        7.706423800002085,
+        7.571102100002463
+      ],
+      "cpu_seconds": [
+        3.2873703000004753,
+        3.3413609999988694,
+        3.3301774999999907
+      ],
+      "cuda_seconds": [
+        0.5674518000014359,
+        0.28328489999694284,
+        0.2728711999952793
+      ],
+      "preview_seconds": [
+        0.13059899999643676,
+        0.11700489999930141,
+        0.12273629999981495
+      ],
+      "cpu_speedup": 2.3141180312467147,
+      "cuda_speedup_vs_v2": 27.203793072222528,
+      "cuda_speedup_vs_cpu": 11.755577159375347,
+      "cpu_vs_baseline_max_absolute_intensity": 1.4551915228366852e-11,
+      "cuda_vs_cpu_max_absolute_intensity": 1.4551915228366852e-11,
+      "max_r86_difference_m": 0.0,
+      "preview_project": {
+        "name": "光阑衍射",
+        "wavelength": 6.328e-07,
+        "waist": 0.00065,
+        "waist_z": 0.0,
+        "length": 0.4,
+        "window": 0.006,
+        "grid": 256,
+        "samples": 33,
+        "elements": [
+          {
+            "kind": "aperture",
+            "z": 0.06,
+            "value": 0.0009,
+            "label": "A1",
+            "enabled": true
+          },
+          {
+            "kind": "lens",
+            "z": 0.1,
+            "value": 0.12,
+            "label": "L1",
+            "enabled": true
+          }
+        ],
+        "focus_refinement": 0
+      },
+      "actual_backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    }
+  ]
+}

@@ -2,7 +2,9 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-当前应用版本为 **V2.0.0**，包含 CPU 数值增强、白色主题和六类图像导出；算法标识为 `fresnel-focus-v2`。本机 Windows 便携包位于 `releases/v2.0.0/`，无需安装 Python。V0.1.0 作为历史版本保留。
+稳定发行版为 **V2.0.0**，本机便携包保留于 `releases/v2.0.0/`。当前 `feature/cuda-responsive-preview` 分支开发可选 CUDA、区段频谱复用和自动预览，算法标识为 `fresnel-segments-v3`；尚未替换稳定版 EXE。开发分支操作及实测见 [加速与交互说明](docs/acceleration.md)。
+
+源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。可选安装脚本为 `scripts/install_cuda_runtime.ps1`，不会修改系统驱动。
 
 ## 启动
 
@@ -44,7 +46,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
 - [V2.0.0 发布说明](docs/release-notes-v2.0.0.md)与[便携版验证](docs/release-validation-v2.0.0.md)：附件、版本属性、解压与隔离运行结果。
-- [当前源码版使用说明](docs/USER_GUIDE.md)：按白色主题界面说明手动计算、六类图像导出、扫描和数据文件。
+- [当前源码版使用说明](docs/USER_GUIDE.md)：说明自动预览、完整计算、后端切换、六类图像导出、扫描和数据文件。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
 - [产品设计草案](docs/product-design.md)：拟议界面、计算路线和待讨论事项。
