@@ -1,5 +1,5 @@
 {
-  ".github/workflows/release.yml":"手动触发的 Windows 构建与发布工作流，在远端安装依赖、检查、打包和上传。",
+  ".github/workflows/release.yml":"手动触发 Windows 远端构建、检查并上传到草稿；本机下载核验后再独立发布。",
   ".gitignore":"排除虚拟环境、构建产物、运行输出及发行目录，避免将大文件与本机缓存提交到源码仓库。",
   "agents.md":"项目协作、中文注释、提交、测试、开发记录及手册维护规则。",
   "README.md":"项目总入口，说明运行、文档、验证、构建方式及当前能力边界。",
@@ -23,7 +23,7 @@
   "scripts/publish_github.py":"经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。",
   "scripts/validate_v1.py":"生成三个预置案例的数值记录、输入配置和实际界面截图。",
   "scripts/verify_release.py":"核对当前版本的附件集合、摘要与 CRC，解压后可在隔离环境执行冻结程序自测。",
-  "scripts/verify_published_release.py":"按明确版本认证下载已发布附件并验证摘要，保留旧版核验入口，不主动发布。",
+  "scripts/verify_published_release.py":"按明确版本认证下载附件并核验摘要及双后端，显式允许草稿验收，不主动发布。",
   "scripts/build_handbook.py":"核对文件用途覆盖率，更新手册附录并生成不依赖网络的阅读网页。",
   "tests/Test-Agents.ps1":"检查项目规则是否包含提交、测试和持续记录要求。",
   "tests/test_optics.py":"数值与数据层测试，包括解析基准、衍射、透过率、扫描及配置往返。",
@@ -88,8 +88,8 @@
   "docs/USER_GUIDE-v3.0.0.md":"V3 便携版启动、首次 CUDA 联网补充、缓存、CPU 回退、自动预览及导出说明。",
   "docs/release-notes-v3.0.0.md":"V3 CUDA 与交互优化发行的功能、附件和适用限制。",
   "docs/release-validation-v3.0.0.md":"V3 构建、冻结环境修复、双后端验证和远端发布证据说明。",
-  "docs/release-artifacts-v3.0.0.json":"V3 本机最终发行附件的字节数、SHA-256、CRC 与 CPU/CUDA 冻结验证状态。",
-  "docs/release-smoke-v3.0.0.json":"V3 本机解压 EXE 的 CPU 与实际 CUDA 案例、交互预览和导出检查。",
+  "docs/release-artifacts-v3.0.0.json":"V3 最初本机构建附件及双后端证据，保留历史摘要，与最终云端发行记录区分。",
+  "docs/release-smoke-v3.0.0.json":"V3 最初本机构建 EXE 的 CPU/CUDA 案例、预览和导出证据，不代替远端下载版。",
   "docs/github-release-v3.0.0.json":"V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
   "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。"
 }

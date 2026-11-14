@@ -1,0 +1,44 @@
+{
+  "repository": "https://github.com/oldcatnine/GaussianLab",
+  "private": true,
+  "tag": "v3.0.0",
+  "release": "https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0",
+  "draft": false,
+  "assets": [
+    {
+      "name": "GaussianLab-v3.0.0-Application-Source.zip",
+      "bytes": 3386997,
+      "sha256": "b2c19b6cddd4af94d6bf9c0c8e9aadb42c7b224fb08cfb725a17217c672a4f95",
+      "github_digest": "sha256:b2c19b6cddd4af94d6bf9c0c8e9aadb42c7b224fb08cfb725a17217c672a4f95",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v3.0.0/GaussianLab-v3.0.0-Application-Source.zip"
+    },
+    {
+      "name": "GaussianLab-v3.0.0-Qt-Corresponding-Source.zip",
+      "bytes": 73624348,
+      "sha256": "155095389ec9807ba4083aee960eadda6e06da2dfd5202417bad1eb88613dda4",
+      "github_digest": "sha256:155095389ec9807ba4083aee960eadda6e06da2dfd5202417bad1eb88613dda4",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v3.0.0/GaussianLab-v3.0.0-Qt-Corresponding-Source.zip"
+    },
+    {
+      "name": "GaussianLab-v3.0.0-Windows-x64.zip",
+      "bytes": 600938694,
+      "sha256": "29a2ae19b9987915cf3da3304c9d5f22c30946514421eb5bee3545afdc68f321",
+      "github_digest": "sha256:29a2ae19b9987915cf3da3304c9d5f22c30946514421eb5bee3545afdc68f321",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v3.0.0/GaussianLab-v3.0.0-Windows-x64.zip"
+    }
+  ],
+  "verification": "私有草稿回下载的摘要/CRC与实际CPU/CUDA均通过后正式发布",
+  "frozen_smoke": {
+    "cpu": "passed",
+    "cuda": "passed"
+  },
+  "published_at": "2026-11-14T19:28:06Z",
+  "build_run": {
+    "id": 43613876322,
+    "url": "https://github.com/oldcatnine/GaussianLab/actions/runs/43613876322",
+    "conclusion": "success",
+    "workflow_commit": "82fdf047994ca58257cf2fe25d67860bf2e4a74d",
+    "application_tag": "v3.0.0",
+    "application_commit": "b4806c3f455ee05a4aa0555c67c1f31d48c73e4f"
+  }
+}

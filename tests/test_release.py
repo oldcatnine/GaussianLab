@@ -168,3 +168,42 @@ def test_remote_build_keeps_draft_until_downloaded_binary_is_verified():
     assert "PYTHONUTF8: '1'" in text
     verifier = (ROOT / "scripts/verify_published_release.py").read_text(encoding="utf-8")
     assert "--allow-draft" in verifier and "--smoke" in verifier
+
+
+def test_download_reuse_requires_matching_size_and_server_digest(tmp_path, monkeypatch):
+    import hashlib
+    import pytest
+    monkeypatch.syspath_prepend(str(ROOT / 'scripts'))
+    import verify_published_release as verifier
+    path = tmp_path / 'asset.zip'
+    path.write_bytes(b'good')
+    calls = []
+    class Client:
+        def get(self, *args, **kwargs):
+            calls.append(args)
+            raise RuntimeError('需要重新下载')
+    asset = {'size': 4, 'digest': 'sha256:' + hashlib.sha256(b'good').hexdigest(), 'url': 'https://example.invalid/asset'}
+    verifier.download(Client(), asset, path)
+    assert not calls
+    path.write_bytes(b'bad!')
+    with pytest.raises(RuntimeError, match='重新下载'):
+        verifier.download(Client(), asset, path)
+    assert len(calls) == 1
+
+
+def test_v3_published_assets_have_real_cpu_and_cuda_download_evidence():
+    release = json.loads((ROOT / 'docs/github-release-v3.0.0.json').read_text(encoding='utf-8'))
+    smoke = json.loads((ROOT / 'docs/github-release-smoke-v3.0.0.json').read_text(encoding='utf-8'))
+    assert release['private'] and not release['draft'] and release['tag'] == 'v3.0.0'
+    assert release['build_run']['conclusion'] == 'success'
+    assert len(release['assets']) == 3
+    for asset in release['assets']:
+        assert asset['github_digest'] == 'sha256:' + asset['sha256']
+    assert set(smoke) == {'cpu', 'cuda'}
+    for kind, report in smoke.items():
+        assert report['version'] == '3.0.0' and report['frozen'] and report['status'] == 'passed'
+        assert report['exit_code'] == 0 and len(report['cases']) == 3
+        assert all(case['backend']['used'] == kind for case in report['cases'])
+        assert report['preview']['quality'] == 'preview' and report['preview']['backend']['used'] == kind
+    assert smoke['cuda']['headers_download_verified'] is True
+    assert smoke['cuda']['executable_sha256'] == smoke['cpu']['executable_sha256']

@@ -14,6 +14,10 @@ from gaussian_lab import __version__
 
 
 def download(client, asset, target):
+    if target.is_file() and target.stat().st_size == asset['size'] and asset.get('digest'):
+        if 'sha256:' + hashlib.sha256(target.read_bytes()).hexdigest() == asset['digest']:
+            print(json.dumps({'reused_verified': target.name}), flush=True)
+            return
     with client.get(asset['url'], headers={'Accept':'application/octet-stream'}, stream=True, timeout=(15,90)) as response:
         response.raise_for_status()
         if 'json' in response.headers.get('Content-Type','').lower():
@@ -34,6 +38,7 @@ def main():
     parser.add_argument("--tag", default="v" + __version__)
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--allow-draft", action="store_true")
+    parser.add_argument("--download-dir", type=Path)
     args = parser.parse_args()
     client = session()
     repo = api(client, 'GET', '/repos/oldcatnine/GaussianLab')
@@ -46,7 +51,9 @@ def main():
     if args.tag != 'v0.1.0':
         expected_assets.add(f'GaussianLab-{args.tag}-Application-Source.zip')
     assert set(assets) == expected_assets
-    folder = ROOT / 'outputs' / f'github-download-{args.tag}-{time.time_ns()}'
+    folder = args.download_dir or ROOT / 'outputs' / f'github-download-{args.tag}-{time.time_ns()}'
+    if not folder.resolve().is_relative_to((ROOT / 'outputs').resolve()):
+        raise RuntimeError('下载复用目录必须位于项目 outputs 内')
     folder.mkdir(parents=True,exist_ok=True)
     download(client, assets['SHA256SUMS.txt'], folder/'SHA256SUMS.txt')
     checked = []
@@ -63,11 +70,12 @@ def main():
         with zipfile.ZipFile(target) as archive:
             assert archive.testzip() is None
             if 'Windows-x64' in name:
-                destination=folder/'remote-portable-check'
+                destination=ROOT/'outputs'/('gh3-'+str(time.time_ns())[-10:])
                 if destination.exists():
                     raise RuntimeError('远端发行包的独立测试目录已经存在')
                 destination.mkdir(parents=True)
                 archive.extractall(destination)
+                print(json.dumps({'remote_runtime_dir':str(destination)}),flush=True)
         checked.append({'name':name,'bytes':asset['size'],'sha256':actual,
                         'github_digest':digest,'url':asset['browser_download_url']})
     report={'repository':repo['html_url'],'private':repo['private'],'tag':release['tag_name'],

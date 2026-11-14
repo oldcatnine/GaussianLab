@@ -734,6 +734,7 @@ git diff --check
 <p>Result 保存参数快照，图表读取该结果；导出数据同步保存生成它的项目配置。扫描使用自己的结果和设置，不能误取后来修改的输入。</p>
 <h3 id="section-87">22.15 为什么同一版本的两个构建摘要可能不同</h3>
 <p>不同机器的打包时间、路径和环境资源可使二进制不同。应区分本机构建清单与远端附件清单，用实际下载文件的摘要核对发布记录。</p>
+<p>V3 发布采用“远端构建上传草稿 → 认证下载 → SHA-256/CRC → 本机 CPU 和实际 CUDA 冻结检查 → 正式发布”。云端无 GPU 不作为 CUDA 验收环境，工作流不自动解除草稿；首次 CUDA 官方补充下载也在全新缓存中检查。构建和安装环境统一启用 UTF-8，避免英文 Windows 的 cp1252 误读中文依赖注释。源码重建时可先设置 PYTHONUTF8=1；运行便携 EXE 无需此设置。</p>
 <h3 id="section-88">22.16 是否采用了外部光学库的实现</h3>
 <p>项目调研了 RayTracing、LightPipes 和 GaussianBeam，但当前 q 参数和菲涅耳计算内核由本项目编写；使用 NumPy/SciPy 完成数组与变换。LightPipes==2.1.5 已用作可选独立对照，不替代产品内核；外部参考、验证依赖与运行依赖分别记录。</p>
 <h3 id="section-89">22.17 是否完成实体实验验证</h3>
@@ -778,7 +779,7 @@ git diff --check
 </tr>
 <tr>
 <td><code>.github/workflows/release.yml</code></td>
-<td>手动触发的 Windows 构建与发布工作流，在远端安装依赖、检查、打包和上传。</td>
+<td>手动触发 Windows 远端构建、检查并上传到草稿；本机下载核验后再独立发布。</td>
 </tr>
 <tr>
 <td><code>.gitignore</code></td>
@@ -913,8 +914,16 @@ git diff --check
 <td>实际下载的远端可执行版本的冻结运行验证结果。</td>
 </tr>
 <tr>
+<td><code>docs/github-release-smoke-v3.0.0.json</code></td>
+<td>从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。</td>
+</tr>
+<tr>
 <td><code>docs/github-release-v0.1.0.json</code></td>
 <td>已发布私有版本的地址、附件大小与服务器摘要核验记录。</td>
+</tr>
+<tr>
+<td><code>docs/github-release-v3.0.0.json</code></td>
+<td>V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。</td>
 </tr>
 <tr>
 <td><code>docs/interaction-validation.json</code></td>
@@ -950,7 +959,7 @@ git diff --check
 </tr>
 <tr>
 <td><code>docs/release-artifacts-v3.0.0.json</code></td>
-<td>V3 本机最终发行附件的字节数、SHA-256、CRC 与 CPU/CUDA 冻结验证状态。</td>
+<td>V3 最初本机构建附件及双后端证据，保留历史摘要，与最终云端发行记录区分。</td>
 </tr>
 <tr>
 <td><code>docs/release-notes-v0.1.0.md</code></td>
@@ -974,7 +983,7 @@ git diff --check
 </tr>
 <tr>
 <td><code>docs/release-smoke-v3.0.0.json</code></td>
-<td>V3 本机解压 EXE 的 CPU 与实际 CUDA 案例、交互预览和导出检查。</td>
+<td>V3 最初本机构建 EXE 的 CPU/CUDA 案例、预览和导出证据，不代替远端下载版。</td>
 </tr>
 <tr>
 <td><code>docs/release-validation-v0.1.0.md</code></td>
@@ -1150,7 +1159,7 @@ git diff --check
 </tr>
 <tr>
 <td><code>scripts/verify_published_release.py</code></td>
-<td>按明确版本认证下载已发布附件并验证摘要，保留旧版核验入口，不主动发布。</td>
+<td>按明确版本认证下载附件并核验摘要及双后端，显式允许草稿验收，不主动发布。</td>
 </tr>
 <tr>
 <td><code>scripts/verify_release.py</code></td>

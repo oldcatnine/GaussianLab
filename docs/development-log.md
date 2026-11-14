@@ -318,6 +318,16 @@
 
 Actions 43613467773 的基础环境和 58 项发行/计算检查通过，安装可选 CUDA 时 pip 23.0.1 按 Windows runner 的 cp1252 解码中文 requirements 注释失败，未进入 EXE 构建和上传。工作流显式设置 PYTHONUTF8=1 与 PYTHONIOENCODING=utf-8，保持 v3.0.0 主程序标签不变；实际失败日志归档 outputs/remote-v3-build-43613467773.log，继续重跑。补充工作流回归要求 UTF-8 模式，避免将本机中文区域设置当作其他机器的默认环境。
 
+修复后的 Actions 43613876322 已 success，四个附件上传至草稿。顺序回下载同样受本机代理低速影响；确认服务端支持精确 HTTP 206 后，使用 outputs/download_v3_parallel.py 临时诊断脚本先 16 路、后 32 路分段读取，签名链接仅保存在内存，每段检查 Content-Range/长度，组装后必须匹配完整 SHA-256 才接受。保留已完成及部分文件，不重下已核对的源码附件；认证下载工具增加 outputs 内指定目录复用，且同时匹配大小与服务器 digest 才跳过网络。补充损坏等长文件必须重新下载的测试，不将并行连接数当作实验加速比。
+
+#### DEV-019 正式交付结果
+
+- 已完成：Actions 43613876322 远端构建成功；回下载三 ZIP 与 SHA256SUMS.txt 后，服务器 digest/SHA-256/ZIP CRC 全部通过。顺序解压布局预计最长 279 字符，调整为短 outputs/gh3-* 路径避免 Windows 长路径问题。下载版 EXE 的 CPU 与真实 CUDA 均退出码 0，覆盖三个光学案例、自动预览、三维渲染、配置、扫描和六类 PNG/SVG/PDF；CUDA 全新缓存首次官方头文件核验为 true，报告见 github-release-v3.0.0.json、github-release-smoke-v3.0.0.json。
+- 正式发布：仅在上述验证通过后 PATCH 草稿为 false，实际仓库 private=true、draft=false；发行页 https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0 。应用基线 b4806c3/v3.0.0 不改写，工作流修复另有提交 dc61261、82fdf04。
+- 最终附件：运行 ZIP 600938694 字节，SHA-256 29a2ae19b9987915cf3da3304c9d5f22c30946514421eb5bee3545afdc68f321；EXE SHA-256 9fbcb2663cb4f90129fdb23facfa2a6031ce68fe0e33bde2d4692d8673c29f04。releases/v3.0.0 已同步为远端下载并验证的版本，本机构建原包经绝对路径核对后移动到 outputs/local-build-v3.0.0；本机历史报告仍保留原摘要，不混同远端文件。V2.0.0 原始 ZIP 摘要未变。
+- 最终测试：完整 tests 为 98 passed in 47.87s、退出码 0；新增发布证据检查要求实际 CPU/CUDA、首次下载和服务器摘要，规则脚本、pip check、差异检查通过。已知 CuPy CUDA_PATH 提示保持原样，实际显卡计算通过；未隐藏既有 Qt COM 诊断。学习手册/离线版覆盖 108 个文件、95 个导航条目，更新草稿验收流程、UTF-8 源码构建前提与两类构建证据区别。
+- 关联提交主题：`docs: 核验 V3 私有发行与双后端回下载`。下一步为其他实体设备试用与兼容反馈；本次未改变仓库可见性、邀请或联系他人，也未保证全部显卡/驱动组合可用。
+
 ## 5. 毕业设计报告素材映射
 
 | 报告部分 | 当前已有素材 | 后续需补证据 |

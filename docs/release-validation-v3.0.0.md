@@ -25,3 +25,11 @@
 ## 发布通道调整
 
 本地基线为 b4806c3，标签 v3.0.0 已推送。代理的大文件写入低速/超时与 DEV-008 历史现象一致，改用 Actions 构建同一标签并上传到私有草稿；工作流不自动发布。云端构建的时间/路径不同，ZIP 和 EXE 摘要可能变化，必须分别记录，本机原始附件不冒充远端文件。回下载验证允许明确指定草稿，只有实际 CPU/CUDA 通过后才解除草稿。
+
+## 远端正式发布结果
+
+[Actions 43613876322](https://github.com/oldcatnine/GaussianLab/actions/runs/43613876322) 已 success；[V3.0.0 发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已正式发布，draft=false、private=true。应用来源为 b4806c3/v3.0.0，后续发布通道调整不改写标签。
+
+回下载三 ZIP 与校验清单，GitHub digest、SHA-256 和 ZIP CRC 均通过；下载版禁用 CUDA 的 CPU 与实际 CUDA 均退出码 0，三个案例、三维场景、扫描、配置、六类 PNG/SVG/PDF 及自动预览通过，CUDA 的独立新缓存首次官方补充核验为 true。最终运行 ZIP 为 600938694 字节，SHA-256 为 29a2ae19b9987915cf3da3304c9d5f22c30946514421eb5bee3545afdc68f321；EXE 摘要为 9fbcb2663cb4f90129fdb23facfa2a6031ce68fe0e33bde2d4692d8673c29f04。完整数据见 github-release-v3.0.0.json 与 github-release-smoke-v3.0.0.json。
+
+本地 releases/v3.0.0 已同步为远端下载并复测的附件和程序；原始本机构建移至 outputs/local-build-v3.0.0，原始 release-artifacts/release-smoke 记录保留。下载复用要求文件大小与服务器摘要同时匹配；为避免 CuPy 深目录触及 Windows 路径限制，测试解压采用短 outputs/gh3-* 路径。未更改仓库可见性、邀请他人或覆盖历史发行。

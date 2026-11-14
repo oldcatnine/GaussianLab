@@ -4,6 +4,8 @@
 
 当前版本为 **V3.0.0**，将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
+[V3.0.0 私有发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
+
 源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。可选安装脚本为 `scripts/install_cuda_runtime.ps1`，不会修改系统驱动。
 
 ## 启动
@@ -82,6 +84,7 @@ test_optics.py 为数值和数据验证；test_independent_optics.py 为可选�
 ## 构建 Windows 便携版
 
 ```powershell
+$env:PYTHONUTF8 = '1'
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 & .\scripts\install_cuda_runtime.ps1
 & .\scripts\build_release.ps1

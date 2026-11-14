@@ -6,7 +6,7 @@
   },
   {
     "path": ".github/workflows/release.yml",
-    "purpose": "手动触发的 Windows 构建与发布工作流，在远端安装依赖、检查、打包和上传。",
+    "purpose": "手动触发 Windows 远端构建、检查并上传到草稿；本机下载核验后再独立发布。",
     "optional_local": false
   },
   {
@@ -175,8 +175,18 @@
     "optional_local": false
   },
   {
+    "path": "docs/github-release-smoke-v3.0.0.json",
+    "purpose": "从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。",
+    "optional_local": false
+  },
+  {
     "path": "docs/github-release-v0.1.0.json",
     "purpose": "已发布私有版本的地址、附件大小与服务器摘要核验记录。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/github-release-v3.0.0.json",
+    "purpose": "V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
     "optional_local": false
   },
   {
@@ -221,7 +231,7 @@
   },
   {
     "path": "docs/release-artifacts-v3.0.0.json",
-    "purpose": "V3 本机最终发行附件的字节数、SHA-256、CRC 与 CPU/CUDA 冻结验证状态。",
+    "purpose": "V3 最初本机构建附件及双后端证据，保留历史摘要，与最终云端发行记录区分。",
     "optional_local": false
   },
   {
@@ -251,7 +261,7 @@
   },
   {
     "path": "docs/release-smoke-v3.0.0.json",
-    "purpose": "V3 本机解压 EXE 的 CPU 与实际 CUDA 案例、交互预览和导出检查。",
+    "purpose": "V3 最初本机构建 EXE 的 CPU/CUDA 案例、预览和导出证据，不代替远端下载版。",
     "optional_local": false
   },
   {
@@ -471,7 +481,7 @@
   },
   {
     "path": "scripts/verify_published_release.py",
-    "purpose": "按明确版本认证下载已发布附件并验证摘要，保留旧版核验入口，不主动发布。",
+    "purpose": "按明确版本认证下载附件并核验摘要及双后端，显式允许草稿验收，不主动发布。",
     "optional_local": false
   },
   {
