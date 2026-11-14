@@ -17,7 +17,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_readme_local_links_resolve(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8")
         links = re.findall(r"\]\((docs/[^)]+)\)", text)
-        self.assertEqual(len(links), 3)
+        self.assertGreaterEqual(len(links), 4)
         for link in links:
             self.assertTrue((ROOT / link).is_file(), link)
 
@@ -30,6 +30,18 @@ class ProjectDocsTests(unittest.TestCase):
             self.assertIn(term, design)
         research = (ROOT / "docs/research.md").read_text(encoding="utf-8")
         self.assertIn("https://github.com/pyvista/pyvistaqt", research)
+
+    def test_consolidated_plan_covers_delivery_and_acceptance(self):
+        plan_path = ROOT / "docs/product-plan.md"
+        text = plan_path.read_text(encoding="utf-8")
+        sections = re.findall(r"^## (\d+)\.", text, re.MULTILINE)
+        self.assertEqual(sections, [str(i) for i in range(1, 17)])
+        for term in ("多片薄透镜", "单透镜聚焦", "双透镜扩束", "焦距扫描", "光阑扫描", "3D",
+                     "横向视觉放大", "观察屏", "r86", "θ86", "收敛", "Git commit", "尚未实现"):
+            self.assertIn(term, text)
+        for link in re.findall(r"\]\(([^)]+\.md)\)", text):
+            self.assertTrue((plan_path.parent / link).is_file(), link)
+        self.assertIn("docs/product-plan.md", (ROOT / "README.md").read_text(encoding="utf-8"))
 
     def test_research_has_traceable_primary_sources_and_limits(self):
         text = (ROOT / "docs/research.md").read_text(encoding="utf-8")

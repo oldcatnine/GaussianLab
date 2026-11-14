@@ -7,6 +7,7 @@
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
 - [产品设计草案](docs/product-design.md)：拟议界面、计算路线和待讨论事项。
+- [产品设计方案 V1.0](docs/product-plan.md)：汇总需求、功能、3D 视觉、架构、开发阶段及验收标准，作为当前完整设计入口。
 
 运行当前阶段验证：
 
