@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $agentsPath = Join-Path $projectRoot 'agents.md'
 if (-not (Test-Path -LiteralPath $agentsPath -PathType Leaf)) {
-    throw 'agents.md is missing.'
+    throw '缺少 agents.md 项目规则文件。'
 }
 $content = [System.IO.File]::ReadAllText($agentsPath)
 $requiredRules = @(
@@ -13,7 +13,7 @@ $requiredRules = @(
 )
 foreach ($rule in $requiredRules) {
     if (-not $content.Contains($rule)) {
-        throw "Required rule is missing: $rule"
+        throw "缺少必需的规则： $rule"
     }
 }
-Write-Output 'PASS: agents.md contains commit, verification and development journal rules.'
+Write-Output '通过：项目规则已包含提交、验证和过程记录要求。'

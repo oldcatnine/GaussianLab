@@ -1,2 +1,2 @@
-"""Gaussian optical bench: SI-unit calculation core and desktop application."""
+"""高斯光学实验台：采用国际单位制的计算内核与桌面应用。"""
 __version__ = "0.1.0"

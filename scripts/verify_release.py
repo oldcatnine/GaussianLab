@@ -1,4 +1,4 @@
-"""Verify final release hashes/ZIP CRCs and extract a standalone test copy."""
+"""验证发行附件摘要和压缩包完整性，并解压独立测试副本。"""
 import hashlib
 import json
 from pathlib import Path
@@ -26,7 +26,7 @@ def main():
                 assert not any(n.rsplit('/', 1)[-1] in forbidden for n in names)
                 destination = ROOT / 'outputs/portable-check'
                 if destination.exists():
-                    raise RuntimeError('Standalone test folder already exists; choose a fresh test location')
+                    raise RuntimeError('独立测试目录已经存在，请使用新的测试位置')
                 destination.mkdir(parents=True)
                 archive.extractall(destination)
         checked.append({'name': name, 'bytes': path.stat().st_size, 'sha256': actual, 'zip_crc': 'passed'})

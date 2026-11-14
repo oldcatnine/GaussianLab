@@ -1,4 +1,4 @@
-"""VTK scene: longitudinal X axis is physical z; transverse axes are magnified."""
+"""三维场景：显示纵轴对应物理 z，横向坐标按视觉倍率放大。"""
 import numpy as np
 import pyvista as pv
 from pyvistaqt import QtInteractor
@@ -20,7 +20,7 @@ class OpticalScene(QtInteractor):
         z = result.z * 1e3
         angle = np.linspace(0, 2 * np.pi, 48)
         zz, aa = np.meshgrid(z, angle, indexing="ij")
-        # Use measured energy radius, not a fictional ray solution after clipping.
+        # 由计算得到的包围能量半径构造轮廓，适用于截断后的显示。
         radii = result.r86 * 1e3 * self.scale_transverse
         yy = radii[:, None] * np.cos(aa)
         hh = radii[:, None] * np.sin(aa)
@@ -58,8 +58,9 @@ class OpticalScene(QtInteractor):
         self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#ffd17a",
                       ambient=.7, name="focus")
         self.add_axes(xlabel="z", ylabel="x", zlabel="y", line_width=2)
-        self.add_text("r86 ENERGY ENVELOPE  |  transverse x25\nOptical elements: schematic geometry",
+        self.add_text("r86 | x25",
                       position="upper_left", font_size=10, color="#8ca7c7", name="scale_label")
+        self.setToolTip("三维轮廓表示 r86；横向放大 25 倍，光学元件外形为示意。")
         self.reset_view()
 
     def set_plane(self, index):
@@ -68,7 +69,7 @@ class OpticalScene(QtInteractor):
             return
         if self.screen_actor is not None:
             self.remove_actor(self.screen_actor, reset_camera=False)
-        # Display a cropped slice to keep it legible relative to the longitudinal bench.
+        # 裁剪显示切片，使观察屏相对于纵向光路保持可读尺寸。
         crop = max(float(r.r86[index] * 1.7), .25e-3)
         mask = np.abs(r.x) <= min(crop, r.project.window * .48)
         coords = r.x[mask][::2] * 1e3 * self.scale_transverse

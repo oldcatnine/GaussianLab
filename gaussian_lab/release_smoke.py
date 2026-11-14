@@ -1,4 +1,4 @@
-"""Assertions executed by the bundled EXE, including real Qt/VTK rendering."""
+"""由冻结可执行程序执行的冒烟断言，包含实际 Qt/VTK 场景渲染。"""
 import json
 from pathlib import Path
 import sys

@@ -1,0 +1,347 @@
+[
+  {
+    "path": ".github/workflows/release.yml",
+    "purpose": "手动触发的 Windows 构建与发布工作流，在远端安装依赖、检查、打包和上传。",
+    "optional_local": false
+  },
+  {
+    "path": ".gitignore",
+    "purpose": "排除虚拟环境、构建产物、运行输出及发行目录，避免将大文件与本机缓存提交到源码仓库。",
+    "optional_local": false
+  },
+  {
+    "path": ".idea/.gitignore",
+    "purpose": "本机集成开发环境生成文件的忽略规则。",
+    "optional_local": true
+  },
+  {
+    "path": ".idea/inspectionProfiles/Project_Default.xml",
+    "purpose": "本机代码检查配置，包含检查工具与忽略包规则。",
+    "optional_local": true
+  },
+  {
+    "path": ".idea/inspectionProfiles/profiles_settings.xml",
+    "purpose": "本机代码检查方案的启用设置。",
+    "optional_local": true
+  },
+  {
+    "path": ".idea/modules.xml",
+    "purpose": "本机项目模块列表及模块文件引用。",
+    "optional_local": true
+  },
+  {
+    "path": ".idea/vcs.xml",
+    "purpose": "本机集成开发环境的 Git 目录映射。",
+    "optional_local": true
+  },
+  {
+    "path": ".idea/毕业设计.iml",
+    "purpose": "本机 Python 模块与解释器配置，不参与业务计算和发行运行。",
+    "optional_local": true
+  },
+  {
+    "path": "GaussianLab.spec",
+    "purpose": "可执行程序的打包配置，决定入口、资源、动态库、隐藏导入和组件排除。",
+    "optional_local": false
+  },
+  {
+    "path": "README.md",
+    "purpose": "项目总入口，说明运行、文档、验证、构建方式及当前能力边界。",
+    "optional_local": false
+  },
+  {
+    "path": "agents.md",
+    "purpose": "项目协作、中文注释、提交、测试、开发记录及手册维护规则。",
+    "optional_local": false
+  },
+  {
+    "path": "app_entry.py",
+    "purpose": "窗口化发行入口，支持正常运行、冻结冒烟测试和启动失败日志。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/THIRD-PARTY-NOTICES.md",
+    "purpose": "发行时使用的中文第三方声明，原始许可证另行随包保留。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/USER_GUIDE-v0.1.0.md",
+    "purpose": "用户操作说明，解释运行、光路修改、扫描、保存导出与故障反馈。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/diffraction-desktop.png",
+    "purpose": "光阑衍射历史应用界面截图，用于追溯界面与数值展示。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/diffraction-scene.png",
+    "purpose": "光阑衍射历史三维场景截图，用于追溯渲染结果。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/diffraction.json",
+    "purpose": "光阑衍射预置项目输入参数，采用国际单位制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/expander-desktop.png",
+    "purpose": "双透镜扩束历史应用界面截图，用于追溯界面与数值展示。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/expander-scene.png",
+    "purpose": "双透镜扩束历史三维场景截图，用于追溯渲染结果。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/expander.json",
+    "purpose": "双透镜扩束预置项目输入参数，采用国际单位制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/focus-desktop.png",
+    "purpose": "单透镜聚焦历史应用界面截图，用于追溯界面与数值展示。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/focus-scene.png",
+    "purpose": "单透镜聚焦历史三维场景截图，用于追溯渲染结果。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/focus.json",
+    "purpose": "单透镜聚焦预置项目输入参数，采用国际单位制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/development-log.md",
+    "purpose": "持续开发台账，记录目标、真实工具方法、结果、失败、证据与提交。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/file-inventory.json",
+    "purpose": "构建手册时生成的文件用途清单，便于自动检查遗漏。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/file-roles.json",
+    "purpose": "人工维护的逐文件用途说明，是文件清单和手册附录的来源。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/github-release-smoke-v0.1.0.json",
+    "purpose": "实际下载的远端可执行版本的冻结运行验证结果。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/github-release-v0.1.0.json",
+    "purpose": "已发布私有版本的地址、附件大小与服务器摘要核验记录。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/product-design.md",
+    "purpose": "早期设计草案，用于追溯界面与技术路线的形成过程。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/product-plan.md",
+    "purpose": "完整设计基线，包含功能、模型、三维交互、架构、阶段和验收；其中计划不等同于当前实现。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-artifacts-v0.1.0.json",
+    "purpose": "早期本机构建附件的大小与摘要历史记录，不是远端重建文件的摘要。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-notes-v0.1.0.md",
+    "purpose": "首版发布说明，列出功能、附件、平台和已知限制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-smoke-v0.1.0.json",
+    "purpose": "本地独立发行包的冻结冒烟测试结果。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-validation-v0.1.0.md",
+    "purpose": "独立可执行版本的构建、摘要、解压与运行验证说明。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/requirements.md",
+    "purpose": "需求及其确认状态、指标定义、范围边界和验收规划。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/research.md",
+    "purpose": "开源仓库、能力包、源码与许可证的首轮调研证据和选型理由。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/test-results-release-v0.1.0.txt",
+    "purpose": "首版发布阶段测试命令的原始输出，不代表后续测试数量。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/test-results-v0.1.txt",
+    "purpose": "初版测试命令的原始输出，用于追溯当时的验证情况。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/third-party.md",
+    "purpose": "第三方依赖和外部参考的简表，说明许可证方向与实际使用方式。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/validation-v0.1.json",
+    "purpose": "首轮数值验证的机器可读数据，包括环境、案例结果、耗时和末端比较。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/validation-v0.1.md",
+    "purpose": "首个运行版本的验证说明，解释测试、数值结果、截图和诊断。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/项目学习手册.html",
+    "purpose": "由手册源文件生成的离线阅读与打印版本，提供侧边目录导航。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/项目学习手册.md",
+    "purpose": "学习手册的可维护源文件，解释操作、光学、算法、架构、文件及技术问答。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/__init__.py",
+    "purpose": "定义应用包与版本号，是识别 Python 包的入口文件。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/__main__.py",
+    "purpose": "响应 python -m gaussian_lab 并调用桌面界面入口。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/charts.py",
+    "purpose": "绘制轴向曲线、光斑、剖面、强度曲面及参数扫描曲线。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/gui.py",
+    "purpose": "构建桌面控件与信号连接，启动后台任务并更新结果、观察屏、扫描与导出。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/model.py",
+    "purpose": "定义光源、元件和项目数据，负责参数校验、排序、复制、预置和 JSON 保存加载。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/optics.py",
+    "purpose": "实现 q 参数解析、二维菲涅耳传播、光斑与远场指标、扫描、取消和收敛比较。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/release_smoke.py",
+    "purpose": "在冻结程序内部验证实际计算、三维渲染、配置与导出是否正常。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/scene.py",
+    "purpose": "将计算结果转换为三维光路、包络、元件示意及观察面。",
+    "optional_local": false
+  },
+  {
+    "path": "requirements-build.txt",
+    "purpose": "在运行依赖快照之上固定打包器、打包钩子和手册网页生成库的版本。",
+    "optional_local": false
+  },
+  {
+    "path": "requirements-lock.txt",
+    "purpose": "已验证运行环境的精确依赖版本快照，不包含本机虚拟环境文件本身。",
+    "optional_local": false
+  },
+  {
+    "path": "requirements.txt",
+    "purpose": "直接依赖的版本范围，说明项目主要使用哪些库。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/build_handbook.py",
+    "purpose": "核对文件用途覆盖率，更新手册附录并生成不依赖网络的阅读网页。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/build_release.ps1",
+    "purpose": "串联打包器与发行整理脚本，任一步失败即停止。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/prepare_release.py",
+    "purpose": "整理便携包、示例与许可，下载核验对应源码并生成压缩附件及摘要清单。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/publish_github.py",
+    "purpose": "经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/validate_v1.py",
+    "purpose": "生成三个预置案例的数值记录、输入配置和实际界面截图。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/verify_published_release.py",
+    "purpose": "认证下载远端已发布附件，核对服务器摘要与清单并解压复测副本。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/verify_release.py",
+    "purpose": "校验本地发行附件摘要与压缩包完整性，并解压独立测试副本。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/Test-Agents.ps1",
+    "purpose": "检查项目规则是否包含提交、测试和持续记录要求。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_gui.py",
+    "purpose": "真实 Qt/VTK 界面测试，覆盖渲染、观察屏、快照、导出及异步扫描按钮链路。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_optics.py",
+    "purpose": "数值与数据层测试，包括解析基准、衍射、透过率、扫描及配置往返。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_project_docs.py",
+    "purpose": "检查需求、设计、文档链接与开发过程记录的一致性。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_release.py",
+    "purpose": "验证发行入口、上传保护和已发布版本的证据记录。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_text_policy.py",
+    "purpose": "检查中文注释、通用文档语气、文件清单覆盖与学习手册的关键事实。",
+    "optional_local": false
+  },
+  {
+    "path": "启动软件.cmd",
+    "purpose": "本机源码启动器，定位项目虚拟环境后执行模块入口。",
+    "optional_local": false
+  },
+  {
+    "path": "启动软件.ps1",
+    "purpose": "PowerShell 源码启动器，检查项目虚拟环境并运行应用。",
+    "optional_local": false
+  }
+]

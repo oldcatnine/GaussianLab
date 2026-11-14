@@ -8,7 +8,7 @@
 - `GaussianLab-v0.1.0-Qt-Corresponding-Source.zip`：73,624,348 字节，第三方对应源码；普通用户运行不需要此附件。
 - `SHA256SUMS.txt`：附件完整性校验。
 
-源码位于私有仓库 [oldcatnine/GaussianLab](https://github.com/oldcatnine/GaussianLab)，发布目标为 [v0.1.0](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0)。用户已确认私有，老师在线访问需要授权，或由用户下载运行 ZIP 后转发。
+源码位于私有仓库 [oldcatnine/GaussianLab](https://github.com/oldcatnine/GaussianLab)，发布目标为 [v0.1.0](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0)。用户已确认私有，私有仓库在线访问需要授权，或由用户下载运行 ZIP 后转发。
 
 ## 自动化与独立运行
 
@@ -39,6 +39,6 @@ Qt hook 还会发现本程序不用的 PDF、VirtualKeyboard、DataVisualization
 
 下载得到的 EXE 在仅含 Windows 系统目录的 PATH 下重新运行冻结冒烟测试，三个案例、3D、配置往返、扫描和导出通过，退出码 0；见 [GitHub 下载版 EXE 证据](github-release-smoke-v0.1.0.json)。因此验证对象为远端实际附件，未用旧本地二进制替代。
 
-最终文件整理在 `releases/v0.1.0/`，与 GitHub 附件一致；原本机构建 ZIP 备份在 outputs/local-build-archive。重建造成二进制摘要变化属于不同构建结果，不将初次本地清单冒充远端清单。老师可以接收运行 ZIP 后完整解压运行；直接在线访问私有仓库需要用户邀请授权。
+最终文件整理在 `releases/v0.1.0/`，与 GitHub 附件一致；原本机构建 ZIP 备份在 outputs/local-build-archive。重建造成二进制摘要变化属于不同构建结果，不将初次本地清单冒充远端清单。用户可下载运行 ZIP 并完整解压运行；直接在线访问私有仓库需要用户邀请授权。
 
 发布证据增加到回归检查后，当前主分支完整测试为 39 项通过、退出码 0；规则验证及依赖检查通过。原始输出见 [最终测试输出](test-results-release-v0.1.0.txt)。此计数包含发布后的验证工具，不改变标签基线的 37 项本地测试记录。

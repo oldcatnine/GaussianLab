@@ -6,7 +6,7 @@
 
 ## 启动
 
-**发给老师：** 下载 [V0.1.0 Release](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0) 的 `GaussianLab-v0.1.0-Windows-x64.zip`，完整解压后双击 `GaussianLab.exe`，无需 Python。保留 `_internal` 文件夹。仓库当前按私有创建，直接在线访问需要授权；也可下载 ZIP 后转发。详见 [便携版使用说明](docs/USER_GUIDE-v0.1.0.md)。
+**便携版运行：** 下载 [V0.1.0 Release](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0) 的 `GaussianLab-v0.1.0-Windows-x64.zip`，完整解压后双击 `GaussianLab.exe`，无需 Python。保留 `_internal` 文件夹。仓库当前按私有创建，直接在线访问需要授权；也可下载 ZIP 后转发。详见 [便携版使用说明](docs/USER_GUIDE-v0.1.0.md)。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
@@ -39,6 +39,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 
 ## 项目文档
 
+- [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
 - [产品设计草案](docs/product-design.md)：拟议界面、计算路线和待讨论事项。

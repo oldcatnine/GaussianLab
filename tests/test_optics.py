@@ -1,3 +1,4 @@
+"""验证计算内核和模型，覆盖解析基准、衍射、扫描、取消与导出。"""
 import threading
 import numpy as np
 import pytest

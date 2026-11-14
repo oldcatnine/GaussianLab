@@ -1,3 +1,4 @@
+"""二维分析图和强度曲面，读取计算结果并生成可导出的图像。"""
 import numpy as np
 from matplotlib import rcParams
 from matplotlib.figure import Figure

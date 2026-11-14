@@ -1,6 +1,7 @@
-"""Real Qt/VTK rendering and application state smoke tests (requires desktop)."""
+"""真实 Qt/VTK 渲染与应用状态冒烟测试，需要可用桌面和图形驱动。"""
 import pytest
 import gc
+import json
 import time
 from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtTest import QTest
@@ -43,6 +44,7 @@ def test_render_tabs_observer_and_animation(window, app, tmp_path):
     assert window.result is not None
     assert not window.dirty
     assert window.scene.screen_actor is not None
+    assert "横向放大 25 倍" in window.scene.toolTip()
     window.plane_slider.setValue(0)
     assert "0.00 mm" in window.plane_label.text()
     for i in range(3):
@@ -87,6 +89,8 @@ def test_scan_gui_keeps_snapshot_and_exports(window, monkeypatch, tmp_path):
     monkeypatch.setattr(window, "choose_path", lambda *a, **k: str(path))
     window.export_data()
     assert (tmp_path/"scan.csv.meta.json").is_file()
+    metadata = json.loads((tmp_path/"scan.csv.meta.json").read_text(encoding="utf-8"))
+    assert metadata["metric"] == "末片透镜后轴向离散采样点中的最小 r86"
 
 
 def test_gui_add_remove_and_validation(window):
@@ -101,7 +105,7 @@ def test_gui_add_remove_and_validation(window):
 
 
 def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatch):
-    """A single light-field calculation must not be mistaken for a parameter scan."""
+    """验证单次光场计算与参数扫描是独立任务，并检查真实按钮触发链路。"""
     assert window.result is not None
     assert window.scan_rows == []
     assert window.scan_table.rowCount() == 0
@@ -116,7 +120,7 @@ def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatc
     deadline = time.monotonic() + 15
     while (window.job.isRunning() or window.scan_table.rowCount() != 3) and time.monotonic() < deadline:
         app.processEvents()
-        time.sleep(.01)  # Explicitly release the GIL for the Python QThread worker.
+        time.sleep(.01)  # 显式释放全局解释器锁，使 Python 工作线程能够继续执行。
         if errors:
             break
     assert not errors

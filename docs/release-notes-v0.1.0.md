@@ -4,7 +4,7 @@
 
 ## 下载与运行
 
-老师或演示用户下载 **GaussianLab-v0.1.0-Windows-x64.zip**，完整解压后运行 **GaussianLab.exe**，无需 Python。`_internal` 必须保留。不要把 GitHub 自动生成的 Source code ZIP 当作可执行包。
+应用用户下载 **GaussianLab-v0.1.0-Windows-x64.zip**，完整解压后运行 **GaussianLab.exe**，无需 Python。`_internal` 必须保留。不要把 GitHub 自动生成的 Source code ZIP 当作可执行包。
 
 ## 功能
 

@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 if not exist ".venv\Scripts\python.exe" (
-  echo Project environment is missing. See README.md.
+  echo 项目运行环境不存在，请查阅 README.md。
   pause
   exit /b 1
 )

@@ -1,4 +1,4 @@
-"""Release entrypoint and publication safety checks without network mutations."""
+"""验证发行入口、发布保护及证据记录，单元测试不修改网络状态。"""
 import importlib.util
 import json
 from pathlib import Path
@@ -61,7 +61,7 @@ def test_published_private_release_has_verified_frozen_evidence():
     smoke = json.loads((ROOT / 'docs/github-release-smoke-v0.1.0.json').read_text(encoding='utf-8'))
     assert release['private'] is True and release['draft'] is False
     assert release['tag'] == 'v0.1.0'
-    assert len(release['assets']) == 2  # two ZIPs; SHA256SUMS is checked by the download integration script
+    assert len(release['assets']) == 2  # 两个压缩包；校验清单由下载集成验证脚本检查。
     for asset in release['assets']:
         assert asset['github_digest'] == 'sha256:' + asset['sha256']
         assert asset['bytes'] > 0

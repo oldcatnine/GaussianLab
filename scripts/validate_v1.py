@@ -1,4 +1,4 @@
-"""Generate reproducible numeric results and real Qt/VTK screenshot evidence."""
+"""生成可复现的数值记录和实际 Qt/VTK 场景截图证据。"""
 import json
 from pathlib import Path
 import platform

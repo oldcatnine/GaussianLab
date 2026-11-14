@@ -1,4 +1,4 @@
-"""Serializable SI-unit project model. No GUI dependencies."""
+"""可序列化的项目数据模型；内部采用国际单位制，不依赖图形界面。"""
 from dataclasses import asdict, dataclass, field
 import json
 import math
@@ -9,7 +9,7 @@ from pathlib import Path
 class Element:
     kind: str = "lens"
     z: float = 0.1
-    value: float = 0.12  # focal length or aperture diameter, meters
+    value: float = 0.12  # 透镜焦距或光阑直径，单位为米。
     label: str = "L1"
     enabled: bool = True
 

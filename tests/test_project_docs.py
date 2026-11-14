@@ -1,4 +1,4 @@
-"""Documentation checks for the requirements/research stage, not physics tests."""
+"""检查需求、研究与文档的一致性；此类断言不验证物理计算精度。"""
 from pathlib import Path
 import re
 import unittest

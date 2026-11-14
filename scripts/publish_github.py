@@ -1,6 +1,6 @@
-"""Publish through official REST API using Git Credential Manager; never print secrets.
+"""通过 Git 凭据管理器和官方接口发布版本，不输出秘密信息。
 
-Read-only status is the default. Mutations require explicit command arguments.
+必须显式指定操作；状态查询只读，创建和发布操作使用对应的子命令。
 """
 import argparse
 import json
@@ -13,7 +13,7 @@ from requests.adapters import HTTPAdapter
 
 
 class BulkUploadAdapter(HTTPAdapter):
-    """Avoid tiny file reads/writes on a high-latency HTTP proxy."""
+    """增大传输块，减少高延迟 HTTP 代理中的小块读写。"""
     def init_poolmanager(self, connections, maxsize, block=False, **kwargs):
         kwargs['blocksize'] = 1024 * 1024
         return super().init_poolmanager(connections, maxsize, block, **kwargs)
@@ -55,7 +55,7 @@ def session():
     values = dict(line.split("=", 1) for line in proc.stdout.splitlines() if "=" in line)
     token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or values.get("password")
     if not token:
-        raise RuntimeError("No noninteractive GitHub credential available")
+        raise RuntimeError("没有可用于非交互操作的 GitHub 凭据")
     client = requests.Session()
     client.mount('https://uploads.github.com/', BulkUploadAdapter())
     client.headers.update({"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
@@ -66,7 +66,7 @@ def session():
 def api(client, method, path, **kwargs):
     response = client.request(method, "https://api.github.com"+path, timeout=60, **kwargs)
     if response.status_code >= 400:
-        # Avoid printing request headers, credentials or arbitrary response bodies.
+        # 不打印请求头、凭据或未经筛选的响应正文。
         raise RuntimeError(f"GitHub API {method} {path}: HTTP {response.status_code}")
     return response.json()
 
@@ -87,24 +87,24 @@ def main():
         print(json.dumps({"authenticated": True, "login": user}))
     elif args.action == "create-repo":
         if args.visibility is None:
-            parser.error("--visibility is required to create a repository")
+            parser.error("创建仓库必须指定 --visibility")
         response = client.get("https://api.github.com"+repo_path, timeout=30)
         if response.status_code == 200:
-            raise RuntimeError("Repository already exists; refusing to overwrite or reuse without inspection")
+            raise RuntimeError("仓库已经存在，请核对后再操作，程序不会直接覆盖或复用")
         if response.status_code != 404:
-            raise RuntimeError(f"Repository check HTTP {response.status_code}")
+            raise RuntimeError(f"仓库检查的 HTTP 状态：{response.status_code}")
         repo = api(client, "POST", "/user/repos", json={"name": args.repo,
-            "description": "Python Gaussian beam propagation, diffraction and interactive 3D optical bench",
+            "description": "基于 Python 的高斯光束传播、衍射与交互式三维光学实验台",
             "private": args.visibility == "private", "auto_init": False})
         print(json.dumps({"url": repo["html_url"], "private": repo["private"]}))
     elif args.action == "release":
         if not args.notes or not args.asset:
-            parser.error("--notes and --asset are required")
+            parser.error("必须指定 --notes 和 --asset")
         existing = [r for r in api(client, 'GET', repo_path+'/releases') if r['tag_name'] == args.tag]
         if existing:
             data = existing[0]
             if not data['draft']:
-                raise RuntimeError('Release is already published; refusing to overwrite')
+                raise RuntimeError('版本已经发布，程序拒绝覆盖')
         else:
             data = api(client, "POST", repo_path+"/releases", json={"tag_name": args.tag,
                 "name": "GaussianLab V0.1.0 — Windows 首版", "body": args.notes.read_text(encoding="utf-8"),
@@ -115,7 +115,7 @@ def main():
                 if present[0]['state'] == 'uploaded' and present[0]['size'] == path.stat().st_size:
                     print(json.dumps({'already_uploaded': path.name}), flush=True)
                     continue
-                raise RuntimeError('Incomplete or mismatched existing asset requires inspection')
+                raise RuntimeError('已有附件尚未完成或大小不符，需要先检查')
             stream = UploadReader(path)
             try:
                 response = client.post(data["upload_url"].split("{")[0], params={"name": path.name},
@@ -123,7 +123,7 @@ def main():
             finally:
                 stream.close()
             if response.status_code != 201:
-                raise RuntimeError(f"Asset upload {path.name}: HTTP {response.status_code}; release remains draft")
+                raise RuntimeError(f"附件上传：{path.name}: HTTP {response.status_code}；版本仍保持草稿状态")
             print(json.dumps({"uploaded": path.name, "bytes": path.stat().st_size}))
         published = api(client, "PATCH", repo_path+f"/releases/{data['id']}", json={"draft": False})
         print(json.dumps({"release_url": published["html_url"]}))
@@ -137,5 +137,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        print(f"Publish operation failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f"发布操作失败：{type(exc).__name__}: {exc}", file=sys.stderr)
         sys.exit(1)

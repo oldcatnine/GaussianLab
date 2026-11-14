@@ -1,4 +1,4 @@
-"""Stage redistributable folder, full notices, verified Qt sources and ZIP assets."""
+"""整理发行目录、完整许可、已校验的 Qt 对应源码和压缩附件。"""
 import argparse
 import hashlib
 from importlib.metadata import distributions
@@ -29,10 +29,10 @@ def download_sources():
         target = folder / url.rsplit("/", 1)[-1]
         response = requests.get(url + ".mirrorlist", timeout=60)
         response.raise_for_status()
-        # MirrorBrain publishes the expected SHA-256 near the file metadata.
+        # 从官方镜像说明页面提取公开的 SHA-256 校验值。
         matches = re.findall(r'\b[0-9a-f]{64}\b', response.text)
         if not matches:
-            raise RuntimeError(f"No published SHA-256 for {target.name}")
+            raise RuntimeError(f"未找到公开的 SHA-256 校验值：{target.name}")
         expected = matches[0]
         if not target.exists() or hashlib.sha256(target.read_bytes()).hexdigest() != expected:
             with requests.get(url, stream=True, timeout=90) as payload:
@@ -42,9 +42,9 @@ def download_sources():
                         output.write(chunk)
         actual = hashlib.sha256(target.read_bytes()).hexdigest()
         if actual != expected:
-            raise RuntimeError(f"Source checksum mismatch: {target.name}")
+            raise RuntimeError(f"源码校验值不匹配：{target.name}")
         manifest.append({"name": target.name, "url": url, "sha256": actual})
-        print(f"Verified source: {target.name}", flush=True)
+        print(f"源码校验通过：{target.name}", flush=True)
     (folder / "SOURCE-MANIFEST.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return folder
 
@@ -55,7 +55,7 @@ def notices(bundle, source_folder):
     index = []
     for dist in distributions():
         name = dist.metadata.get("Name", "unknown")
-        # Include notices of the environment conservatively; some are build-only.
+        # 保守收集当前环境的许可；清单可能包含只在构建时使用的包。
         count = 0
         for file in dist.files or []:
             parts = str(file).lower().replace("\\", "/")
@@ -72,8 +72,8 @@ def notices(bundle, source_folder):
                 shutil.copy2(path, dest)
                 count += 1
         index.append({"name": name, "version": dist.version, "license_files": count})
-    # Qt wheels may contain only the commercial alternative notice. Also extract
-    # all upstream license texts from the corresponding verified source archives.
+    # 部分 Qt 安装包只附商业许可选项说明，因此同时从已校验的对应源码归档中
+    # 提取上游原始许可证文本，完整保留其内容。
     for archive in source_folder.glob("*.tar.xz"):
         with tarfile.open(archive, "r:xz") as tar:
             for member in tar.getmembers():
@@ -91,11 +91,11 @@ def notices(bundle, source_folder):
     (target / "INDEX.json").write_text(json.dumps(index, indent=2), encoding="utf-8")
     python_license = Path(sys.base_prefix) / 'LICENSE.txt'
     if not python_license.is_file():
-        raise RuntimeError('CPython license not found in the build interpreter')
+        raise RuntimeError('构建解释器目录中未找到 CPython 许可证')
     (target / 'CPython').mkdir(exist_ok=True)
     shutil.copy2(python_license, target / 'CPython/LICENSE.txt')
     shutil.copy2(source_folder / "SOURCE-MANIFEST.json", target)
-    assert list(target.rglob("LGPL-3.0-only.txt")), "Missing full LGPL-3.0 text"
+    assert list(target.rglob("LGPL-3.0-only.txt")), "缺少完整的 LGPL-3.0 许可证文本"
 
 
 def stage():
@@ -103,15 +103,15 @@ def stage():
     sources = download_sources()
     bundle = RELEASE / "GaussianLab-v0.1.0-Windows-x64"
     if bundle.exists():
-        # Only replace this exact generated release folder, never arbitrary paths.
+        # 只允许替换这个明确的生成目录，避免操作其他路径。
         if bundle.resolve().parent != RELEASE.resolve() or RELEASE.resolve().parent != (ROOT / 'releases').resolve():
-            raise RuntimeError("Unexpected release staging path")
+            raise RuntimeError("发行暂存路径不符合预期")
         shutil.rmtree(bundle)
     shutil.copytree(ROOT / "dist/GaussianLab", bundle, dirs_exist_ok=True)
-    # Disallow accidental environment libraries that could shadow Windows ICU.
+    # 拒绝混入可能覆盖 Windows 系统 ICU 的外部环境动态库。
     forbidden = [p for p in bundle.rglob('*.dll') if p.name.lower().startswith(('icudt', 'icuuc', 'icuin'))]
     if forbidden:
-        raise RuntimeError('Unexpected third-party ICU library in final bundle; rebuild from current spec')
+        raise RuntimeError('发行目录中存在非预期的外部 ICU 动态库，请按当前配置重新构建')
     notices(bundle, sources)
     shutil.copy2(ROOT / "docs/USER_GUIDE-v0.1.0.md", bundle / "使用说明.md")
     shutil.copy2(ROOT / "docs/release-notes-v0.1.0.md", bundle / "版本说明.md")
@@ -120,8 +120,8 @@ def stage():
     examples.mkdir(exist_ok=True)
     for name in ("focus", "expander", "diffraction"):
         shutil.copy2(ROOT / f"docs/assets/{name}.json", examples)
-    (bundle / "版本信息.txt").write_text("GaussianLab 0.1.0\nWindows x64 portable folder build\n"
-        "解压整个文件夹，双击 GaussianLab.exe，无需安装 Python。\nQt/PySide6: LGPLv3 dynamic libraries; see THIRD-PARTY-NOTICES.md.\n", encoding="utf-8")
+    (bundle / "版本信息.txt").write_text("GaussianLab 0.1.0\nWindows 64 位便携目录版本\n"
+        "解压整个文件夹，双击 GaussianLab.exe，无需安装 Python。\nQt/PySide6 使用 LGPLv3 动态库；详见 THIRD-PARTY-NOTICES.md。\n", encoding="utf-8")
     with zipfile.ZipFile(RELEASE / "GaussianLab-v0.1.0-Windows-x64.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zip_out:
         for path in sorted(bundle.rglob("*")):
             if path.is_file():

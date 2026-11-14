@@ -18,8 +18,8 @@ a = Analysis(
               'PySide6.QtDataVisualization', 'PySide6.QtVirtualKeyboard'],
     noarchive=False,
 )
-# The Qt GUI hook discovers optional image/input plugins. Keep only the modules
-# actually used by this Widgets application, without PDF/QML/virtual-keyboard.
+# Qt 图形界面钩子会发现可选的图像和输入插件。
+# 仅保留本应用实际使用的模块，排除文档、声明式界面与虚拟键盘组件。
 qt_libraries = {'Qt6Core.dll', 'Qt6Gui.dll', 'Qt6Network.dll', 'Qt6OpenGL.dll',
                 'Qt6OpenGLWidgets.dll', 'Qt6Widgets.dll', 'Qt6Svg.dll'}
 def required_binary(item):
@@ -29,13 +29,13 @@ def required_binary(item):
         return False
     if destination.startswith('PySide6/') and filename.startswith('Qt6') and filename.endswith('.dll'):
         return filename in qt_libraries
-    # Qt's native Windows ICU API must resolve from System32. A third-party
-    # Poppler ICU found on the build host's PATH exports incompatible symbols.
+    # Qt 应从 Windows 系统目录解析原生 ICU 接口；构建环境 PATH 中的
+    # Poppler 版本导出符号不同，必须排除。
     return filename not in {'qpdf.dll', 'qtvirtualkeyboardplugin.dll', 'QtDataVisualization.pyd',
                             'icuuc.dll', 'icuin.dll', 'icudt.dll'}
 a.binaries = [item for item in a.binaries if required_binary(item)]
-# Python 3.10 ships an older MSVC runtime. The bootloader loads the root copy
-# first; use the newer, backwards-compatible runtime supplied by the Qt wheel.
+# Python 3.10 自带的运行库较旧，加载器会优先读取包根目录的副本。
+# 统一采用 Qt 安装包附带的较新兼容版本，避免动态库加载冲突。
 pyside_path = Path(get_package_paths('PySide6')[1])
 runtime_names = ('VCRUNTIME140.dll', 'VCRUNTIME140_1.dll')
 a.binaries = [item for item in a.binaries if item[0].lower() not in {name.lower() for name in runtime_names}]

@@ -1,7 +1,7 @@
-"""Paraxial Gaussian reference and sampled scalar Fresnel diffraction.
+"""近轴高斯参考解与离散标量菲涅耳衍射。
 
-Fields use exp(-r²/w²) and a -i k r²/(2f) thin-lens phase.
-FFT propagation is periodic; warnings do not constitute a convergence proof.
+光场采用 exp(-r²/w²)，薄透镜相位为 -i k r²/(2f)。
+快速傅里叶传播具有周期性；诊断警告不能代替收敛验证。
 """
 from dataclasses import dataclass
 import csv
@@ -45,7 +45,7 @@ def analytic(p, positions):
 
 
 def output_gaussian(p):
-    """Reference after final active element, even when a real aperture is present."""
+    """计算末个启用元件后的理想高斯参考；存在光阑时也不把参考解视为截断场解。"""
     q, last = q_initial(p), 0.0
     for e in p.ordered():
         q += e.z - last
@@ -66,7 +66,7 @@ def coordinates(p):
 def initial_field(p, r2):
     q = q_initial(p)
     w = radius(q, p.wavelength)
-    # Gaussian reference uses opposite q phase convention to complex field.
+    # 复光场的相位表示与高斯 q 参数的符号约定相配套。
     return np.exp(-r2 / w**2 + 1j * np.pi / p.wavelength * (1 / q).real * r2)
 
 
@@ -105,7 +105,7 @@ class Result:
 
     @property
     def focus_index(self):
-        # Focus search only after the final lens (or final element without lenses).
+        # 仅在末片透镜之后搜索；没有透镜时从入口开始搜索。
         lenses = [e.z for e in self.project.ordered() if e.kind == "lens"]
         start = max(lenses) if lenses else 0
         valid = np.flatnonzero(self.z >= start)
@@ -208,7 +208,7 @@ def export_csv(rows, path):
 
 
 def convergence(project, cancel=None):
-    """Compare base grid, finer dx, and larger window at unchanged dx."""
+    """对比基准网格、加密网格，以及保持采样间距时扩大窗口的末端指标。"""
     if project.grid > 512:
         raise ValueError("收敛检查基准网格最多 512；将执行两次双倍网格计算")
     base = simulate(project, cancel)
@@ -222,7 +222,7 @@ def convergence(project, cancel=None):
     wide = fine.clone()
     wide.window *= 2
     expanded = simulate(wide, cancel)
-    # Compare the final observation plane as a reproducible metric.
+    # 使用末端观察面的半径进行可复现比较，不代表其他平面收敛。
     return {"base_r86_m": b, "fine_r86_m": fine_radius,
             "wide_r86_m": float(expanded.r86[-1]),
             "grid_change": float(abs(fine_radius - b) / b),

@@ -1,3 +1,4 @@
+"""桌面界面及任务调度，连接输入、后台计算、图表和三维场景。"""
 import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
@@ -541,7 +542,7 @@ class MainWindow(QMainWindow):
                 if is_scan:
                     Path(path + ".meta.json").write_text(json.dumps({"element_index": self.scan_options[0],
                         "low_m": self.scan_options[1], "high_m": self.scan_options[2], "count": self.scan_options[3],
-                        "metric": "minimum r86 after final lens on sampled z planes"}, indent=2), encoding="utf-8")
+                        "metric": "末片透镜后轴向离散采样点中的最小 r86"}, ensure_ascii=False, indent=2), encoding="utf-8")
                 self.status.setText("已导出数据和对应参数快照：" + path)
         except Exception as exc:
             self.show_error(str(exc))
