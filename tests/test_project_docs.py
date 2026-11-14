@@ -74,3 +74,22 @@ class ProjectDocsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+def test_current_numeric_evidence_matches_implemented_acceptance():
+    import json
+    report = json.loads((ROOT / "docs/numerical-validation-v2.json").read_text(encoding="utf-8"))
+    assert report["algorithm_version"] == "fresnel-focus-v2"
+    assert report["short_focus_relative_error"] < .05
+    assert len(report["independent"]) == 6
+    assert max(row["normalized_intensity_l1"] for row in report["independent"]) < .08
+    assert max(row["r86_relative_difference"] for row in report["independent"]) < .05
+    assert max(row["transmission_absolute_difference"] for row in report["independent"]) < .04
+    assert len(report["aperture_tradeoff"]) == 7
+    assert all("refined" in row for row in report["aperture_tradeoff"])
+    assert all(row["process_peak_bytes"] >= row["result_array_bytes"] for row in report["memory"])
+    assert (ROOT / "docs/numerical-validation-v2.png").is_file()
+    text = (ROOT / "docs/validation-v2.md").read_text(encoding="utf-8")
+    for term in ("局部细化", "LightPipes", "限制", "内存", "尚未"):
+        assert term in text

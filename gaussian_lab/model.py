@@ -26,6 +26,8 @@ class Project:
     samples: int = 65
     elements: list[Element] = field(default_factory=lambda: [Element()])
 
+    focus_refinement: int = 2
+
     def validate(self):
         numbers = (self.wavelength, self.waist, self.waist_z, self.length, self.window)
         if not all(math.isfinite(x) for x in numbers):
@@ -36,9 +38,11 @@ class Project:
             raise ValueError("网格须为 128、256、512 或 1024")
         if not isinstance(self.samples, int) or not 17 <= self.samples <= 161:
             raise ValueError("轴向采样须为 17—161 点")
+        if type(self.focus_refinement) is not int or not 0 <= self.focus_refinement <= 4:
+            raise ValueError("焦区细化级数须为 0—4")
         if len(self.elements) > 20:
             raise ValueError("第一版最多支持 20 个元件")
-        if self.grid**2 * (self.samples + len(self.elements)) * 4 > 384 * 1024**2:
+        if self.grid**2 * (self.samples + len(self.elements) + 1) * 4 > 384 * 1024**2:
             raise ValueError("结果体积超过首版 384 MiB 限制，请减少网格或轴向采样点")
         for e in self.elements:
             if e.kind not in ("lens", "aperture"):

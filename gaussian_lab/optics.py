@@ -3,12 +3,36 @@
 光场采用 exp(-r²/w²)，薄透镜相位为 -i k r²/(2f)。
 快速傅里叶传播具有周期性；诊断警告不能代替收敛验证。
 """
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 import csv
-import threading
+import json
+import hashlib
+from pathlib import Path
+import platform
+import subprocess
+from datetime import datetime
+import scipy
+from . import __version__
 import numpy as np
 from scipy.fft import fft2, ifft2, fftfreq, fftshift
 from .model import Project
+
+
+ALGORITHM_VERSION = "fresnel-focus-v2"
+
+
+def source_fingerprint():
+    """记录加载时的源码摘要；冻结程序可能没有独立源文件，明确返回未知。"""
+    digest = hashlib.sha256()
+    try:
+        for name in ("optics.py", "model.py"):
+            digest.update((Path(__file__).parent / name).read_bytes())
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
+SOURCE_SHA256 = source_fingerprint()
 
 
 class Cancelled(Exception):
@@ -80,11 +104,14 @@ def fresnel(field, wavelength, dx, distance):
     return ifft2(fft2(field) * phase)
 
 
-def encircled_radius(intensity, radii, fraction=.86):
+def encircled_radius(intensity, radii, fraction=.86, order=None):
     energy = np.asarray(intensity).ravel()
     if not np.isfinite(energy).all() or energy.sum() <= 0:
         raise ValueError("光场能量为零或无效，请检查光阑与采样")
-    order = np.argsort(radii.ravel())
+    if not 0 < fraction < 1:
+        raise ValueError("包围能量比例须在 0 与 1 之间")
+    if order is None:
+        order = np.argsort(radii.ravel())
     cumulative = np.cumsum(energy[order])
     i = np.searchsorted(cumulative, fraction * cumulative[-1])
     return float(radii.ravel()[order[min(i, len(order) - 1)]])
@@ -102,15 +129,112 @@ class Result:
     theta86: float
     reference: dict
     warnings: list[str]
+    focus: dict = field(default_factory=dict)
+    provenance: dict = field(default_factory=dict)
 
     @property
     def focus_index(self):
-        # 仅在末片透镜之后搜索；没有透镜时从入口开始搜索。
+        if self.focus:
+            return int(np.argmin(abs(self.z - self.focus["z_m"])))
+        # 兼容旧结果；仅在末片透镜之后搜索。
         lenses = [e.z for e in self.project.ordered() if e.kind == "lens"]
         start = max(lenses) if lenses else 0
         valid = np.flatnonzero(self.z >= start)
         return int(valid[np.argmin(self.r86[valid])])
 
+
+
+def field_at(project, z, r2, cancel=None):
+    """从入口独立传播到任意观察面，确保跨越光阑和同位置元件时执行顺序一致。"""
+    value, last = initial_field(project, r2), 0.0
+    for element in project.ordered():
+        check_cancel(cancel)
+        if element.z > z:
+            break
+        value = fresnel(value, project.wavelength, project.window / project.grid, element.z - last)
+        if element.kind == "lens":
+            value *= np.exp(-1j * np.pi * r2 / (project.wavelength * element.value))
+        else:
+            value *= r2 <= (element.value / 2)**2
+        last = element.z
+    check_cancel(cancel)
+    return fresnel(value, project.wavelength, project.window / project.grid, z - last)
+
+
+def refine_focus(p, zs, sizes, r2, order, cancel):
+    """用实际衍射半径细化粗最小区间；高斯束腰仅作额外探测点，不替代数值答案。"""
+    start = max((e.z for e in p.ordered() if e.kind == "lens"), default=0.0)
+    indices = np.flatnonzero(zs >= start)
+    coarse = int(indices[np.argmin(sizes[indices])])
+    points = {float(zs[i]): float(sizes[i]) for i in indices}
+    radii = np.sqrt(r2)
+    evaluations = 0
+
+    def measure(z):
+        nonlocal evaluations
+        check_cancel(cancel)
+        z = float(z)
+        if z not in points:
+            value = field_at(p, z, r2, cancel)
+            points[z] = encircled_radius(abs(value)**2, radii, order=order)
+            evaluations += 1
+        return points[z]
+
+    def bracket():
+        positions = np.array(sorted(points))
+        values = np.array([points[z] for z in positions])
+        minimum = values.min()
+        tied = np.flatnonzero(np.isclose(values, minimum, rtol=0, atol=1e-15))
+        # 取最长连续等值区间的中心，避免把平台左端误报成唯一焦点。
+        runs = np.split(tied, np.flatnonzero(np.diff(tied) > 1) + 1)
+        run = max(runs, key=lambda group: positions[group[-1]] - positions[group[0]])
+        lo = positions[max(0, run[0] - 1)]
+        hi = positions[min(len(positions) - 1, run[-1] + 1)]
+        center = (positions[run[0]] + positions[run[-1]]) / 2
+        return float(lo), float(hi), float(center), minimum
+
+    if p.focus_refinement:
+        hint = output_gaussian(p)["waist_z"]
+        if start <= hint <= p.length:
+            measure(hint)
+        for _ in range(p.focus_refinement):
+            lo, hi, _, _ = bracket()
+            for z in np.linspace(lo, hi, 9):
+                measure(z)
+        lo, hi, center, minimum = bracket()
+        measure(center)
+        # 中心重新测量后若不属于最低平台，保留已测得的最小值。
+        best = min(points, key=lambda z: (points[z], abs(z - center)))
+    else:
+        best = float(zs[coarse])
+        lo = float(zs[max(indices[0], coarse - 1)])
+        hi = float(zs[min(len(zs) - 1, coarse + 1)])
+    boundary = points.get(start, np.inf) <= points[best] or points.get(p.length, np.inf) <= points[best]
+    return {"z_m": float(best), "r86_m": float(points[best]), "coarse_z_m": float(zs[coarse]),
+            "coarse_r86_m": float(sizes[coarse]), "bracket_m": [lo, hi],
+            "axial_bracket_width_m": hi - lo, "transverse_step_m": p.window / p.grid,
+            "levels": p.focus_refinement, "evaluations": evaluations,
+            "search_interval_m": [start, p.length], "boundary_minimum": bool(boundary),
+            "note": "局部离散细化；括区与横向像素不是严格误差上界，多峰和硬孔径仍需收敛复核"}
+
+
+def calculation_provenance():
+    """记录计算发生时的源码版本；便携环境没有 Git 时明确标注未知。"""
+    root = Path(__file__).resolve().parents[1]
+    revision, dirty = None, None
+    try:
+        revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, stderr=subprocess.DEVNULL,
+                                           timeout=2, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)).decode().strip()
+        changes = subprocess.check_output(["git", "status", "--porcelain", "--", "gaussian_lab"],
+                                          cwd=root, stderr=subprocess.DEVNULL, timeout=2,
+                                          creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        dirty = bool(changes.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return {"source_sha256": SOURCE_SHA256, "calculated_at": datetime.now().astimezone().isoformat(), "source_revision": revision,
+            "source_dirty": dirty, "algorithm_version": ALGORITHM_VERSION,
+            "software_version": __version__, "python": platform.python_version(),
+            "numpy": np.__version__, "scipy": scipy.__version__}
 
 def simulate(project, cancel=None, progress=None):
     p = project.clone().validate()
@@ -120,7 +244,11 @@ def simulate(project, cancel=None, progress=None):
     input_energy = float(np.sum(abs(field)**2))
     dx = p.window / p.grid
     zs = np.unique(np.r_[np.linspace(0, p.length, p.samples), [e.z for e in p.ordered()]])
-    images, sizes, powers, warnings = [], [], [], []
+    images = np.empty((len(zs) + 1, p.grid, p.grid), dtype=np.float32)
+    sizes, powers, warnings = [], [], []
+    order = np.argsort(rr.ravel())
+    border = np.ones(r2.shape, bool)
+    border[8:-8, 8:-8] = False
     elements, index, last_z = p.ordered(), 0, 0.0
     last_element_field = field.copy()
     for i, z in enumerate(zs):
@@ -140,16 +268,14 @@ def simulate(project, cancel=None, progress=None):
             index += 1
             last_element_field = field.copy()
         intensity = abs(field)**2
-        images.append(intensity.astype(np.float32))
-        sizes.append(encircled_radius(intensity, rr))
+        images[i] = intensity
+        sizes.append(encircled_radius(intensity, rr, order=order))
         powers.append(float(intensity.sum() / input_energy))
-        border = np.ones(intensity.shape, bool)
-        border[8:-8, 8:-8] = False
         if intensity[border].sum() / max(intensity.sum(), 1e-300) > .005:
             warnings.append("边界能量超过 0.5%：可能发生窗口截断/周期回绕，请扩大窗口并复核")
         last_z = z
         if progress:
-            progress(int((i + 1) / len(zs) * 100))
+            progress(int((i + 1) / len(zs) * 80))
     frequencies = fftshift(fftfreq(p.grid, dx)) * p.wavelength
     angular_r = np.sqrt(frequencies[:, None]**2 + frequencies[None, :]**2)
     angular_i = abs(fftshift(fft2(last_element_field)))**2
@@ -160,12 +286,27 @@ def simulate(project, cancel=None, progress=None):
     if not 0 <= reference["waist_z"] <= p.length:
         warnings.append("理想高斯参考束腰位于显示区间之外（可能为回推束腰）")
     sizes = np.asarray(sizes)
-    result = Result(p, zs, x, np.asarray(images), analytic(p, zs), sizes, np.asarray(powers),
-                    theta, reference, list(dict.fromkeys(warnings)))
-    if result.focus_index == len(zs) - 1:
-        result.warnings.append("数值最小 r86 位于搜索区间末端，请扩大传播范围")
+    focus = refine_focus(p, zs, sizes, r2, order, cancel)
+    selected = focus["z_m"]
+    if not np.any(zs == selected):
+        j = int(np.searchsorted(zs, selected))
+        for k in range(len(zs), j, -1):
+            images[k] = images[k - 1]
+        selected_intensity = abs(field_at(p, selected, r2, cancel))**2
+        images[j] = selected_intensity
+        if selected_intensity[border].sum() / selected_intensity.sum() > .005:
+            warnings.append("细化焦区边界能量超过 0.5%：请扩大窗口并复核")
+        zs = np.insert(zs, j, selected)
+        sizes = np.insert(sizes, j, focus["r86_m"])
+        powers = np.insert(powers, j, float(selected_intensity.sum() / input_energy))
+    result = Result(p, zs, x, images[:len(zs)], analytic(p, zs), sizes, np.asarray(powers),
+                    theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
+    if focus["boundary_minimum"]:
+        result.warnings.append("最小 r86 平台接触搜索区间边界；可能没有内部焦点，请检查传播范围")
     if sizes.min() < 3 * dx:
         result.warnings.append("最小光斑不足 3 个像素：尺寸精度有限，请加密网格")
+    if progress:
+        progress(100)
     return result
 
 
@@ -188,11 +329,12 @@ def scan(project, element_index, low, high, count=11, cancel=None, progress=None
             k = r.focus_index
             rows.append({"value_m": float(value), "min_r86_m": float(r.r86[k]), "focus_z_m": float(r.z[k]),
                          "transmission": float(r.transmission[-1]), "theta86_rad": r.theta86,
-                         "status": "ok", "note": "；".join(r.warnings)})
+                         "focus_bracket_m": r.focus["axial_bracket_width_m"],
+                         "status": "warning" if r.warnings else "ok", "note": "；".join(r.warnings)})
         except ValueError as exc:
             rows.append({"value_m": float(value), "min_r86_m": float("nan"), "focus_z_m": float("nan"),
                          "transmission": float("nan"), "theta86_rad": float("nan"),
-                         "status": "error", "note": str(exc)})
+                         "focus_bracket_m": float("nan"), "status": "error", "note": str(exc)})
         if progress:
             progress(int((i + 1) / count * 100))
     return rows
@@ -207,24 +349,112 @@ def export_csv(rows, path):
         writer.writerows(rows)
 
 
+
+def result_summary(result):
+    """提取可序列化指标与固定物理坐标的剖面，供导出与收敛使用。"""
+    k = result.focus_index
+    p = result.project
+    image = result.intensity[k]
+    profile_x = np.linspace(-min(p.window / 4, max(result.r86[k] * 3, p.waist)),
+                            min(p.window / 4, max(result.r86[k] * 3, p.waist)), 129)
+    profile = np.interp(profile_x, result.x, image[p.grid // 2] / max(float(image.max()), 1e-30))
+    radii, energy = radial_energy(image, np.sqrt(np.add.outer(result.x**2, result.x**2)))
+    quality = {"r50_m": float(radii[np.searchsorted(energy, .5)]),
+               "r95_m": float(radii[np.searchsorted(energy, .95)]),
+               "energy_inside_2r86": float(np.interp(2 * result.r86[k], radii, energy))}
+    return {"quality": quality, "provenance": result.provenance, "endpoint_r86_m": float(result.r86[-1]), "focus_r86_m": float(result.r86[k]),
+            "focus_z_m": float(result.z[k]), "theta86_rad": result.theta86,
+            "transmission": float(result.transmission[-1]), "focus": result.focus,
+            "profile_x_m": profile_x.tolist(), "focus_profile": profile.tolist(),
+            "warnings": result.warnings, "project": asdict(p)}
+
+
 def convergence(project, cancel=None):
-    """对比基准网格、加密网格，以及保持采样间距时扩大窗口的末端指标。"""
-    if project.grid > 512:
-        raise ValueError("收敛检查基准网格最多 512；将执行两次双倍网格计算")
-    base = simulate(project, cancel)
-    b = float(base.r86[-1])
-    del base
+    """分别改变横向网格、窗口与轴向分辨率；报告多指标变化，不自动宣称通过。"""
+    project.validate()
+    if project.grid > 512 or project.focus_refinement >= 4:
+        raise ValueError("收敛检查基准网格最多 512，焦区细化级数最多 3")
+    variants = {"base": project.clone()}
     fine = project.clone()
     fine.grid *= 2
-    refined = simulate(fine, cancel)
-    fine_radius = float(refined.r86[-1])
-    del refined
+    variants["grid"] = fine
     wide = fine.clone()
     wide.window *= 2
-    expanded = simulate(wide, cancel)
-    # 使用末端观察面的半径进行可复现比较，不代表其他平面收敛。
-    return {"base_r86_m": b, "fine_r86_m": fine_radius,
-            "wide_r86_m": float(expanded.r86[-1]),
-            "grid_change": float(abs(fine_radius - b) / b),
-            "window_change": float(abs(expanded.r86[-1] - b) / b),
-            "note": "仅比较末端观察面 r86；不代表焦点或远场全面收敛"}
+    variants["window"] = wide
+    axial = project.clone()
+    axial.samples = min(161, 2 * axial.samples - 1)
+    axial.focus_refinement += 1
+    variants["axial"] = axial
+    # 先校验所有配置，避免执行到一半才遇到结果体积限制。
+    for p in variants.values():
+        p.validate()
+    summaries = {}
+    for name, p in variants.items():
+        check_cancel(cancel)
+        result = simulate(p, cancel)
+        summaries[name] = result_summary(result)
+        del result
+    base = summaries["base"]
+    changes = {}
+    for name in ("grid", "window", "axial"):
+        other = summaries[name]
+        changes[name] = {key + "_relative": abs(other[key] - base[key]) / max(abs(base[key]), 1e-30)
+                         for key in ("endpoint_r86_m", "focus_r86_m", "theta86_rad", "transmission")}
+        changes[name]["focus_z_absolute_m"] = abs(other["focus_z_m"] - base["focus_z_m"])
+        # 插值到基准剖面的同一物理横坐标；各自焦面，不等同于同一固定 z 平面。
+        profile = np.interp(base["profile_x_m"], other["profile_x_m"], other["focus_profile"])
+        changes[name]["focus_profile_rms"] = float(np.sqrt(np.mean((profile - base["focus_profile"])**2)))
+    return {"algorithm_version": ALGORITHM_VERSION, "variants": summaries, "changes": changes,
+            "base_r86_m": base["endpoint_r86_m"], "fine_r86_m": summaries["grid"]["endpoint_r86_m"],
+            "wide_r86_m": summaries["window"]["endpoint_r86_m"],
+            "grid_change": changes["grid"]["endpoint_r86_m_relative"],
+            "window_change": changes["window"]["endpoint_r86_m_relative"],
+            "status": "需结合警告与用途判断",
+            "project": asdict(project),
+            "note": "分别比较网格、等间距扩大窗口及轴向细化；结果变化不是严格误差界，也不自动构成精度认证"}
+
+
+def result_metadata(result, convergence_report=None):
+    """导出定义、输入与完整结果摘要；收敛记录只允许关联完全相同的输入。"""
+    matching = (convergence_report is not None and
+                convergence_report.get("algorithm_version") == ALGORITHM_VERSION and
+                convergence_report["variants"]["base"]["project"] == asdict(result.project) and
+                convergence_report["variants"]["base"].get("provenance", {}).get("source_sha256") ==
+                result.provenance.get("source_sha256"))
+    return {"schema_version": 2, "software_version": __version__, "algorithm_version": ALGORITHM_VERSION,
+            "python": platform.python_version(), "numpy": np.__version__, "units": "SI",
+            "project": asdict(result.project), "provenance": result.provenance, "metrics": result_summary(result),
+            "definitions": {"gaussian_w_m": "无截断理想高斯强度 1/e² 半径参考",
+                            "r86_m": "以光轴为圆心的 86% 包围能量半径",
+                            "theta86_rad": "末个启用元件出射角谱的 86% 包围能量半角",
+                            "intensity": "相对强度，未标定绝对功率"},
+            "reference": result.reference, "warnings": result.warnings,
+            "convergence": convergence_report if matching else None,
+            "precision_status": "需复核采样与模型边界"}
+
+
+def export_result(result, path, convergence_report=None):
+    """将传播曲线、参数快照、完整指标及焦面包围能量曲线一并保存。"""
+    from .model import save_project
+    rows = [{"z_m": float(z), "gaussian_w_m": float(w), "r86_m": float(r), "transmission": float(t)}
+            for z, w, r, t in zip(result.z, result.gaussian_w, result.r86, result.transmission)]
+    export_csv(rows, path)
+    save_project(result.project, Path(path).with_suffix(".project.json"))
+    Path(str(path) + ".meta.json").write_text(
+        json.dumps(result_metadata(result, convergence_report), ensure_ascii=False, indent=2), encoding="utf-8")
+    rr = np.sqrt(np.add.outer(result.x**2, result.x**2))
+    image = result.intensity[result.focus_index]
+    radii, energy = radial_energy(image, rr)
+    export_csv([{"radius_m": float(r), "encircled_fraction": float(e)} for r, e in zip(radii, energy)],
+               Path(path).with_suffix(".energy.csv"))
+
+
+def radial_energy(intensity, radii):
+    """将同半径像素合并，得到以光轴为中心的包围能量曲线。"""
+    flat = np.asarray(intensity, dtype=float).ravel()
+    total = flat.sum()
+    if not np.isfinite(flat).all() or total <= 0:
+        raise ValueError("光场能量为零或无效")
+    radius, inverse = np.unique(np.asarray(radii).ravel(), return_inverse=True)
+    energy = np.bincount(inverse, weights=flat)
+    return radius, np.cumsum(energy) / total

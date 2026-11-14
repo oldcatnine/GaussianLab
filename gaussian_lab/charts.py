@@ -1,5 +1,6 @@
 """二维分析图和强度曲面，读取计算结果并生成可导出的图像。"""
 import numpy as np
+from .optics import radial_energy
 from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -95,4 +96,19 @@ class PlotCanvas(FigureCanvasQTAgg):
         ax2.set_ylabel("透过率 / %", color="#64dcea")
         ax2.set_ylim(0, 105)
         ax2.tick_params(colors="#64dcea", labelsize=8)
+        self.draw_idle()
+
+
+    def energy(self, r, index):
+        """显示包围能量分布，用于比较光阑引起的主斑与外侧能量变化。"""
+        ax = self.reset()
+        radius = np.sqrt(np.add.outer(r.x**2, r.x**2))
+        radii, fraction = radial_energy(r.intensity[index], radius)
+        ax.plot(radii * 1e6, fraction * 100, color="#64dcea")
+        ax.axhline(86, color="#ffc477", ls="--", lw=.9)
+        ax.axvline(r.r86[index] * 1e6, color="#ffc477", ls="--", lw=.9)
+        ax.set(xlabel="距光轴半径 / μm", ylabel="包围能量 / %", ylim=(0, 101),
+               xlim=(0, min(r.project.window / 2, r.r86[index] * 4) * 1e6),
+               title="以观察面总能量归一化；虚线为 r86")
+        ax.grid(alpha=.12)
         self.draw_idle()

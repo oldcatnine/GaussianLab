@@ -1,5 +1,10 @@
 [
   {
+    "path": ".github/workflows/checks.yml",
+    "purpose": "普通提交的无图形持续测试，以及可手动触发的真实 Qt/VTK 图形回归；不自动发布。",
+    "optional_local": false
+  },
+  {
     "path": ".github/workflows/release.yml",
     "purpose": "手动触发的 Windows 构建与发布工作流，在远端安装依赖、检查、打包和上传。",
     "optional_local": false
@@ -140,6 +145,16 @@
     "optional_local": false
   },
   {
+    "path": "docs/numerical-validation-v2.json",
+    "purpose": "数值增强的实际输入、输出、环境、源码摘要、孔径加密和峰值内存证据。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/numerical-validation-v2.png",
+    "purpose": "基于实际数值记录生成的孔径取舍与加密对照图。",
+    "optional_local": false
+  },
+  {
     "path": "docs/product-design.md",
     "purpose": "早期设计草案，用于追溯界面与技术路线的形成过程。",
     "optional_local": false
@@ -210,6 +225,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/validation-v2.md",
+    "purpose": "数值增强的当前验收入口，解释焦区、多指标收敛、独立对照、孔径取舍和适用限制。",
+    "optional_local": false
+  },
+  {
     "path": "docs/项目学习手册.html",
     "purpose": "由手册源文件生成的离线阅读与打印版本，提供侧边目录导航。",
     "optional_local": false
@@ -231,7 +251,7 @@
   },
   {
     "path": "gaussian_lab/charts.py",
-    "purpose": "绘制轴向曲线、光斑、剖面、强度曲面及参数扫描曲线。",
+    "purpose": "绘制轴向、光斑、剖面、强度曲面、扫描和包围能量曲线。",
     "optional_local": false
   },
   {
@@ -246,7 +266,7 @@
   },
   {
     "path": "gaussian_lab/optics.py",
-    "purpose": "实现 q 参数解析、二维菲涅耳传播、光斑与远场指标、扫描、取消和收敛比较。",
+    "purpose": "实现解析参考、预分配菲涅耳传播、焦区细化、多指标收敛、包围能量及结果证据导出。",
     "optional_local": false
   },
   {
@@ -267,6 +287,11 @@
   {
     "path": "requirements-lock.txt",
     "purpose": "已验证运行环境的精确依赖版本快照，不包含本机虚拟环境文件本身。",
+    "optional_local": false
+  },
+  {
+    "path": "requirements-validation.txt",
+    "purpose": "固定独立数值对照的可选依赖，继承运行快照并指定 LightPipes 版本。",
     "optional_local": false
   },
   {
@@ -295,6 +320,11 @@
     "optional_local": false
   },
   {
+    "path": "scripts/validate_numerics.py",
+    "purpose": "生成焦区细化、LightPipes 独立对照、孔径加密实验、分析图及独立进程内存记录。",
+    "optional_local": false
+  },
+  {
     "path": "scripts/validate_v1.py",
     "purpose": "生成三个预置案例的数值记录、输入配置和实际界面截图。",
     "optional_local": false
@@ -317,6 +347,11 @@
   {
     "path": "tests/test_gui.py",
     "purpose": "真实 Qt/VTK 界面测试，覆盖渲染、观察屏、快照、导出及异步扫描按钮链路。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_independent_optics.py",
+    "purpose": "使用固定版本 LightPipes 卷积传播对照自由传播、单透镜及光阑与透镜案例。",
     "optional_local": false
   },
   {

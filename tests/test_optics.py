@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from gaussian_lab.model import Project, Element, preset, save_project, load_project
 from gaussian_lab.optics import (analytic, output_gaussian, simulate, scan, convergence,
-                                 fresnel, coordinates, initial_field, encircled_radius, Cancelled, export_csv)
+                                 fresnel, coordinates, initial_field, encircled_radius, field_at, result_metadata, export_result, radial_energy, Cancelled, export_csv)
 
 
 def small(**kwargs):
@@ -162,3 +162,110 @@ def test_encircled_radius_against_gaussian_energy_integral(fraction):
     expected = p.waist * np.sqrt(-np.log(1 - fraction) / 2)
     measured = encircled_radius(intensity, np.sqrt(r2), fraction)
     assert abs(measured - expected) <= p.window / p.grid
+
+
+def test_short_focus_refinement_matches_independent_gaussian_reference():
+    """在横向采样足够的短焦距案例中，验证局部细化改善粗轴向漏采。"""
+    p = small(grid=1024, window=.003, length=.18, elements=[Element("lens", .1, .04)])
+    r = simulate(p)
+    expected = r.reference["waist"] * np.sqrt(-np.log(.14) / 2)
+    assert abs(r.focus["r86_m"] - expected) < expected * .05
+    assert abs(r.focus["z_m"] - r.reference["waist_z"]) < .001
+    assert r.focus["r86_m"] < r.focus["coarse_r86_m"] * .6
+    assert r.focus["evaluations"] > 0
+    assert np.all(np.diff(r.z) > 0)
+    assert r.intensity.shape == (len(r.z), p.grid, p.grid)
+    assert r.intensity.dtype == np.float32
+    assert r.r86[r.focus_index] == r.focus["r86_m"]
+
+
+def test_refined_plane_respects_apertures_after_last_lens():
+    p = small(grid=128, elements=[Element("lens", .1, .12), Element("aperture", .2, .0002)])
+    r = simulate(p)
+    _, r2 = coordinates(p)
+    image = abs(field_at(p, r.z[r.focus_index], r2))**2
+    np.testing.assert_allclose(r.intensity[r.focus_index], image, atol=1e-7, rtol=1e-5)
+    assert r.transmission[-1] < 1
+
+
+def test_convergence_separates_axes_and_exports_matching_snapshot(tmp_path):
+    p = small(grid=128, samples=17, focus_refinement=0)
+    report = convergence(p)
+    base = report["variants"]["base"]["project"]
+    assert report["variants"]["grid"]["project"]["window"] == base["window"]
+    assert report["variants"]["window"]["project"]["grid"] == base["grid"] * 2
+    assert report["variants"]["window"]["project"]["window"] == base["window"] * 2
+    assert report["variants"]["axial"]["project"]["grid"] == base["grid"]
+    assert report["variants"]["axial"]["project"]["samples"] == 33
+    assert report["variants"]["axial"]["project"]["focus_refinement"] == 1
+    for changes in report["changes"].values():
+        assert "focus_z_absolute_m" in changes and "theta86_rad_relative" in changes
+        assert "transmission_relative" in changes and "focus_profile_rms" in changes
+    r = simulate(p)
+    assert result_metadata(r, report)["convergence"] is report
+    from copy import deepcopy
+    stale = deepcopy(report)
+    stale["variants"]["base"]["provenance"]["source_sha256"] = "旧源码摘要"
+    assert result_metadata(r, stale)["convergence"] is None
+    assert len(r.provenance["source_sha256"]) == 64
+    other = p.clone()
+    other.waist *= 1.1
+    assert result_metadata(simulate(other), report)["convergence"] is None
+    target = tmp_path / "propagation.csv"
+    export_result(r, target, report)
+    import json
+    metadata = json.loads((tmp_path / "propagation.csv.meta.json").read_text(encoding="utf-8"))
+    assert metadata["metrics"]["focus_z_m"] == r.focus["z_m"]
+    assert metadata["convergence"]["variants"]["base"]["project"] == base
+    assert (tmp_path / "propagation.energy.csv").is_file()
+
+
+def test_radial_energy_combines_shells_and_normalizes():
+    radii, fraction = radial_energy(np.ones((2, 2)), np.array([[0., 1.], [1., 2.]]))
+    np.testing.assert_allclose(radii, [0, 1, 2])
+    np.testing.assert_allclose(fraction, [.25, .75, 1])
+
+
+def test_focus_boundary_is_flagged_and_disabled_refinement_preserves_coarse_grid():
+    p = small(grid=128, focus_refinement=0)
+    r = simulate(p)
+    assert len(r.z) == p.samples
+    assert r.focus["boundary_minimum"]
+    assert any("边界" in warning for warning in r.warnings)
+
+
+def test_refinement_checks_cancellation_between_planes(monkeypatch):
+    import gaussian_lab.optics as optics
+    p = small(grid=128)
+    cancel = threading.Event()
+    original = optics.field_at
+    def stop_after_first(*args, **kwargs):
+        value = original(*args, **kwargs)
+        cancel.set()
+        return value
+    monkeypatch.setattr(optics, "field_at", stop_after_first)
+    with pytest.raises(Cancelled):
+        simulate(p, cancel)
+
+
+@pytest.mark.parametrize("levels", [-1, 5, 1.5, True])
+def test_invalid_refinement_levels_are_rejected(levels):
+    with pytest.raises(ValueError, match="焦区细化"):
+        small(focus_refinement=levels).validate()
+
+
+def test_warned_scan_points_are_not_silently_marked_ok():
+    rows = scan(small(grid=128, elements=[Element("lens", .1, .04)]), 0, .03, .05, 3)
+    assert all(row["status"] == "warning" and row["note"] for row in rows)
+    assert all("focus_bracket_m" in row for row in rows)
+
+
+
+def test_source_fingerprint_handles_frozen_environment_without_source(monkeypatch):
+    import gaussian_lab.optics as optics
+    from pathlib import Path
+    def unavailable(*args, **kwargs):
+        raise FileNotFoundError("冻结程序中没有独立 Python 源文件")
+    monkeypatch.setattr(Path, "read_bytes", unavailable)
+    assert optics.source_fingerprint() is None
+    assert optics.calculation_provenance()["algorithm_version"] == optics.ALGORITHM_VERSION

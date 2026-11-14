@@ -47,10 +47,12 @@ def test_render_tabs_observer_and_animation(window, app, tmp_path):
     assert "横向放大 25 倍" in window.scene.toolTip()
     window.plane_slider.setValue(0)
     assert "0.00 mm" in window.plane_label.text()
-    for i in range(3):
+    for i in range(4):
         window.tabs.setCurrentIndex(i)
         app.processEvents()
     assert window.surface_plot.ax.name == "3d"
+    assert window.energy_plot.ax.get_ylim() == (0, 101)
+    assert "括区宽" in window.cards[1].toolTip()
     window.toggle_play()
     assert window.play_timer.isActive()
     window.advance_plane()
@@ -74,6 +76,11 @@ def test_edits_save_and_export_snapshot(window, monkeypatch, tmp_path):
     window.export_data()
     assert csv.is_file()
     assert load_project(tmp_path/"data.project.json").waist == old
+    metadata = json.loads((tmp_path/"data.csv.meta.json").read_text(encoding="utf-8"))
+    assert metadata["project"]["waist"] == old
+    assert metadata["metrics"]["theta86_rad"] == window.result.theta86
+    assert metadata["convergence"] is None
+    assert (tmp_path/"data.energy.csv").is_file()
 
 
 def test_scan_gui_keeps_snapshot_and_exports(window, monkeypatch, tmp_path):
@@ -90,7 +97,7 @@ def test_scan_gui_keeps_snapshot_and_exports(window, monkeypatch, tmp_path):
     window.export_data()
     assert (tmp_path/"scan.csv.meta.json").is_file()
     metadata = json.loads((tmp_path/"scan.csv.meta.json").read_text(encoding="utf-8"))
-    assert metadata["metric"] == "末片透镜后轴向离散采样点中的最小 r86"
+    assert metadata["metric"] == "末片透镜后粗搜索与局部细化的最小 r86；警告点需复核"
 
 
 def test_gui_add_remove_and_validation(window):
@@ -133,4 +140,40 @@ def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatc
     window.bottom.setCurrentIndex(2)
     assert float(window.scan_table.item(0, 0).text()) == 100
     assert float(window.scan_table.item(2, 0).text()) == 140
-    assert all(window.scan_table.item(i, 4).text() == 'ok' for i in range(3))
+    assert all(window.scan_table.item(i, 4).text() in ('ok', 'warning') for i in range(3))
+
+
+def test_convergence_preserves_scene_snapshot_and_marks_its_scope(window):
+    from gaussian_lab.optics import convergence
+    p = window.result.project.clone()
+    p.waist *= 1.2
+    previous = window.result
+    window.job = Job("convergence", p)
+    window.job_done(convergence(p))
+    assert window.result is previous
+    assert "主场景仍为上次光场结果" in window.result_state.text()
+    assert "焦区 r86" in window.status.text()
+
+
+
+def test_active_energy_curve_can_be_exported(window, app, monkeypatch, tmp_path):
+    window.tabs.setCurrentIndex(3)
+    app.processEvents()
+    path = tmp_path / "energy.png"
+    monkeypatch.setattr(window, "choose_path", lambda *args, **kwargs: str(path))
+    window.export_plot()
+    assert path.is_file() and path.stat().st_size > 5000
+
+
+
+def test_parameters_remain_accessible_at_minimum_window_height(window, app):
+    window.resize(1180, 780)
+    app.processEvents()
+    assert window.height() <= 800
+    window.parameter_scroll.ensureWidgetVisible(window.convergence_button)
+    app.processEvents()
+    scroll = window.parameter_scroll.verticalScrollBar()
+    assert scroll.value() > 0
+    viewport = window.parameter_scroll.viewport()
+    position = window.convergence_button.mapTo(viewport, window.convergence_button.rect().center())
+    assert viewport.rect().contains(position)

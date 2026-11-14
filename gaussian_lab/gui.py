@@ -2,6 +2,7 @@
 import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
+from dataclasses import asdict
 from pathlib import Path
 import threading
 import numpy as np
@@ -10,9 +11,9 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
-    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView)
+    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea)
 from .model import Project, Element, preset, load_project, save_project
-from .optics import simulate, scan, convergence, export_csv, Cancelled
+from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
 from .scene import OpticalScene
 from .charts import PlotCanvas
 
@@ -139,10 +140,13 @@ class MainWindow(QMainWindow):
         self.samples = QSpinBox()
         self.samples.setRange(17, 161)
         self.samples.setValue(65)
+        self.focus_refinement = QSpinBox()
+        self.focus_refinement.setRange(0, 4)
+        self.focus_refinement.setValue(2)
         for label, widget in (("波长 λ", self.wave), ("束腰半径 w₀", self.waist),
                               ("束腰位置 z₀", self.waist_z), ("传播长度", self.length),
                               ("计算窗口边长", self.window_size), ("横向网格 N×N", self.grid),
-                              ("轴向采样点", self.samples)):
+                              ("轴向采样点", self.samples), ("焦区细化级数", self.focus_refinement)):
             form.addRow(label, widget)
             widget.setAccessibleName(label)
             if isinstance(widget, QComboBox):
@@ -186,10 +190,16 @@ class MainWindow(QMainWindow):
         self.scan_button = button("开始扫描", self.start_scan)
         sf.addRow(self.scan_button)
         left_layout.addWidget(scan_box)
-        self.convergence_button = button("检查末端 r86 收敛", self.start_convergence)
+        self.convergence_button = button("检查多指标收敛", self.start_convergence)
         left_layout.addWidget(self.convergence_button)
         left_layout.addStretch()
-        splitter.addWidget(left)
+        self.parameter_scroll = QScrollArea()
+        self.parameter_scroll.setWidgetResizable(True)
+        self.parameter_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.parameter_scroll.setMinimumWidth(330)
+        self.parameter_scroll.setMaximumWidth(440)
+        self.parameter_scroll.setWidget(left)
+        splitter.addWidget(self.parameter_scroll)
         right = QWidget()
         rv = QVBoxLayout(right)
         rv.setContentsMargins(0, 0, 0, 0)
@@ -224,6 +234,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.spot_plot, "光斑")
         self.tabs.addTab(self.profile_plot, "剖面")
         self.tabs.addTab(self.surface_plot, "强度曲面")
+        self.energy_plot = PlotCanvas()
+        self.tabs.addTab(self.energy_plot, "包围能量")
         self.tabs.setMinimumWidth(300)
         self.tabs.currentChanged.connect(self.draw_plane)
         main_views.addWidget(self.tabs)
@@ -289,7 +301,8 @@ class MainWindow(QMainWindow):
             self.presets.setCurrentText(p.name)
         for widget, value in ((self.wave, p.wavelength*1e9), (self.waist, p.waist*1e3),
                               (self.waist_z, p.waist_z*1e3), (self.length, p.length*1e3),
-                              (self.window_size, p.window*1e3), (self.samples, p.samples)):
+                              (self.window_size, p.window*1e3), (self.samples, p.samples),
+                              (self.focus_refinement, p.focus_refinement)):
             widget.setValue(value)
         self.grid.setCurrentText(str(p.grid))
         self.table.setRowCount(0)
@@ -324,7 +337,7 @@ class MainWindow(QMainWindow):
             raise ValueError("元件位置与焦距/直径须为数值，不得为空") from exc
         return Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
                        self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
-                       int(self.grid.currentText()), self.samples.value(), elements).validate()
+                       int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value()).validate()
 
     def add_element(self, kind):
         n = self.table.rowCount() + 1
@@ -431,10 +444,14 @@ class MainWindow(QMainWindow):
                     self.scan_table.setItem(row, col, QTableWidgetItem(value))
             self.scan_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
             self.bottom.setCurrentIndex(1)
-            self.status.setText(f"扫描完成 · {len(result)} 点 · 最小值仅在末片透镜后离散采样区间内搜索 · CSV 保留警告")
+            self.status.setText(f"扫描完成 · {len(result)} 点 · 末片透镜后搜索并局部细化；警告点需复核 · CSV 保留警告")
         elif self.job.kind == "convergence":
             self.last_convergence = result
-            self.status.setText(f"末端 r86 检查：加密网格变化 {result['grid_change']:.2%}；扩大窗口变化 {result['window_change']:.2%}。{result['note']}")
+            changes = result["changes"]
+            self.status.setText("焦区 r86 变化：" + "；".join(
+                f"{label} {changes[key]['focus_r86_m_relative']:.2%} / 位置 {changes[key]['focus_z_absolute_m']*1e3:.3f} mm"
+                for key, label in (("grid", "网格"), ("window", "窗口"), ("axial", "轴向"))) +
+                "。远场、透过率与剖面见 outputs/convergence.json；变化不等于误差认证")
             Path("outputs").mkdir(exist_ok=True)
             Path("outputs/convergence.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         else:
@@ -443,7 +460,8 @@ class MainWindow(QMainWindow):
             ref = result.reference
             k = result.focus_index
             self.cards[0].setText(f"高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
-            self.cards[1].setText(f"衍射最小 r86 / 采样点\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
+            self.cards[1].setText(f"衍射最小 r86 / 细化点\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
+            self.cards[1].setToolTip(f"焦区细化 {result.focus['levels']} 级；括区宽 {result.focus['axial_bracket_width_m']*1e3:.4f} mm。横向分位平台仍需复核。")
             self.cards[2].setText(f"参考 θ / 衍射 θ86\n{ref['divergence']*1e3:.2f} / {result.theta86*1e3:.2f} mrad")
             self.cards[3].setText(f"系统透过率 / 末端\n{result.transmission[-1]*100:.2f} %")
             self.plane_slider.setRange(0, len(result.z)-1)
@@ -454,6 +472,8 @@ class MainWindow(QMainWindow):
             self.bottom.setCurrentIndex(0)
         if self.job.kind == "scan":
             self.result_state.setText("扫描为任务参数快照 · 主场景与指标卡保留上次光场结果")
+        elif self.job.kind == "convergence":
+            self.result_state.setText("收敛检查使用独立参数快照 · 主场景仍为上次光场结果")
         else:
             self.result_state.setText("参数已修改 · 显示任务快照结果" if self.dirty else
                                       f"任务完成 · N={self.job.project.grid} · 标量近轴 / 轴向离散采样")
@@ -470,8 +490,10 @@ class MainWindow(QMainWindow):
             self.spot_plot.spot(r, i, self.log_scale.isChecked())
         elif self.tabs.currentIndex() == 1:
             self.profile_plot.profile(r, i)
-        else:
+        elif self.tabs.currentIndex() == 2:
             self.surface_plot.intensity_surface(r, i)
+        else:
+            self.energy_plot.energy(r, i)
         self.beam_plot.beam(r, i)
 
     def locate_focus(self):
@@ -526,29 +548,34 @@ class MainWindow(QMainWindow):
     def export_data(self):
         try:
             is_scan = self.bottom.currentIndex() in (1, 2)
-            if is_scan and self.scan_rows:
-                rows, project = self.scan_rows, self.scan_project
-            elif self.result is not None:
-                r = self.result
-                rows = [{"z_m": float(z), "gaussian_w_m": float(w), "r86_m": float(s), "transmission": float(t)}
-                        for z, w, s, t in zip(r.z, r.gaussian_w, r.r86, r.transmission)]
-                project = r.project
-            else:
-                raise ValueError("请先完成计算或扫描")
+            if is_scan and not self.scan_rows:
+                raise ValueError("当前扫描页没有结果，请先完成扫描")
+            if not is_scan and self.result is None:
+                raise ValueError("请先完成计算")
             path = self.choose_path("导出计算快照数据", "scan.csv" if is_scan else "propagation.csv", "CSV (*.csv)")
             if path:
-                export_csv(rows, path)
-                save_project(project, str(Path(path).with_suffix(".project.json")))
                 if is_scan:
+                    export_csv(self.scan_rows, path)
+                    save_project(self.scan_project, str(Path(path).with_suffix(".project.json")))
                     Path(path + ".meta.json").write_text(json.dumps({"element_index": self.scan_options[0],
                         "low_m": self.scan_options[1], "high_m": self.scan_options[2], "count": self.scan_options[3],
-                        "metric": "末片透镜后轴向离散采样点中的最小 r86"}, ensure_ascii=False, indent=2), encoding="utf-8")
+                        "algorithm_version": ALGORITHM_VERSION,
+                        "project": asdict(self.scan_project),
+                        "metric": "末片透镜后粗搜索与局部细化的最小 r86；警告点需复核"},
+                        ensure_ascii=False, indent=2), encoding="utf-8")
+                else:
+                    export_result(self.result, path, getattr(self, "last_convergence", None))
                 self.status.setText("已导出数据和对应参数快照：" + path)
         except Exception as exc:
             self.show_error(str(exc))
 
     def export_plot(self):
-        plot = self.scan_plot if self.bottom.currentIndex() == 1 else self.beam_plot
+        if self.bottom.currentIndex() in (1, 2):
+            plot = self.scan_plot
+        elif self.tabs.currentIndex() == 3:
+            plot = self.energy_plot
+        else:
+            plot = self.beam_plot
         if plot.ax is None:
             return
         path = self.choose_path("导出当前定量曲线", "curve.png", "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")

@@ -1,0 +1,57 @@
+name: 持续测试
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_gui:
+        description: 在可用图形环境尝试运行真实 Qt/VTK 测试
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.11'
+      - name: 安装固定的构建与独立验证依赖
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt -r requirements-validation.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: 运行内核、独立对照、文档与发行规则检查
+        run: |
+          .\.venv\Scripts\python.exe -m pytest tests --ignore=tests/test_gui.py -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\tests\Test-Agents.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\.venv\Scripts\python.exe -m pip check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+  gui:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_gui
+    needs: core
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.11'
+      - name: 安装并运行实际图形测试
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\.venv\Scripts\python.exe -m pytest tests/test_gui.py -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
