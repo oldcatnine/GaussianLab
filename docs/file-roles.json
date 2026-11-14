@@ -40,7 +40,7 @@
   "docs/product-design.md":"早期设计草案，用于追溯界面与技术路线的形成过程。",
   "docs/product-plan.md":"完整设计基线，包含功能、模型、三维交互、架构、阶段和验收；其中计划不等同于当前实现。",
   "docs/development-log.md":"持续开发台账，记录目标、真实工具方法、结果、失败、证据与提交。",
-  "docs/USER_GUIDE-v0.1.0.md":"用户操作说明，解释运行、光路修改、扫描、保存导出与故障反馈。",
+  "docs/USER_GUIDE-v0.1.0.md":"历史 V0.1.0 便携版使用说明，保留旧功能操作并链接当前源码指南。",
   "docs/third-party.md":"第三方依赖和外部参考的简表，说明许可证方向与实际使用方式。",
   "docs/THIRD-PARTY-NOTICES.md":"发行时使用的中文第三方声明，原始许可证另行随包保留。",
   "docs/release-notes-v0.1.0.md":"首版发布说明，列出功能、附件、平台和已知限制。",
@@ -61,5 +61,7 @@
   "docs/validation-v2.md":"数值增强的当前验收入口，解释焦区、多指标收敛、独立对照、孔径取舍和适用限制。",
   "docs/numerical-validation-v2.json":"数值增强的实际输入、输出、环境、源码摘要、孔径加密和峰值内存证据。",
   "docs/numerical-validation-v2.png":"基于实际数值记录生成的孔径取舍与加密对照图。",
-  "gaussian_lab/theme.py":"定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。"
+  "gaussian_lab/theme.py":"定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。",
+  "docs/USER_GUIDE.md":"当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。",
+  "docs/assets/white-theme-desktop.png":"白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。"
 }

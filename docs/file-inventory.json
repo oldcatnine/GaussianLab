@@ -71,7 +71,12 @@
   },
   {
     "path": "docs/USER_GUIDE-v0.1.0.md",
-    "purpose": "用户操作说明，解释运行、光路修改、扫描、保存导出与故障反馈。",
+    "purpose": "历史 V0.1.0 便携版使用说明，保留旧功能操作并链接当前源码指南。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/USER_GUIDE.md",
+    "purpose": "当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。",
     "optional_local": false
   },
   {
@@ -117,6 +122,11 @@
   {
     "path": "docs/assets/focus.json",
     "purpose": "单透镜聚焦预置项目输入参数，采用国际单位制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/white-theme-desktop.png",
+    "purpose": "白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。",
     "optional_local": false
   },
   {

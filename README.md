@@ -26,6 +26,8 @@ python -m venv .venv
 
 requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照；requirements.txt 是直接依赖范围。Windows EXE 采用 PyInstaller 文件夹模式，构建依赖见 requirements-build.txt；其他 Python/系统组合尚未验证。
 
+当前白色界面、观察屏、图片导出与常见问题见 [当前源码版使用说明](docs/USER_GUIDE.md)；原理与逐文件学习见 [项目学习手册](docs/项目学习手册.html)。
+
 ## 使用与边界
 
 - 左侧设置光源和光路。表格中的透镜数值为焦距、光阑数值为直径，单位 mm；元件按 z 排序，同位置按表格顺序执行。
@@ -41,6 +43,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 ## 项目文档
 
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
+- [当前源码版使用说明](docs/USER_GUIDE.md)：按白色主题界面说明手动计算、六类图像导出、扫描和数据文件。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
 - [产品设计草案](docs/product-design.md)：拟议界面、计算路线和待讨论事项。

@@ -34,7 +34,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_development_journal_is_linked_and_traceable(self):
         journal = ROOT / "docs/development-log.md"
         text = journal.read_text(encoding="utf-8")
-        for index in range(1, 15):
+        for index in range(1, 16):
             self.assertIn(f"### DEV-{index:03d}｜", text)
         for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
             self.assertIn(commit, text)
@@ -93,3 +93,27 @@ def test_current_numeric_evidence_matches_implemented_acceptance():
     text = (ROOT / "docs/validation-v2.md").read_text(encoding="utf-8")
     for term in ("局部细化", "LightPipes", "限制", "内存", "尚未"):
         assert term in text
+
+
+
+def test_current_guides_match_export_choices_and_resolve_local_links():
+    guide = (ROOT / "docs/USER_GUIDE.md").read_text(encoding="utf-8")
+    manual = (ROOT / "docs/项目学习手册.md").read_text(encoding="utf-8")
+    source = (ROOT / "gaussian_lab/gui.py").read_text(encoding="utf-8")
+    for label in ("当前分析图", "光斑图", "剖面强度曲线", "强度曲面", "包围能量", "轴向传播", "参数扫描"):
+        assert label in source and label in guide and label in manual
+    for term in ("853e9b3", "300 dpi", "CPU", "快照", "V0.1.0", "白底"):
+        assert term in guide, term
+    assert "USER_GUIDE.md" in (ROOT / "docs/USER_GUIDE-v0.1.0.md").read_text(encoding="utf-8")
+    for filename in ("USER_GUIDE.md", "项目学习手册.md", "product-design.md", "product-plan.md", "requirements.md"):
+        path = ROOT / "docs" / filename
+        targets = re.findall(r"\]\(([^)]+)\)", path.read_text(encoding="utf-8"))
+        assert targets, filename
+        for target in targets:
+            if target.startswith(("http:", "https:", "#", "C:/", "file:")):
+                continue
+            relative = target.split("#", 1)[0]
+            assert (path.parent / relative).is_file(), (filename, target)
+    offline = (ROOT / "docs/项目学习手册.html").read_text(encoding="utf-8")
+    assert "data:image/png;base64," in offline
+    assert 'src="assets/white-theme-desktop.png"' not in offline
