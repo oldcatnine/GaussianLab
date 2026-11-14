@@ -165,5 +165,6 @@ def test_remote_build_keeps_draft_until_downloaded_binary_is_verified():
     assert "--draft=false" not in text
     assert "gh release upload" in text
     assert "requirements-cuda.txt" in text
+    assert "PYTHONUTF8: '1'" in text
     verifier = (ROOT / "scripts/verify_published_release.py").read_text(encoding="utf-8")
     assert "--allow-draft" in verifier and "--smoke" in verifier
