@@ -18,9 +18,9 @@
 .\.venv\Scripts\python.exe -m gaussian_lab
 ```
 
-也可运行 [启动软件.ps1](启动软件.ps1)。首次启动自动计算单透镜案例；切换顶部案例后点击“加载案例”。
+也可运行 [启动软件.ps1](启动软件.ps1)。首次启动自动生成单透镜案例的快速预览；切换顶部案例后点击“加载案例”。完整采样结果需点击“计算光场”。
 
-新机器需要 Python 3.10 或更新的兼容版本；建议先使用已实测的 Python 3.10：
+从源码运行的新机器需创建 Python 环境；已实测版本为 Python 3.10.11。便携版用户无需执行以下安装步骤：
 
 ```powershell
 python -m venv .venv
@@ -40,14 +40,14 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 - 选择扫描元件与起止值，点击“开始扫描”。曲线显示末片透镜后粗搜索与局部细化得到的最小 r86；数据表与 CSV 区分正常、警告及失败点，记录焦区括宽。
 - JSON 保存可恢复光路和计算参数。CSV 同步导出参数快照；单次计算额外导出指标、警告、源码摘要、匹配的收敛记录和焦面包围能量曲线；扫描额外记录扫描范围。当前支持分析图 PNG/SVG/PDF 和白底场景 PNG，尚未保存相机、观察屏等显示状态。
 - 所有图形基于单色同轴、标量近轴、理想薄透镜与圆孔模型。解析 w 为高斯参考；衍射 r86 为 86% 包围能量半径，二者定义不同。
-- **本版是可验证的首版，不是任意光路的高精度保证**：Fresnel FFT 使用有限周期窗口，焦点采用粗搜索与局部离散细化；高 NA、复杂像差与 M² 不在当前范围。“多指标收敛”分别比较网格、窗口、轴向采样下的末端/焦区 r86、焦点位置、远场角、透过率与焦面剖面，但不自动给出精度认证。
+- **当前版本不保证任意光路的精度**：Fresnel FFT 使用有限周期窗口，焦点采用粗搜索与局部离散细化；高 NA、复杂像差与 M² 不在当前范围。“多指标收敛”分别比较网格、窗口、轴向采样下的末端/焦区 r86、焦点位置、远场角、透过率与焦面剖面，但不自动给出精度认证。
 - 三维横向尺寸放大 25 倍，透镜外形及支座为示意；透明包络是 r86 轮廓，内部亮芯为展示辅助，不能当作三维强度测量。
 - 光阑目前为独立元件；透镜有效口径、光路行拖动排序和扫描动画播放留待后续版本。
 
 ## 项目文档
 
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
-- [V2.0.0 发布说明](docs/release-notes-v2.0.0.md)与[便携版验证](docs/release-validation-v2.0.0.md)：附件、版本属性、解压与隔离运行结果。
+- [V3.0.0 发布说明](docs/release-notes-v3.0.0.md)与[便携版验证](docs/release-validation-v3.0.0.md)：当前附件、版本属性、远端构建、回下载与 CPU/CUDA 检查；[V2.0.0 发布说明](docs/release-notes-v2.0.0.md)保留为历史资料。
 - [当前源码版使用说明](docs/USER_GUIDE.md)：说明自动预览、完整计算、后端切换、六类图像导出、扫描和数据文件。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
@@ -57,7 +57,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 - [V0.1 验证与交付记录](docs/validation-v0.1.md)：自动化测试、插件自测、数值结果、实际截图和首版局限。
 - [V0.1.0 EXE 与 GitHub 发布验证](docs/release-validation-v0.1.0.md)：便携包、GitHub 构建及最终下载版 EXE 的复测证据。
 
-- [数值增强验证与验收矩阵](docs/validation-v2.md)：新算法、独立对照、孔径取舍、内存记录与当前限制。
+- [数值增强验证与验收矩阵](docs/validation-v2.md)：数值增强阶段的独立对照、孔径取舍和内存记录；[CUDA 与交互说明](docs/acceleration.md)说明 V3 实现与分支实测口径。
 - [项目检查与改进建议](docs/project-review-2026-11-14.md)：阶段评价、焦区采样复核、问题优先级与后续验证建议。
 
 ## 验证
@@ -79,7 +79,7 @@ test_optics.py 为数值和数据验证；test_independent_optics.py 为可选�
 .\.venv\Scripts\python.exe scripts/validate_numerics.py
 ```
 
-输出默认位于 outputs，包含原始参数、数值表和孔径取舍图；归档记录见 docs/numerical-validation-v2.json。LightPipes 仅用于验证，不是应用运行依赖。普通提交的无 GUI 测试工作流已配置，真实 GUI 测试可手动触发；远端尚未执行本次新工作流。
+输出默认位于 outputs，包含原始参数、数值表和孔径取舍图；归档记录见 docs/numerical-validation-v2.json。LightPipes 仅用于验证，不是应用运行依赖。普通提交运行无 GUI 持续测试，图形作业需手动触发；V3 实际远端构建与本机下载版双后端结果见 docs/github-release-v3.0.0.json 和 docs/github-release-smoke-v3.0.0.json。无 GPU 的云端作业不作为 CUDA 验收证据。
 
 ## 构建 Windows 便携版
 

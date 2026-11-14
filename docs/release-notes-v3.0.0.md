@@ -2,6 +2,8 @@
 
 V3.0.0 将独立 CUDA 开发分支整理为 Windows x64 便携发行，保留 V2.0.0 历史附件。
 
+发布状态：已在[私有发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0)正式发布，应用标签 v3.0.0 对应 b4806c3。构建与回下载证据见[发行验证](release-validation-v3.0.0.md)。
+
 - 可选 CUDA FFT 和复光场计算，设备不可用或执行故障自动回退 CPU，记录实际后端与原因。
 - 数值框停止输入 400 ms 后自动预览，完整计算保持原始采样与焦区细化；取消过期任务并丢弃迟到结果。
 - 光路区段频谱复用、128 MiB 会话缓存、场景几何和游标复用、拖动更新合并，减少重复计算与绘制。
@@ -12,4 +14,4 @@ V3.0.0 将独立 CUDA 开发分支整理为 Windows x64 便携发行，保留 V2
 
 附件：Windows-x64 运行 ZIP、Qt-Corresponding-Source ZIP、Application-Source ZIP 及 SHA256SUMS.txt。运行只需完整解压 Windows-x64 ZIP；两个源码附件不必为运行解压。Qt LGPL 对应源码与 CUDA 原始许可保留。
 
-目标为 Windows 10/11 x64；本机 CUDA 与禁用 CUDA 的冻结验证在交付前执行并记录于 release-validation-v3.0.0.md。未商业签名；其他实体设备仍需实测。不包含完整 CUDA Toolkit 或驱动安装器，不改变仓库的私有设置。
+目标为 Windows 10/11 x64；远端下载版已通过本机真实 CUDA 与禁用 CUDA 的 CPU 冻结检查，原始记录见 github-release-smoke-v3.0.0.json。未商业签名；其他实体设备仍需实测。不包含完整 CUDA Toolkit 或驱动安装器，仓库保持私有。

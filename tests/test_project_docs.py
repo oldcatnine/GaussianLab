@@ -34,7 +34,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_development_journal_is_linked_and_traceable(self):
         journal = ROOT / "docs/development-log.md"
         text = journal.read_text(encoding="utf-8")
-        for index in range(1, 20):
+        for index in range(1, 21):
             self.assertIn(f"### DEV-{index:03d}｜", text)
         for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
             self.assertIn(commit, text)
@@ -117,3 +117,27 @@ def test_current_guides_match_export_choices_and_resolve_local_links():
     offline = (ROOT / "docs/项目学习手册.html").read_text(encoding="utf-8")
     assert "data:image/png;base64," in offline
     assert 'src="assets/white-theme-desktop.png"' not in offline
+
+
+def test_v3_current_documents_distinguish_release_preview_and_historical_evidence():
+    import json
+    from gaussian_lab import __version__
+    from gaussian_lab.backend import preview_project
+    from gaussian_lab.model import Project
+    release = json.loads((ROOT / 'docs/github-release-v3.0.0.json').read_text(encoding='utf-8'))
+    assert release['tag'] == 'v' + __version__ and not release['draft']
+    for name in ('README.md', 'docs/USER_GUIDE.md', 'docs/acceleration.md', 'docs/项目学习手册.md'):
+        text = (ROOT / name).read_text(encoding='utf-8')
+        assert 'V' + __version__ in text and '400 ms' in text, name
+        assert '稳定包仍走原来的 CPU 路径' not in text, name
+        assert '本说明针对源码开发版' not in text, name
+    p = preview_project(Project())
+    for name in ('USER_GUIDE.md', 'acceleration.md', '项目学习手册.md'):
+        text = (ROOT / 'docs' / name).read_text(encoding='utf-8')
+        assert str(p.grid) in text and str(p.samples) in text and '完整计算' in text, name
+    guide = (ROOT / 'docs/USER_GUIDE.md').read_text(encoding='utf-8')
+    assert '使用 V2.0.0 便携包或当前源码' not in guide
+    assert '3.6 MB' in guide and '源码安装' in guide
+    log = (ROOT / 'docs/development-log.md').read_text(encoding='utf-8')
+    overview = log.split('## 2. 当前阶段总览', 1)[1].split('## 3.', 1)[0]
+    assert release['tag'] in overview and 'V0.1 已实现' not in overview

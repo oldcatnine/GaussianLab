@@ -2,7 +2,7 @@
 
 本版未复制 RayTracing、LightPipes、GaussianBeam 的实现代码；解析与 Fresnel 内核由本项目编写，并通过解析基准验证。外部参考来源及学习范围见 research.md。
 
-直接运行依赖为 NumPy、SciPy、Matplotlib、PySide6、PyVista、PyVistaQt，三维底层依赖 VTK；测试使用 pytest。精确版本见 requirements-lock.txt，相关许可证以实际安装包中的 LICENSE/NOTICE 为准。
+基础运行依赖为 NumPy、SciPy、Matplotlib、PySide6、PyVista、PyVistaQt，三维底层依赖 VTK；测试使用 pytest。V3 可选 CUDA 另用 CuPy 与 NVIDIA 运行组件。基础版本见 requirements-lock.txt，可选源码环境版本见 requirements-cuda.txt；相关许可证以实际组件的 LICENSE/NOTICE 为准。
 
 | 项目 | 上游许可方向 | 使用方式 |
 | --- | --- | --- |
@@ -13,8 +13,13 @@
 | PyVistaQt | MIT | Qt 三维画布 |
 | VTK | BSD | 三维渲染 |
 | pytest | MIT | 自动测试 |
+| CuPy 14.2.0 | MIT | V3 CUDA 数组与 FFT |
+| cuda-pathfinder 1.8.3 | Apache-2.0 | NVIDIA 组件路径查找 |
+| cudart / NVRTC / cuFFT / nvJitLink | NVIDIA 随包许可/EULA | 应用私有运行组件，不包含系统驱动 |
 
-V0.1.0 已准备 Windows onedir 二进制发行：所需动态库与原始许可随运行包保存，Qt/PySide6 对应源码以独立附件提供。Qt PDF、DataVisualization、VirtualKeyboard 等非必需模块和插件排除。完整说明见 [发行第三方声明](THIRD-PARTY-NOTICES.md)；实际收集清单位于运行包 THIRD_PARTY_LICENSES/INDEX.json。本表不替代包内原始许可文本。
+V3.0.0 已发布 Windows onedir 便携包：Qt 动态库保持可替换结构，Qt/PySide6 对应源码与应用源码分别提供附件。非必需的 Qt PDF、DataVisualization、VirtualKeyboard 模块排除。基础许可清单为 THIRD_PARTY_LICENSES/INDEX.json，CUDA 原始许可另存 THIRD_PARTY_LICENSES/CUDA，文件摘要为 _internal/cuda_runtime/RUNTIME-MANIFEST.json。完整说明见 [发行第三方声明](THIRD-PARTY-NOTICES.md)。本表不替代原始许可文本。
+
+便携版首次 CUDA 从固定官方 PyPI wheel 补齐编译头文件，核验大小和 SHA-256 后提取到私有缓存；配置为 packaging/cuda-headers-wheel.json，随包名为 CUDA-HEADERS.json。源码安装与便携初始化是两条流程，便携版用户无需手动安装 Python 或完整 Toolkit。
 
 
 ## 可选数值对照依赖

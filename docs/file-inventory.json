@@ -86,7 +86,7 @@
   },
   {
     "path": "docs/USER_GUIDE.md",
-    "purpose": "当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。",
+    "purpose": "当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。",
     "optional_local": false
   },
   {
@@ -96,7 +96,7 @@
   },
   {
     "path": "docs/acceleration.md",
-    "purpose": "CUDA 与响应式预览分支的使用方法、设计、性能证据与限制。",
+    "purpose": "V3 CUDA/响应式预览实现与使用说明，保留开发阶段性能口径并链接正式发行证据。",
     "optional_local": false
   },
   {
