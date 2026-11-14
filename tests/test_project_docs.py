@@ -17,7 +17,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_readme_local_links_resolve(self):
         text = (ROOT / "README.md").read_text(encoding="utf-8")
         links = re.findall(r"\]\((docs/[^)]+)\)", text)
-        self.assertGreaterEqual(len(links), 4)
+        self.assertGreaterEqual(len(links), 5)
         for link in links:
             self.assertTrue((ROOT / link).is_file(), link)
 
@@ -30,6 +30,20 @@ class ProjectDocsTests(unittest.TestCase):
             self.assertIn(term, design)
         research = (ROOT / "docs/research.md").read_text(encoding="utf-8")
         self.assertIn("https://github.com/pyvista/pyvistaqt", research)
+
+    def test_development_journal_is_linked_and_traceable(self):
+        journal = ROOT / "docs/development-log.md"
+        text = journal.read_text(encoding="utf-8")
+        for index in range(1, 6):
+            self.assertIn(f"### DEV-{index:03d}｜", text)
+        for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
+            self.assertIn(commit, text)
+        for term in ("工具与方法", "验证证据", "问题与处理", "报告素材", "后续记录模板", "尚未实现", "ENOTFOUND"):
+            self.assertIn(term, text)
+        for link in re.findall(r"\]\(([^)]+\.md)\)", text):
+            self.assertTrue((journal.parent / link).is_file(), link)
+        for filename in ("agents.md", "README.md"):
+            self.assertIn("docs/development-log.md", (ROOT / filename).read_text(encoding="utf-8"))
 
     def test_consolidated_plan_covers_delivery_and_acceptance(self):
         plan_path = ROOT / "docs/product-plan.md"
