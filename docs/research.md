@@ -71,3 +71,10 @@
 采用 `Begin` 后显式赋予标准高斯复振幅，再调用 `Fresnel`、`Lens`、`CircAperture`，避免高斯解析快捷分支。已核对坐标数组与内部 SI 网格一致。外部对照使用卷积传播，本项目使用周期窗口频域传递函数，算法和有限窗口处理不同；差异需结合案例与分辨率分析，不把外部程序视为无误差真值。源码中的 legacy 采样处理也提示不能只按接口名称假定离散结果完全一致。
 
 原始来源：[仓库说明](https://github.com/opticspy/lightpipes)、[传播源码](https://github.com/opticspy/lightpipes/blob/master/LightPipes/propagators.py)、[许可证](https://github.com/opticspy/lightpipes/blob/master/LICENSE.txt)。本次版本、输入、实测结果与限制见 [数值增强验证](validation-v2.md)。
+
+
+## V2.0.0 便携构建复核
+
+沿用已有 PyInstaller 目录模式与 Qt 动态库分发方案，再读取 [PyInstaller 原仓库](https://github.com/pyinstaller/pyinstaller)和 [6.22.3 使用说明](https://pyinstaller.org/en/stable/usage.html)，本次继续使用已锁定的 6.22.3。EXE 版本资源、分版本输出目录和固定摘要的 Qt 缓存用于保证版本可辨识及构建可追溯。
+
+[Qt 6.12 Windows 支持说明](https://doc.qt.io/qt-6/windows.html)列出 Windows 10 1809 及以后版本、Windows 11 的 x86_64 支持。本项目以 Windows 10/11 x64 为目标，实际只记录本机与隔离运行结果；这不是对全部 Qt 支持平台、显卡或其他实体设备的验证承诺。冻结测试还需覆盖实际 SVG/PDF 导出，源码环境通过不等于打包后相关后端一定存在。

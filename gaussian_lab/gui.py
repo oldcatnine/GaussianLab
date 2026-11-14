@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
     QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea)
+from . import __version__
 from .model import Project, Element, preset, load_project, save_project
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
 from .scene import OpticalScene
@@ -86,7 +87,7 @@ def spin(value, low, high, decimals=3, suffix=""):
 class MainWindow(QMainWindow):
     def __init__(self, auto_compute=True):
         super().__init__()
-        self.setWindowTitle("GaussianLab · 高斯光束传输与光斑分析 V0.1")
+        self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__}")
         self.resize(1520, 980)
         self.setMinimumSize(1180, 780)
         self.result = None

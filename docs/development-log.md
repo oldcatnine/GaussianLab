@@ -258,6 +258,23 @@
 - 报告素材：功能与文档基线管理、当前/历史版本区分、操作与数据口径、源码到教学资料的交叉核对、离线阅读资源嵌入。
 - 下一步：按当前源码指南开展操作和图片导出；新的代码与界面变更继续同步手册和用途清单。
 
+### DEV-016｜2026-11-14｜V2.0.0 便携版本迭代与构建
+
+- 目标：将白色主题、分析图导出和 CPU 数值增强整理为其他 Windows x64 电脑无需 Python 即可运行的 V2.0.0，保留历史版本。
+- 操作与变更：包版本、窗口标题、冻结自测与 Windows EXE 文件资源统一为 2.0.0；分版本输出至 dist/v2.0.0、build/v2.0.0、releases/v2.0.0。构建整理脚本按包版本生成运行包、Qt 对应源码、应用源码与摘要清单，附当前指南、离线手册、示例和原始许可。应用源码过滤虚拟环境、IDE、输出与生成目录。
+- 工具与方法：实际使用 PowerShell、Git、Python、PyInstaller 6.22.3、pytest、Qt/VTK、ZIP/CRC 与 SHA-256；读取 PyInstaller 原仓库与官方使用说明、Qt 6.12 Windows 支持说明，复用已有打包方案，不安装无关项目或改动系统驱动。Qt 源码固定摘要从前次验证清单继承，可复用旧缓存并重新校验，不将旧版本附件改名充作新程序。
+- 版本与许可：新增 Windows 中文版本资源与固定 Qt 源码摘要清单；保持动态库目录和完整版权/许可，应用源码单独作为同版本附件提供。本次没有选择新的开源许可证，没有上传 GitHub Release；发布脚本与手动工作流更新默认版本，尚未执行远端发布。
+- 实际构建：首次 PyInstaller 完成约 141.4s，EXE FileVersion/ProductVersion 为 2.0.0；隔离路径冻结测试完成三个光学案例和三维渲染，但实际 SVG 导出失败，缺少 matplotlib.backends.backend_svg。补齐 SVG/PDF 后端后重新构建约 135.8s；第二次直接构建目录的冻结程序自测通过，包含三个案例、配置、三点扫描、六类 PNG、SVG/PDF、白底和窗口版本，退出码 0。
+- 验证口径：冻结程序自测使用 PATH 仅含 Windows 系统目录，移除 Python/虚拟环境/Qt 开发路径，并从独立目录启动；窗口程序自测失败时写日志退出，避免弹窗阻塞自动验证。低网格扫描的 warning 状态按实际保留，不当作 error 或伪装为 ok。直接构建版通过不替代最终 ZIP 的解压复测。
+- 测试变更：增加版本资源与 SVG/PDF 后端一致性、Qt 来源/摘要清单检查、发行附件被篡改时拒绝解压，以及无 .git 的源码解压目录按文件清单重新整理附件的测试；发布规则专项最终 9 项通过（0.65s）。完整项目测试 `python -m pytest tests -q` 为 75 passed in 50.70s，退出码 0；Test-Agents.ps1、pip check 与差异空白检查通过。手册覆盖 87 个文件、95 个导航条目。
+- 最终附件验证：三个 ZIP 的 SHA-256/CRC 通过，运行包独立解压至 outputs/portable-v2.0.0-final 后，隔离路径冻结自测通过、退出码 0；三个案例、配置往返、三点扫描、六类白底 PNG 及 SVG/PDF 均完成。EXE 摘要为 d2acb4610616c5888724e14681ffc351867e600386a8ffcf435e0cd809001c82，运行 ZIP 为 188667175 字节。view_image 复看 desktop-v2.png，白色界面、三维光路和曲线可读；摘要与实际输出见两个同版本 JSON 报告。源码附件最后单独刷新，不改变已验证的运行包。
+- 问题与处理：直接在根目录运行未限定范围的 pytest 会误收集 outputs/rollback-cuda-20261114 的历史备份测试，因已撤回模块不存在而收集失败；改为对当前项目 tests 目录运行完整测试，不删除回退证据。Qt/VTK 测试仍输出已知 Windows COM 0x8001010d 诊断，实际断言与退出码成功，未声称修复底层环境问题。用户原有 .idea 暂存内容保持原状，不混入本次提交。
+- 关联文件：gaussian_lab/__init__.py、gui.py、release_smoke.py、app_entry.py、GaussianLab.spec、packaging、scripts/build_release.ps1、prepare_release.py、verify_release.py、publish_github.py、verify_published_release.py、.github/workflows/release.yml、tests/test_release.py、tests/test_project_docs.py、README.md、docs 当前指南/学习手册/依赖说明与 V2.0.0 发布文件。
+- 关联提交主题：`release: 构建 GaussianLab V2.0.0 便携版`。
+- 报告素材：版本元数据一致性、源码环境与冻结环境差异、真实导出后端漏包的发现修复、对应源码与许可、隔离运行和摘要/CRC 校验。
+- 限制：目标为 Windows 10/11 x64，实际仍为本机 Windows 11，未宣称所有其他实体电脑、显卡或 ARM/macOS/Linux 可运行；未进行商业代码签名。CUDA 与参数自动预览维持撤回状态。
+- 下一步：保留本机 V2.0.0 发行附件与同版本源码，按接收设备实际环境反馈兼容情况；跨实体电脑验证和远端发布尚未执行。
+
 ## 5. 毕业设计报告素材映射
 
 | 报告部分 | 当前已有素材 | 后续需补证据 |

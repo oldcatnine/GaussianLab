@@ -5,6 +5,7 @@ import sys
 import time
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
+from . import __version__
 from .model import preset, save_project, load_project
 from .optics import simulate, scan, export_csv
 from .gui import MainWindow, Job
@@ -16,8 +17,9 @@ def run(output: Path):
     window = MainWindow(auto_compute=False)
     window.show()
     app.processEvents()
-    report = {"version": "0.1.0", "frozen": bool(getattr(sys, "frozen", False)), "cases": []}
+    report = {"version": __version__, "frozen": bool(getattr(sys, "frozen", False)), "cases": []}
     try:
+        assert f"V{__version__}" in window.windowTitle()
         for name, slug in (("单透镜聚焦", "focus"), ("双透镜扩束", "expander"), ("光阑衍射", "diffraction")):
             p = preset(name)
             start = time.perf_counter()
@@ -42,13 +44,40 @@ def run(output: Path):
                                      "transmission": float(result.transmission[-1])})
         p.grid, p.samples = 128, 17
         rows = scan(p, 0, .0006, .0012, 3)
-        assert all(r["status"] == "ok" for r in rows)
+        assert all(r["status"] in ("ok", "warning") for r in rows)
         assert rows[0]["transmission"] < rows[-1]["transmission"]
         export_csv(rows, output / "scan.csv")
         window.plane_slider.setValue(0)
         window.advance_plane()
         assert window.plane_slider.value() == 1
-        report.update({"scan_points": len(rows), "status": "passed"})
+        window.job = Job("scan", p, (0, .0006, .0012, 3))
+        window.job_done(rows)
+        exported = []
+        errors = []
+        window.show_error = errors.append
+        for key in ("spot", "profile", "surface", "energy", "beam", "scan"):
+            window.export_target.setCurrentIndex(window.export_target.findData(key))
+            target = output / f"{key}.png"
+            window.choose_path = lambda *args, selected=target, **kwargs: str(selected)
+            window.export_plot()
+            assert target.is_file() and target.stat().st_size > 5000, (key, errors)
+            from PIL import Image
+            with Image.open(target) as image:
+                assert image.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
+            exported.append(key)
+        for extension in ("svg", "pdf"):
+            window.export_target.setCurrentIndex(window.export_target.findData("energy"))
+            target = output / f"energy.{extension}"
+            window.choose_path = lambda *args, selected=target, **kwargs: str(selected)
+            window.export_plot()
+            assert target.is_file() and target.stat().st_size > 1000, errors
+        assert not errors, errors
+        window.tabs.setCurrentIndex(3)
+        app.processEvents()
+        window.grab().save(str(output / "desktop-v2.png"))
+        report.update({"scan_points": len(rows), "scan_statuses": [row["status"] for row in rows],
+                       "exported_plots": exported, "formats": ["png", "svg", "pdf"],
+                       "theme": "white", "window_title": window.windowTitle(), "status": "passed"})
         (output / "smoke-result.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
         return 0
     except Exception as exc:

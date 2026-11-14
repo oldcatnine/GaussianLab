@@ -78,7 +78,7 @@ def main():
     parser.add_argument("--visibility", choices=["public", "private"])
     parser.add_argument("--notes", type=Path)
     parser.add_argument("--asset", type=Path, action="append", default=[])
-    parser.add_argument("--tag", default="v0.1.0")
+    parser.add_argument("--tag", default="v2.0.0")
     args = parser.parse_args()
     client = session()
     user = api(client, "GET", "/user")["login"]
@@ -107,7 +107,7 @@ def main():
                 raise RuntimeError('版本已经发布，程序拒绝覆盖')
         else:
             data = api(client, "POST", repo_path+"/releases", json={"tag_name": args.tag,
-                "name": "GaussianLab V0.1.0 — Windows 首版", "body": args.notes.read_text(encoding="utf-8"),
+                "name": f"GaussianLab {args.tag} — Windows 便携版", "body": args.notes.read_text(encoding="utf-8"),
                 "draft": True, "prerelease": False})
         for path in args.asset:
             present = [a for a in api(client, 'GET', repo_path+f"/releases/{data['id']}/assets") if a['name'] == path.name]

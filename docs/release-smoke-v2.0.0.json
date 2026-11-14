@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "frozen": true,
+  "cases": [
+    {
+      "name": "单透镜聚焦",
+      "seconds": 3.307112700000289,
+      "transmission": 1.0000000000000175
+    },
+    {
+      "name": "双透镜扩束",
+      "seconds": 3.282333399998606,
+      "transmission": 1.000000000000016
+    },
+    {
+      "name": "光阑衍射",
+      "seconds": 3.40102730000217,
+      "transmission": 0.6166232881766799
+    }
+  ],
+  "scan_points": 3,
+  "scan_statuses": [
+    "warning",
+    "warning",
+    "warning"
+  ],
+  "exported_plots": [
+    "spot",
+    "profile",
+    "surface",
+    "energy",
+    "beam",
+    "scan"
+  ],
+  "formats": [
+    "png",
+    "svg",
+    "pdf"
+  ],
+  "theme": "white",
+  "window_title": "GaussianLab · 高斯光束传输与光斑分析 V2.0.0",
+  "status": "passed",
+  "exit_code": 0,
+  "environment": "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量",
+  "executable_sha256": "d2acb4610616c5888724e14681ffc351867e600386a8ffcf435e0cd809001c82"
+}

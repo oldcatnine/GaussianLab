@@ -10,7 +10,8 @@ a = Analysis(
     ['app_entry.py'], pathex=[], binaries=[], datas=datas,
     hiddenimports=['vtkmodules.qt.QVTKRenderWindowInteractor', 'vtkmodules.vtkInteractionStyle',
                    'vtkmodules.vtkRenderingOpenGL2', 'vtkmodules.vtkRenderingFreeType',
-                   'matplotlib.backends.backend_qtagg', 'scipy.fft._pocketfft'],
+                   'matplotlib.backends.backend_qtagg', 'matplotlib.backends.backend_svg',
+                   'matplotlib.backends.backend_pdf', 'scipy.fft._pocketfft'],
     hookspath=[], hooksconfig={'matplotlib': {'backends': ['QtAgg']}}, runtime_hooks=[],
     excludes=['PyQt5', 'PyQt6', 'PySide2', 'tkinter', 'pytest', 'IPython',
               'PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets', 'PySide6.QtWebEngineQuick',
@@ -43,5 +44,5 @@ a.binaries += [(name, str(pyside_path / name), 'BINARY') for name in runtime_nam
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='GaussianLab', debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,
-          disable_windowed_traceback=False)
+          disable_windowed_traceback=False, version='packaging/windows-version-info.txt')
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name='GaussianLab')

@@ -8,9 +8,9 @@ GaussianLab 使用 CPython、NumPy、SciPy、Matplotlib、PySide6、Shiboken6、
 
 应用使用未修改的 Qt 6.12.0、PySide6 6.12.0 和 Shiboken6 6.12.0 动态库，按 LGPL 第三版选项使用。完整 LGPL、GPL 及上游第三方许可文本位于 THIRD_PARTY_LICENSES/Qt-upstream。
 
-Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户可以替换为兼容的修改版本并运行应用；为调试这些 LGPL 库的修改而进行逆向工程的权利不受本项目额外限制。替换时应保持二进制兼容性与目录结构。同一版本标签提供应用源码、依赖版本与打包配置，以支持重新构建和链接。
+Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户可以替换为兼容的修改版本并运行应用；为调试这些 LGPL 库的修改而进行逆向工程的权利不受本项目额外限制。替换时应保持二进制兼容性与目录结构。同一版本的 Application-Source.zip 提供应用源码、依赖版本与打包配置，以支持重新构建和链接；仓库标签用于追溯。
 
-对应 Qt 组件的完整、未修改源码，包括 qtbase、qtsvg、qtimageformats、pyside-setup 及其中的 Shiboken，以 GaussianLab-v0.1.0-Qt-Corresponding-Source.zip 附件提供。SOURCE-MANIFEST.json 记录原始下载地址和经核验的 SHA-256。源码归档包含上游构建说明，与可执行附件在同一个版本发布位置提供。
+对应 Qt 组件的完整、未修改源码，包括 qtbase、qtsvg、qtimageformats、pyside-setup 及其中的 Shiboken，以 GaussianLab-v2.0.0-Qt-Corresponding-Source.zip 附件提供。SOURCE-MANIFEST.json 记录原始下载地址和经核验的 SHA-256。源码归档包含上游构建说明，与可执行附件和应用源码附件一起提供。
 
 本应用使用 Qt Widgets，不需要的 Qt PDF、DataVisualization、VirtualKeyboard 插件已从发行包排除。
 

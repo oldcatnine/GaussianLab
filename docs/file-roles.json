@@ -19,11 +19,11 @@
   "gaussian_lab/charts.py":"以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
   "gaussian_lab/release_smoke.py":"在冻结程序内部验证实际计算、三维渲染、配置与导出是否正常。",
   "scripts/build_release.ps1":"串联打包器与发行整理脚本，任一步失败即停止。",
-  "scripts/prepare_release.py":"整理便携包、示例与许可，下载核验对应源码并生成压缩附件及摘要清单。",
+  "scripts/prepare_release.py":"按应用版本整理便携目录、文档、许可、固定摘要的 Qt 源码和应用源码压缩包。",
   "scripts/publish_github.py":"经标准凭据管理器访问官方接口，提供状态、建仓、草稿续传及发布操作。",
   "scripts/validate_v1.py":"生成三个预置案例的数值记录、输入配置和实际界面截图。",
-  "scripts/verify_release.py":"校验本地发行附件摘要与压缩包完整性，并解压独立测试副本。",
-  "scripts/verify_published_release.py":"认证下载远端已发布附件，核对服务器摘要与清单并解压复测副本。",
+  "scripts/verify_release.py":"核对当前版本的附件集合、摘要与 CRC，解压后可在隔离环境执行冻结程序自测。",
+  "scripts/verify_published_release.py":"按明确版本认证下载已发布附件并验证摘要，保留旧版核验入口，不主动发布。",
   "scripts/build_handbook.py":"核对文件用途覆盖率，更新手册附录并生成不依赖网络的阅读网页。",
   "tests/Test-Agents.ps1":"检查项目规则是否包含提交、测试和持续记录要求。",
   "tests/test_optics.py":"数值与数据层测试，包括解析基准、衍射、透过率、扫描及配置往返。",
@@ -63,5 +63,12 @@
   "docs/numerical-validation-v2.png":"基于实际数值记录生成的孔径取舍与加密对照图。",
   "gaussian_lab/theme.py":"定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。",
   "docs/USER_GUIDE.md":"当前源码版操作说明，覆盖白色界面、观察屏、六类图片导出、扫描、数据快照及版本识别。",
-  "docs/assets/white-theme-desktop.png":"白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。"
+  "docs/assets/white-theme-desktop.png":"白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。",
+  "packaging/windows-version-info.txt":"Windows EXE 中文版本资源，记录 FileVersion/ProductVersion 与程序名称。",
+  "packaging/qt-source-manifest.json":"Qt/PySide6 对应源码的固定官方来源与 SHA-256，用于缓存复核和下载校验。",
+  "docs/USER_GUIDE-v2.0.0.md":"V2.0.0 便携版的启动、图像导出、数据、目录保留和故障说明。",
+  "docs/release-notes-v2.0.0.md":"V2.0.0 新增能力、三类源码/运行附件、目标平台与限制。",
+  "docs/release-validation-v2.0.0.md":"V2.0.0 构建、后端补齐、独立解压和隔离运行验证的过程与边界。",
+  "docs/release-artifacts-v2.0.0.json":"实际 V2.0.0 三个附件的字节数、SHA-256、ZIP CRC 和解压验证结果。",
+  "docs/release-smoke-v2.0.0.json":"最终解压版 V2.0.0 EXE 的版本、冻结状态、计算与导出冒烟证据。"
 }

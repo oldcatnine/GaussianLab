@@ -1,4 +1,7 @@
 """认证下载已发布附件，校验摘要并解压独立测试副本。"""
+import argparse
+import sys
+import time
 import hashlib
 import json
 from pathlib import Path
@@ -6,6 +9,8 @@ import zipfile
 from publish_github import session, api
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from gaussian_lab import __version__
 
 
 def download(client, asset, target):
@@ -25,14 +30,20 @@ def download(client, asset, target):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="下载并核验明确指定的已发布版本，不创建或覆盖远端发行")
+    parser.add_argument("--tag", default="v" + __version__)
+    args = parser.parse_args()
     client = session()
     repo = api(client, 'GET', '/repos/oldcatnine/GaussianLab')
-    release = api(client, 'GET', '/repos/oldcatnine/GaussianLab/releases/tags/v0.1.0')
+    release = api(client, 'GET', '/repos/oldcatnine/GaussianLab/releases/tags/' + args.tag)
     assert repo['private'] and not release['draft']
     assets = {a['name']:a for a in release['assets']}
-    assert set(assets) == {'GaussianLab-v0.1.0-Windows-x64.zip',
-                           'GaussianLab-v0.1.0-Qt-Corresponding-Source.zip','SHA256SUMS.txt'}
-    folder = ROOT / 'outputs/github-download'
+    expected_assets = {f'GaussianLab-{args.tag}-Windows-x64.zip',
+                       f'GaussianLab-{args.tag}-Qt-Corresponding-Source.zip', 'SHA256SUMS.txt'}
+    if args.tag != 'v0.1.0':
+        expected_assets.add(f'GaussianLab-{args.tag}-Application-Source.zip')
+    assert set(assets) == expected_assets
+    folder = ROOT / 'outputs' / f'github-download-{args.tag}-{time.time_ns()}'
     folder.mkdir(parents=True,exist_ok=True)
     download(client, assets['SHA256SUMS.txt'], folder/'SHA256SUMS.txt')
     checked = []
@@ -49,7 +60,7 @@ def main():
         with zipfile.ZipFile(target) as archive:
             assert archive.testzip() is None
             if 'Windows-x64' in name:
-                destination=ROOT/'outputs/remote-portable-check'
+                destination=folder/'remote-portable-check'
                 if destination.exists():
                     raise RuntimeError('远端发行包的独立测试目录已经存在')
                 destination.mkdir(parents=True)
@@ -59,7 +70,7 @@ def main():
     report={'repository':repo['html_url'],'private':repo['private'],'tag':release['tag_name'],
             'release':release['html_url'],'draft':release['draft'],'assets':checked,
             'verification':'已下载，SHA-256 与发布清单一致，压缩包完整性检查通过'}
-    (ROOT/'docs/github-release-v0.1.0.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
+    (ROOT/f'docs/github-release-{args.tag}.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(report,ensure_ascii=False,indent=2))
 
 

@@ -2,11 +2,11 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-采用 Python 开发。当前源码在 V0.1 基础上增加焦区局部细化、多指标收敛、包围能量图、完整结果元数据和独立衍射对照；算法标识为 `fresnel-focus-v2`。已发布便携版仍为 V0.1.0，未包含本轮增强；使用下方源码启动器运行新功能。
+当前应用版本为 **V2.0.0**，包含 CPU 数值增强、白色主题和六类图像导出；算法标识为 `fresnel-focus-v2`。本机 Windows 便携包位于 `releases/v2.0.0/`，无需安装 Python。V0.1.0 作为历史版本保留。
 
 ## 启动
 
-**便携版运行：** 下载 [V0.1.0 Release](https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0) 的 `GaussianLab-v0.1.0-Windows-x64.zip`，完整解压后双击 `GaussianLab.exe`，无需 Python。保留 `_internal` 文件夹。仓库当前按私有创建，直接在线访问需要授权；也可下载 ZIP 后转发。详见 [便携版使用说明](docs/USER_GUIDE-v0.1.0.md)。
+**便携版运行：** 将 `releases/v2.0.0/GaussianLab-v2.0.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V2.0.0 便携版指南](docs/USER_GUIDE-v2.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本；本次没有上传新的 GitHub Release。历史 V0.1.0 仍可按其原发布记录追溯。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
@@ -43,6 +43,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 ## 项目文档
 
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
+- [V2.0.0 发布说明](docs/release-notes-v2.0.0.md)与[便携版验证](docs/release-validation-v2.0.0.md)：附件、版本属性、解压与隔离运行结果。
 - [当前源码版使用说明](docs/USER_GUIDE.md)：按白色主题界面说明手动计算、六类图像导出、扫描和数据文件。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
@@ -83,4 +84,4 @@ test_optics.py 为数值和数据验证；test_independent_optics.py 为可选�
 & .\scripts\build_release.ps1
 ```
 
-输出位于 `releases/v0.1.0/`，不进入源码 Git。构建脚本下载并校验 Qt 对应源码，需要联网；Release 将运行包、对应源码包和 SHA-256 清单作为独立附件。构建和发布过程见 [开发记录](docs/development-log.md)。
+输出位于当前版本的 `releases/v2.0.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。

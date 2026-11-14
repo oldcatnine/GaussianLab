@@ -27,6 +27,8 @@ if __name__ == "__main__":
         log_dir.mkdir(parents=True, exist_ok=True)
         log = log_dir / "startup-error.txt"
         log.write_text(traceback.format_exc(), encoding="utf-8")
+        if "--smoke-test" in sys.argv:
+            sys.exit(1)
         try:
             from PySide6.QtWidgets import QApplication, QMessageBox
             app = QApplication.instance() or QApplication([])

@@ -67,3 +67,52 @@ def test_published_private_release_has_verified_frozen_evidence():
         assert asset['bytes'] > 0
     assert smoke['frozen'] is True and smoke['status'] == 'passed'
     assert len(smoke['cases']) == 3 and smoke['scan_points'] == 3
+
+
+
+def test_v2_versions_and_export_backends_are_consistent():
+    from gaussian_lab import __version__
+    assert __version__ == "2.0.0"
+    text = (ROOT / "packaging/windows-version-info.txt").read_text(encoding="utf-8")
+    assert "filevers=(2, 0, 0, 0)" in text and "prodvers=(2, 0, 0, 0)" in text
+    assert "StringStruct('ProductVersion', '2.0.0')" in text
+    spec = (ROOT / "GaussianLab.spec").read_text(encoding="utf-8")
+    assert "packaging/windows-version-info.txt" in spec
+    assert "matplotlib.backends.backend_svg" in spec and "matplotlib.backends.backend_pdf" in spec
+    for name in ("USER_GUIDE-v2.0.0.md", "release-notes-v2.0.0.md"):
+        assert (ROOT / "docs" / name).is_file()
+
+
+def test_qt_sources_have_fixed_names_urls_and_hashes():
+    rows = json.loads((ROOT / "packaging/qt-source-manifest.json").read_text(encoding="utf-8"))
+    assert len(rows) == 4
+    for row in rows:
+        assert row["name"] == row["url"].rsplit("/", 1)[-1]
+        assert row["url"].startswith("https://download.qt.io/")
+        assert len(row["sha256"]) == 64 and set(row["sha256"]) <= set("0123456789abcdef")
+
+
+def test_release_verification_rejects_tampered_archive(tmp_path):
+    from scripts.verify_release import verify_archives
+    import hashlib
+    import pytest
+    names = ["GaussianLab-v2.0.0-Windows-x64.zip", "GaussianLab-v2.0.0-Qt-Corresponding-Source.zip",
+             "GaussianLab-v2.0.0-Application-Source.zip"]
+    original = b"original bytes"
+    for name in names:
+        (tmp_path / name).write_bytes(original)
+    (tmp_path / "SHA256SUMS.txt").write_text("\n".join(hashlib.sha256(original).hexdigest() + "  " + name for name in names), encoding="utf-8")
+    (tmp_path / names[0]).write_bytes(b"changed bytes")
+    with pytest.raises(RuntimeError, match="摘要不匹配"):
+        verify_archives(tmp_path, tmp_path / "extract")
+    assert not (tmp_path / "extract").exists()
+
+
+
+def test_application_source_can_be_repacked_without_git_metadata(tmp_path):
+    from scripts.prepare_release import application_source_names
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    names = ["gaussian_lab/__init__.py", "GaussianLab.spec", "requirements-build.txt"]
+    (docs / "file-inventory.json").write_text(json.dumps([{"path": name} for name in names]), encoding="utf-8")
+    assert application_source_names(tmp_path) == sorted(names)
