@@ -1,7 +1,9 @@
 """Real Qt/VTK rendering and application state smoke tests (requires desktop)."""
 import pytest
 import gc
-from PySide6.QtCore import QCoreApplication, QEvent
+import time
+from PySide6.QtCore import QCoreApplication, QEvent, Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from gaussian_lab.gui import MainWindow, Job
 from gaussian_lab.model import preset, load_project
@@ -96,3 +98,35 @@ def test_gui_add_remove_and_validation(window):
     window.table.item(0, 2).setText("0")
     with pytest.raises(ValueError):
         window.read_project()
+
+
+def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatch):
+    """A single light-field calculation must not be mistaken for a parameter scan."""
+    assert window.result is not None
+    assert window.scan_rows == []
+    assert window.scan_table.rowCount() == 0
+    assert window.scan_plot.ax is None
+    errors = []
+    monkeypatch.setattr(window, 'show_error', errors.append)
+    window.scan_count.setValue(3)
+    window.scan_low.setValue(100)
+    window.scan_high.setValue(140)
+    QTest.mouseClick(window.scan_button, Qt.LeftButton)
+    assert window.job.kind == 'scan'
+    deadline = time.monotonic() + 15
+    while (window.job.isRunning() or window.scan_table.rowCount() != 3) and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)  # Explicitly release the GIL for the Python QThread worker.
+        if errors:
+            break
+    assert not errors
+    assert not window.job.isRunning()
+    assert window.scan_table.rowCount() == 3
+    assert window.scan_table.columnCount() == 6
+    assert window.scan_plot.ax is not None
+    assert len(window.scan_plot.ax.lines[0].get_xdata()) == 3
+    assert window.bottom.currentIndex() == 1
+    window.bottom.setCurrentIndex(2)
+    assert float(window.scan_table.item(0, 0).text()) == 100
+    assert float(window.scan_table.item(2, 0).text()) == 140
+    assert all(window.scan_table.item(i, 4).text() == 'ok' for i in range(3))
