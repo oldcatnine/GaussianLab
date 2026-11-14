@@ -143,14 +143,18 @@
 - 报告素材：部署方案、冻结依赖、动态库冲突排查、二进制验证、版本发布与许可证整理。
 - 下一步：提交标签并推送首版 Release，发布成功后另补录 GitHub 返回的附件与版本信息。
 
-### DEV-008｜2026-11-14｜发布通道优化与远端构建（进行中）
+### DEV-008｜2026-11-14｜发布通道优化与远端构建
 
 - 目标：完成私有 GitHub Release 附件上传。
 - 问题与处理：本机代理中小附件可上传，但约 176 MiB 主包上传极慢。使用 36 字节、2 MiB 临时探针测试并清理；直接 HTTPS 连通性测试失败，未更改系统代理。增加 1 MiB 上传块和进度、草稿续传保护，经新测试验证；本机累计 I/O 仍显示低速，改用 GitHub Actions 在远端构建并上传。
 - 工具与方法：官方 GitHub REST API、requests/urllib3、只读进程 I/O 统计、browser-use 检查网页通道；浏览器未登录，没有自动操作认证或改变访问权限。使用官方 actions/checkout 和 setup-python 配置 Windows 构建，避免通过本机网络发送大型二进制。
-- 验证：优化后的源码全量测试 38 项通过，退出码 0；本地 v0.1.0 包验证结果保留。远端构建是否完成及其附件哈希待核实，不能与本地包哈希混用。
+- 验证：上传优化后 38 项测试通过；补充最终发布证据测试后全量 39 项通过，退出码 0，规则验证及 pip check 通过。本地 v0.1.0 原始构建记录保留；GitHub Actions 运行 43573110436 已 success，三个 Release 附件全部存在，draft=false、private=true。下载两个远端 ZIP，SHA-256 与 GitHub digest 及发布校验清单均一致，ZIP CRC 通过；远端 EXE 隔离 Python 后三个案例、Qt/VTK 截图、配置、三点扫描及 CSV 通过，退出码 0。本地交付目录的 ZIP 再次与远端摘要核对一致。
 - 关联提交主题：`ci: build private Windows release on GitHub Actions`。
-- 下一步：触发并跟进 Windows 构建，核对远端成功状态及附件。
+- 关联提交：构建基线 `7b35599`（标签 v0.1.0），发布通道与 CI `2be6649`；最终证据补录提交主题 `docs: verify private v0.1.0 release and teacher handoff`。
+- 发布结果：https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0 。构建记录：https://github.com/oldcatnine/GaussianLab/actions/runs/43573110436 。用户未授权公开，仓库保持私有，未邀请或联系其他人。
+- 本地整理：releases/v0.1.0 中的 ZIP、校验清单和解压程序已统一为 GitHub 下载并复测的版本；早期本机构建 ZIP 移至 outputs/local-build-archive 供追溯。GitHub 运行包 184256791 字节，其摘要见 github-release-v0.1.0.json；原本机构建摘要保留在 release-artifacts-v0.1.0.json，二者不混用。
+- 能力与方法补充：官方 GitHub Actions Windows runner、checkout/setup-python、GitHub CLI Release 上传，认证 API 下载、GitHub digest/SHA-256/ZIP CRC 三重核对、冻结程序复测；通过受控 PowerShell 文件操作整理生成物，未改动用户其他目录。
+- 下一步：后续功能开发按新版本和 Git commit 推进；老师获取私有仓库在线访问权需由用户另行授权，当前可直接转发已整理的 ZIP。
 
 ## 5. 毕业设计报告素材映射
 

@@ -1,5 +1,6 @@
 """Release entrypoint and publication safety checks without network mutations."""
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -53,3 +54,16 @@ def test_upload_reader_and_bulk_proxy_configuration(tmp_path):
     assert adapter.poolmanager.connection_pool_kw['blocksize'] == 1024**2
     proxy = adapter.proxy_manager_for('http://localhost:12345')
     assert proxy.connection_pool_kw['blocksize'] == 1024**2
+
+
+def test_published_private_release_has_verified_frozen_evidence():
+    release = json.loads((ROOT / 'docs/github-release-v0.1.0.json').read_text(encoding='utf-8'))
+    smoke = json.loads((ROOT / 'docs/github-release-smoke-v0.1.0.json').read_text(encoding='utf-8'))
+    assert release['private'] is True and release['draft'] is False
+    assert release['tag'] == 'v0.1.0'
+    assert len(release['assets']) == 2  # two ZIPs; SHA256SUMS is checked by the download integration script
+    for asset in release['assets']:
+        assert asset['github_digest'] == 'sha256:' + asset['sha256']
+        assert asset['bytes'] > 0
+    assert smoke['frozen'] is True and smoke['status'] == 'passed'
+    assert len(smoke['cases']) == 3 and smoke['scan_points'] == 3

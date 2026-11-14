@@ -1,0 +1,24 @@
+{
+  "repository": "https://github.com/oldcatnine/GaussianLab",
+  "private": true,
+  "tag": "v0.1.0",
+  "release": "https://github.com/oldcatnine/GaussianLab/releases/tag/v0.1.0",
+  "draft": false,
+  "assets": [
+    {
+      "name": "GaussianLab-v0.1.0-Qt-Corresponding-Source.zip",
+      "bytes": 73624348,
+      "sha256": "c98c19c0a49bc658e3e2964cd09bf4c3edf6a3e4a93aa8c71ce7081923f7fbff",
+      "github_digest": "sha256:c98c19c0a49bc658e3e2964cd09bf4c3edf6a3e4a93aa8c71ce7081923f7fbff",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v0.1.0/GaussianLab-v0.1.0-Qt-Corresponding-Source.zip"
+    },
+    {
+      "name": "GaussianLab-v0.1.0-Windows-x64.zip",
+      "bytes": 184256791,
+      "sha256": "d5e2c00764ecdccd86ecb3e5fc58c4f11a9c092ca2bebb70b63b4443965e11eb",
+      "github_digest": "sha256:d5e2c00764ecdccd86ecb3e5fc58c4f11a9c092ca2bebb70b63b4443965e11eb",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v0.1.0/GaussianLab-v0.1.0-Windows-x64.zip"
+    }
+  ],
+  "verification": "downloaded, SHA-256 matched release checksum and ZIP CRC passed"
+}

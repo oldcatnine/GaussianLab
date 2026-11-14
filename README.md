@@ -45,6 +45,7 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 - [产品设计方案 V1.0](docs/product-plan.md)：汇总需求、功能、3D 视觉、架构、开发阶段及验收标准，作为当前完整设计入口。
 - [开发过程与能力方法记录](docs/development-log.md)：随每次工作同步更新，积累毕业设计报告所需的过程、工具方法、验证和问题处理证据。
 - [V0.1 验证与交付记录](docs/validation-v0.1.md)：自动化测试、插件自测、数值结果、实际截图和首版局限。
+- [V0.1.0 EXE 与 GitHub 发布验证](docs/release-validation-v0.1.0.md)：便携包、GitHub 构建及最终下载版 EXE 的复测证据。
 
 ## 验证
 
