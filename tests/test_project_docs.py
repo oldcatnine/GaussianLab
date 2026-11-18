@@ -34,7 +34,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_development_journal_is_linked_and_traceable(self):
         journal = ROOT / "docs/development-log.md"
         text = journal.read_text(encoding="utf-8")
-        for index in range(1, 21):
+        for index in range(1, 22):
             self.assertIn(f"### DEV-{index:03d}｜", text)
         for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
             self.assertIn(commit, text)
