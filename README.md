@@ -10,7 +10,7 @@
 
 ## 启动
 
-**便携版运行：** 将 `releases/v3.0.0/GaussianLab-v3.0.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.0.0 便携版指南](docs/USER_GUIDE-v3.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本；发布状态见同版本验证记录。历史版本按其原记录追溯。
+**便携版运行：** 将本机构建的 `releases/v3.1.0/GaussianLab-v3.1.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.1.0 便携版指南](docs/USER_GUIDE-v3.1.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 

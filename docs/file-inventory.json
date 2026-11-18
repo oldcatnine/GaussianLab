@@ -240,6 +240,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-artifacts-v3.1.0.json",
+    "purpose": "V3.1.0 本地便携附件大小、摘要、压缩完整性和解压验证记录。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-notes-v0.1.0.md",
     "purpose": "首版发布说明，列出功能、附件、平台和已知限制。",
     "optional_local": false
@@ -272,6 +277,11 @@
   {
     "path": "docs/release-smoke-v3.0.0.json",
     "purpose": "V3 最初本机构建 EXE 的 CPU/CUDA 案例、预览和导出证据，不代替远端下载版。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-smoke-v3.1.0.json",
+    "purpose": "实际解压 V3.1.0 EXE 的 CPU、CUDA、预览和导出验证记录。",
     "optional_local": false
   },
   {

@@ -93,5 +93,7 @@
   "docs/release-artifacts-v3.0.0.json":"V3 最初本机构建附件及双后端证据，保留历史摘要，与最终云端发行记录区分。",
   "docs/release-smoke-v3.0.0.json":"V3 最初本机构建 EXE 的 CPU/CUDA 案例、预览和导出证据，不代替远端下载版。",
   "docs/github-release-v3.0.0.json":"V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
-  "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。"
+  "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。",
+  "docs/release-artifacts-v3.1.0.json":"V3.1.0 本地便携附件大小、摘要、压缩完整性和解压验证记录。",
+  "docs/release-smoke-v3.1.0.json":"实际解压 V3.1.0 EXE 的 CPU、CUDA、预览和导出验证记录。"
 }

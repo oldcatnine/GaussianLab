@@ -92,6 +92,24 @@ def test_qt_sources_have_fixed_names_urls_and_hashes():
         assert len(row["sha256"]) == 64 and set(row["sha256"]) <= set("0123456789abcdef")
 
 
+def test_v31_portable_evidence_matches_extracted_dual_backend():
+    artifacts = json.loads((ROOT / "docs/release-artifacts-v3.1.0.json").read_text(encoding="utf-8"))
+    smoke = json.loads((ROOT / "docs/release-smoke-v3.1.0.json").read_text(encoding="utf-8"))
+    assert artifacts["version"] == "3.1.0"
+    assert len(artifacts["assets"]) == 3
+    assert all(row["zip_crc"] == "passed" for row in artifacts["assets"])
+    for backend in ("cpu", "cuda"):
+        report = smoke[backend]
+        assert report["version"] == artifacts["version"] and report["frozen"]
+        assert report["status"] == artifacts["frozen_smoke"][backend] == "passed"
+        assert report["exit_code"] == 0
+        assert report["executable_sha256"] == artifacts["executable_sha256"]
+        assert len(report["cases"]) == 3
+        assert all(case["backend"]["used"] == backend for case in report["cases"])
+        assert report["preview"]["backend"]["used"] == backend
+    assert smoke["cuda"]["headers_download_verified"]
+
+
 def test_release_verification_rejects_tampered_archive(tmp_path):
     from scripts.verify_release import TAG, verify_archives
     import hashlib
