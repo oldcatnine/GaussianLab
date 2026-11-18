@@ -366,3 +366,52 @@ def test_preview_vector_export_carries_quality_label(window, app, monkeypatch, t
     exported = target.read_text(encoding="utf-8")
     assert "快速预览" in exported and "N=128" in exported
     assert window.result.project.grid == 256
+
+
+def test_comparison_pins_full_result_and_exports_joint_scale(window, app, monkeypatch, tmp_path):
+    window.pin_baseline()
+    a = window.result
+    window.table.item(0, 5).setText("0.8")
+    assert window.read_project().elements[0].clear_diameter == pytest.approx(.0008)
+    window.compare_results()
+    assert window.comparison is None
+    window.compute()
+    deadline = time.monotonic() + 10
+    while not window.run_button.isEnabled() and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(.01)
+    assert window.run_button.isEnabled()
+    assert window.baseline is a and window.result is not a
+    window.compare_results()
+    first, i, second, j, _ = window.comparison
+    assert first.z[i] == pytest.approx(second.z[j], abs=1e-12)
+    assert second.transmission[j] < first.transmission[i]
+    spot_a, spot_b = window.compare_plot.figure.axes[:2]
+    assert spot_a.images[0].get_clim() == spot_b.images[0].get_clim()
+    window.compare_mode.setCurrentIndex(1)
+    window.compare_results()
+    assert window.comparison[1:4:2] == (a.focus_index, second.focus_index)
+    path = tmp_path / "comparison.png"
+    monkeypatch.setattr(window, "choose_path", lambda *args: str(path))
+    window.export_target.setCurrentIndex(window.export_target.findData("compare"))
+    window.export_plot()
+    assert path.stat().st_size > 5000
+    window.clear_baseline()
+    assert window.baseline is None and window.comparison is None
+
+
+def test_longitudinal_uses_computed_slices_and_links_observer(window, monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    r = window.result
+    window.show_longitudinal()
+    ax = window.longitudinal_plot.ax
+    cross_section = r.intensity[:, r.project.grid // 2, :]
+    expected = 10 * np.log10(np.maximum(cross_section / cross_section.max(), 1e-5))
+    np.testing.assert_allclose(np.asarray(ax.collections[0].get_array()).reshape(expected.T.shape), expected.T)
+    window.locate_longitudinal_plane(SimpleNamespace(inaxes=ax, xdata=r.z[3]*1e3))
+    assert window.plane_slider.value() == 3
+    path = tmp_path / "longitudinal.svg"
+    monkeypatch.setattr(window, "choose_path", lambda *args: str(path))
+    window.export_target.setCurrentIndex(window.export_target.findData("longitudinal"))
+    window.export_plot()
+    assert path.stat().st_size > 5000

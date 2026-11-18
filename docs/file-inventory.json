@@ -85,6 +85,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/USER_GUIDE-v3.1.0.md",
+    "purpose": "V3.1.0 便携构建的启动入口及功能指南。",
+    "optional_local": false
+  },
+  {
     "path": "docs/USER_GUIDE.md",
     "purpose": "当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。",
     "optional_local": false
@@ -250,6 +255,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-notes-v3.1.0.md",
+    "purpose": "记录 V3.1.0 更新内容和发行验证状态。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-smoke-v0.1.0.json",
     "purpose": "本地独立发行包的冻结冒烟测试结果。",
     "optional_local": false
@@ -351,7 +361,7 @@
   },
   {
     "path": "gaussian_lab/gui.py",
-    "purpose": "构建白色桌面界面、调度后台计算并提供结果、观察屏、扫描及六类图像导出。",
+    "purpose": "构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。",
     "optional_local": false
   },
   {
@@ -501,7 +511,7 @@
   },
   {
     "path": "tests/test_gui.py",
-    "purpose": "真实 Qt/VTK 界面测试，覆盖渲染、观察屏、快照、导出及异步扫描按钮链路。",
+    "purpose": "真实 Qt/VTK 界面测试，覆盖渲染、观察屏、快照、导出及异步扫描、方案对比和纵向强度交互。",
     "optional_local": false
   },
   {
@@ -511,7 +521,7 @@
   },
   {
     "path": "tests/test_optics.py",
-    "purpose": "数值与数据层测试，包括解析基准、衍射、透过率、扫描及配置往返。",
+    "purpose": "数值与数据层测试，包括解析基准、衍射、透过率、扫描及配置往返及透镜口径等效性。",
     "optional_local": false
   },
   {

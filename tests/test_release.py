@@ -72,14 +72,14 @@ def test_published_private_release_has_verified_frozen_evidence():
 
 def test_current_versions_and_export_backends_are_consistent():
     from gaussian_lab import __version__
-    assert __version__ == "3.0.0"
+    assert __version__ == "3.1.0"
     text = (ROOT / "packaging/windows-version-info.txt").read_text(encoding="utf-8")
-    assert "filevers=(3, 0, 0, 0)" in text and "prodvers=(3, 0, 0, 0)" in text
-    assert "StringStruct('ProductVersion', '3.0.0')" in text
+    assert "filevers=(3, 1, 0, 0)" in text and "prodvers=(3, 1, 0, 0)" in text
+    assert "StringStruct('ProductVersion', '3.1.0')" in text
     spec = (ROOT / "GaussianLab.spec").read_text(encoding="utf-8")
     assert "packaging/windows-version-info.txt" in spec
     assert "matplotlib.backends.backend_svg" in spec and "matplotlib.backends.backend_pdf" in spec
-    for name in ("USER_GUIDE-v3.0.0.md", "release-notes-v3.0.0.md"):
+    for name in (f"USER_GUIDE-v{__version__}.md", f"release-notes-v{__version__}.md"):
         assert (ROOT / "docs" / name).is_file()
 
 
@@ -93,11 +93,11 @@ def test_qt_sources_have_fixed_names_urls_and_hashes():
 
 
 def test_release_verification_rejects_tampered_archive(tmp_path):
-    from scripts.verify_release import verify_archives
+    from scripts.verify_release import TAG, verify_archives
     import hashlib
     import pytest
-    names = ["GaussianLab-v3.0.0-Windows-x64.zip", "GaussianLab-v3.0.0-Qt-Corresponding-Source.zip",
-             "GaussianLab-v3.0.0-Application-Source.zip"]
+    names = [f"GaussianLab-{TAG}-{suffix}.zip" for suffix in
+             ("Windows-x64", "Qt-Corresponding-Source", "Application-Source")]
     original = b"original bytes"
     for name in names:
         (tmp_path / name).write_bytes(original)

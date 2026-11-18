@@ -125,3 +125,45 @@ class PlotCanvas(FigureCanvasQTAgg):
                title=f"z = {r.z[index]*1e3:.2f} mm · 虚线为 r86")
         ax.grid(alpha=.45)
         self.draw_idle()
+
+    def compare(self, a, i, b, j, mode):
+        """采用相同入射功率标尺，并保留各方案独立的包围能量百分比。"""
+        self.figure.clear()
+        spot_a, spot_b, profile, energy = self.figure.subplots(2, 2).ravel()
+        pairs = ((a, i, "A", BLUE, spot_a), (b, j, "B", ORANGE, spot_b))
+        images = [r.intensity[k] / r.provenance["input_power_integral"] / 1e6
+                  for r, k, _, _, _ in pairs]
+        peak = max(float(image.max()) for image in images)
+        limit = max(min(max(r.r86[k] * 3, .15e-3), r.project.window / 2)
+                    for r, k, _, _, _ in pairs) * 1e3
+        for (r, k, name, color, ax), image in zip(pairs, images):
+            dx = r.project.window / r.project.grid
+            extent = [(r.x[0] - dx / 2) * 1e3, (r.x[-1] + dx / 2) * 1e3] * 2
+            plot = ax.imshow(image, origin="lower", extent=extent, cmap=INTENSITY_CMAP,
+                             vmin=0, vmax=peak, interpolation="nearest")
+            ax.set(xlim=(-limit, limit), ylim=(-limit, limit), xlabel="x / mm", ylabel="y / mm",
+                   title=f"{name} · z={r.z[k]*1e3:.3f} mm · 透过率 {r.transmission[k]:.1%}")
+            profile.plot(r.x * 1e3, image[r.project.grid // 2], color=color, label=name)
+            radii, fraction = radial_energy(image, np.sqrt(np.add.outer(r.x**2, r.x**2)))
+            energy.plot(radii * 1e3, fraction * 100, color=color,
+                        label=f"{name} · r86 {r.r86[k]*1e6:.1f} μm")
+        self.figure.colorbar(plot, ax=[spot_a, spot_b], label=r"单位入射功率的强度 / $\mathrm{mm}^{-2}$")
+        self.figure.suptitle(mode)
+        profile.set(xlim=(-limit, limit), xlabel="x / mm", ylabel=r"中心剖面 / $\mathrm{mm}^{-2}$")
+        energy.set(xlim=(0, limit), ylim=(0, 101), xlabel="距光轴半径 / mm", ylabel="各自观察面的包围能量 / %")
+        for ax in (profile, energy):
+            ax.grid(alpha=.35)
+            ax.legend()
+        self.draw_idle()
+
+    def longitudinal(self, r):
+        """从已计算场提取中心剖面，保持轴向采样的实际间距。"""
+        ax = self.reset()
+        image = r.intensity[:, r.project.grid // 2, :]
+        db = 10 * np.log10(np.maximum(image / max(float(image.max()), 1e-30), 1e-5))
+        plot = ax.pcolormesh(r.z * 1e3, r.x * 1e3, db.T, shading="nearest",
+                             cmap=INTENSITY_CMAP, vmin=-50, vmax=0)
+        ax.set(xlabel="传播位置 z / mm", ylabel="横向位置 x / mm",
+               title="中心剖面 · 全图峰值归一化")
+        self.figure.colorbar(plot, ax=ax, label="相对强度 / dB")
+        self.draw_idle()

@@ -269,3 +269,27 @@ def test_source_fingerprint_handles_frozen_environment_without_source(monkeypatc
     monkeypatch.setattr(Path, "read_bytes", unavailable)
     assert optics.source_fingerprint() is None
     assert optics.calculation_provenance()["algorithm_version"] == optics.ALGORITHM_VERSION
+
+
+def test_lens_clear_diameter_matches_explicit_aperture(tmp_path):
+    p = small(grid=128, elements=[Element("lens", .1, .12, clear_diameter=.0008)])
+    equivalent = p.clone()
+    equivalent.elements[0].clear_diameter = None
+    equivalent.elements.insert(0, Element("aperture", .1, .0008))
+    a, b = simulate(p), simulate(equivalent)
+    np.testing.assert_allclose(a.z, b.z)
+    np.testing.assert_allclose(a.intensity, b.intensity)
+    np.testing.assert_allclose(a.r86, b.r86)
+    np.testing.assert_allclose(a.transmission, b.transmission)
+    assert 0 < a.transmission[-1] < 1
+    path = tmp_path / "lens.json"
+    save_project(p, path)
+    assert load_project(path) == p
+    p.elements[0].clear_diameter = None
+    save_project(p, path)
+    assert "clear_diameter" not in path.read_text(encoding="utf-8")
+    assert load_project(path) == p
+    for diameter in (0, -.001, float("nan"), float("inf")):
+        p.elements[0].clear_diameter = diameter
+        with pytest.raises(ValueError, match="有效通光直径"):
+            p.validate()

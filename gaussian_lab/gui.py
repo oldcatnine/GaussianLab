@@ -22,12 +22,17 @@ from .session import ResultCache
 
 STYLE = """
 QMainWindow,QWidget {background:#ffffff;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
-QGroupBox {border:1px solid #cbd5e1;border-radius:9px;margin-top:13px;padding:13px 9px 8px;}
-QGroupBox::title {subcontrol-origin:margin;left:12px;color:#1e40af;}
-QPushButton {background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:7px 13px;}
+QWidget#workspaceHeader {border:1px solid #e2e8f0;border-radius:12px;}
+QLabel#productTitle {font-size:22px;font-weight:700;color:#0f172a;}
+QLabel#productCaption {font-size:11px;color:#475569;}
+QGroupBox {border:1px solid #e2e8f0;border-radius:10px;margin-top:15px;padding:13px 10px 9px;}
+QGroupBox::title {subcontrol-origin:margin;left:12px;color:#334155;font-weight:bold;}
+QPushButton {background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:7px 11px;}
 QPushButton:hover {background:#eff6ff;border-color:#60a5fa;}
 QPushButton:disabled {color:#94a3b8;background:#f1f5f9;}
 QPushButton#primary {background:#2563eb;border-color:#1d4ed8;color:white;font-weight:bold;}
+QPushButton#primary:hover {background:#1d4ed8;}
+QPushButton#primary:disabled {background:#e2e8f0;border-color:#e2e8f0;color:#64748b;}
 QComboBox,QDoubleSpinBox,QSpinBox {background:#f8fafc;border:1px solid #cbd5e1;border-radius:5px;padding:4px;min-height:20px;}
 QComboBox QAbstractItemView {background:#f8fafc;selection-background-color:#dbeafe;}
 QTableWidget {background:#ffffff;gridline-color:#e2e8f0;border:1px solid #cbd5e1;selection-background-color:#dbeafe;}
@@ -35,10 +40,17 @@ QHeaderView::section {background:#f1f5f9;color:#334155;padding:6px;border:0;}
 QTabWidget::pane {border:1px solid #cbd5e1;border-radius:4px;}
 QTabBar::tab {background:#f8fafc;color:#475569;padding:7px 13px;}
 QTabBar::tab:selected {color:#1d4ed8;border-bottom:2px solid #2563eb;background:#eff6ff;}
+QTabBar::tab:hover:!selected {background:#f1f5f9;}
+QScrollArea {border:0;}
+QSplitter::handle {background:#f1f5f9;}
 QSlider::groove:horizontal {height:5px;background:#cbd5e1;border-radius:2px;}
 QSlider::handle:horizontal {background:#2563eb;width:14px;margin:-5px 0;border-radius:6px;}
-QProgressBar {border:0;border-radius:3px;background:#e2e8f0;text-align:center;max-height:15px;}
+QProgressBar {border:0;border-radius:2px;background:#e2e8f0;max-height:4px;}
 QProgressBar::chunk {background:#2563eb;}
+QScrollBar:vertical {background:#f8fafc;width:9px;margin:0;}
+QScrollBar::handle:vertical {background:#cbd5e1;min-height:28px;border-radius:4px;}
+QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical {height:0;}
+QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical {background:none;}
 QToolTip {background:#ffffff;color:#1f2937;border:1px solid #94a3b8;}
 """
 
@@ -109,6 +121,9 @@ class MainWindow(QMainWindow):
         self.resize(1520, 980)
         self.setMinimumSize(1180, 780)
         self.result = None
+        self.baseline = None
+        self.comparison = None
+        self.longitudinal_result = None
         self.scan_rows = []
         self.job = None
         self.loading = False
@@ -135,10 +150,19 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
         root.setContentsMargins(18, 12, 18, 10)
         root.setSpacing(10)
-        toolbar = QHBoxLayout()
-        title = QLabel("GAUSSIAN<span style='color:#2563eb'>LAB</span>  <small>光学传输实验台</small>")
-        title.setStyleSheet("font-size:22px;font-weight:bold;")
-        toolbar.addWidget(title)
+        header = QWidget()
+        header.setObjectName("workspaceHeader")
+        toolbar = QHBoxLayout(header)
+        toolbar.setContentsMargins(14, 8, 12, 8)
+        brand = QVBoxLayout()
+        brand.setSpacing(1)
+        title = QLabel("GaussianLab")
+        title.setObjectName("productTitle")
+        subtitle = QLabel("高斯光束仿真与实验对比")
+        subtitle.setObjectName("productCaption")
+        brand.addWidget(title)
+        brand.addWidget(subtitle)
+        toolbar.addLayout(brand)
         toolbar.addStretch()
         self.presets = QComboBox()
         self.presets.addItems(["单透镜聚焦", "双透镜扩束", "光阑衍射"])
@@ -152,14 +176,14 @@ class MainWindow(QMainWindow):
         self.cancel_button = button("取消", self.cancel_job)
         self.cancel_button.setEnabled(False)
         toolbar.addWidget(self.cancel_button)
-        root.addLayout(toolbar)
+        root.addWidget(header)
         splitter = QSplitter(Qt.Horizontal)
         left = QWidget()
         left.setMinimumWidth(310)
         left.setMaximumWidth(420)
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(0, 0, 6, 0)
-        source_box = QGroupBox("01  光源与传播 · SI 内核")
+        source_box = QGroupBox("光源与传播")
         form = QFormLayout(source_box)
         self.wave = spin(632.8, 100, 20000, 2, " nm")
         self.waist = spin(.45, .005, 10, 4, " mm")
@@ -200,10 +224,11 @@ class MainWindow(QMainWindow):
         self.auto_preview.toggled.connect(self.preview_toggled)
         performance_form.addRow(self.auto_preview)
         left_layout.addWidget(performance_box)
-        element_box = QGroupBox("02  光路元件 · 按位置传播")
+        element_box = QGroupBox("光路元件")
         el = QVBoxLayout(element_box)
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["类型", "z/mm", "f或直径/mm", "名称", "启用"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["类型", "位置", "参数", "名称", "启用", "口径"])
+        self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().hide()
         self.table.setMinimumHeight(125)
@@ -216,11 +241,12 @@ class MainWindow(QMainWindow):
         row.addWidget(button("＋光阑", lambda: self.add_element("aperture")))
         row.addWidget(button("移除选中", self.remove_element))
         el.addLayout(row)
-        hint = QLabel("透镜参数为焦距，光阑参数为直径。\n同位置按列表先后执行；元件为理想薄元件。")
+        hint = QLabel("位置、参数和口径均用 mm。参数为焦距或光阑直径。\n透镜口径留空表示不限，同位置按列表顺序执行。")
+        hint.setWordWrap(True)
         hint.setStyleSheet("color:#64748b;font-size:10px;")
         el.addWidget(hint)
         left_layout.addWidget(element_box)
-        scan_box = QGroupBox("03  单参数扫描")
+        scan_box = QGroupBox("单参数扫描")
         sf = QFormLayout(scan_box)
         self.scan_target = QComboBox()
         self.scan_target.currentIndexChanged.connect(self.scan_defaults)
@@ -286,7 +312,13 @@ class MainWindow(QMainWindow):
         self.tabs.currentChanged.connect(self.draw_plane)
         main_views.addWidget(self.tabs)
         main_views.setSizes([720, 430])
-        rv.addWidget(main_views, 5)
+        views = QSplitter(Qt.Vertical)
+        views.setChildrenCollapsible(False)
+        upper = QWidget()
+        upper_layout = QVBoxLayout(upper)
+        upper_layout.setContentsMargins(0, 0, 0, 0)
+        upper_layout.addWidget(main_views, 1)
+        views.addWidget(upper)
         observer = QHBoxLayout()
         observer.addWidget(QLabel("观察屏 z"))
         self.plane_slider = QSlider(Qt.Horizontal)
@@ -301,7 +333,7 @@ class MainWindow(QMainWindow):
         self.log_scale.toggled.connect(self.draw_plane)
         observer.addWidget(self.log_scale)
         observer.addWidget(button("定位最小光斑", self.locate_focus))
-        rv.addLayout(observer)
+        upper_layout.addLayout(observer)
         self.bottom = QTabWidget()
         self.beam_plot, self.scan_plot = PlotCanvas(), PlotCanvas()
         self.bottom.addTab(self.beam_plot, "轴向传播")
@@ -309,8 +341,33 @@ class MainWindow(QMainWindow):
         self.scan_table = QTableWidget()
         self.scan_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.bottom.addTab(self.scan_table, "扫描数据")
+        compare_panel = QWidget()
+        compare_layout = QVBoxLayout(compare_panel)
+        compare_controls = QHBoxLayout()
+        self.baseline_label = QLabel("尚未固定方案 A")
+        compare_controls.addWidget(self.baseline_label, 1)
+        compare_controls.addWidget(button("固定当前为 A", self.pin_baseline))
+        compare_controls.addWidget(button("清除 A", self.clear_baseline))
+        self.compare_mode = QComboBox()
+        self.compare_mode.addItems(["共用观察面", "各自最小光斑面"])
+        compare_controls.addWidget(self.compare_mode)
+        compare_controls.addWidget(button("与当前 B 对比", self.compare_results, True))
+        compare_layout.addLayout(compare_controls)
+        self.compare_plot = PlotCanvas()
+        compare_layout.addWidget(self.compare_plot, 1)
+        self.bottom.addTab(compare_panel, "A/B 对比")
+        longitudinal_panel = QWidget()
+        longitudinal_layout = QVBoxLayout(longitudinal_panel)
+        longitudinal_layout.addWidget(button("从当前结果生成纵向强度图", self.show_longitudinal), 0, Qt.AlignLeft)
+        self.longitudinal_plot = PlotCanvas()
+        self.longitudinal_plot.mpl_connect("button_press_event", self.locate_longitudinal_plane)
+        longitudinal_layout.addWidget(self.longitudinal_plot, 1)
+        self.bottom.addTab(longitudinal_panel, "纵向强度")
         self.bottom.setMinimumHeight(200)
-        rv.addWidget(self.bottom, 3)
+        views.addWidget(self.bottom)
+        views.setStretchFactor(0, 5)
+        views.setStretchFactor(1, 3)
+        rv.addWidget(views, 1)
         exports = QHBoxLayout()
         self.result_state = QLabel("尚未计算")
         self.result_state.setStyleSheet("color:#475569;")
@@ -319,7 +376,8 @@ class MainWindow(QMainWindow):
         self.export_target = QComboBox()
         self.export_target.setAccessibleName("导出图像类型")
         for label, key in (("当前分析图", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
-                           ("强度曲面", "surface"), ("包围能量", "energy"), ("轴向传播", "beam"), ("参数扫描", "scan")):
+                           ("强度曲面", "surface"), ("包围能量", "energy"), ("轴向传播", "beam"), ("参数扫描", "scan"),
+                           ("A/B 对比", "compare"), ("纵向强度", "longitudinal")):
             self.export_target.addItem(label, key)
         exports.addWidget(self.export_target)
         exports.addWidget(button("导出图片", self.export_plot))
@@ -333,6 +391,7 @@ class MainWindow(QMainWindow):
         root.addWidget(self.status)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
+        self.progress.setTextVisible(False)
         self.progress.setValue(0)
         root.addWidget(self.progress)
         self.setCentralWidget(central)
@@ -399,16 +458,22 @@ class MainWindow(QMainWindow):
         enabled.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
         enabled.setCheckState(Qt.Checked if e.enabled else Qt.Unchecked)
         self.table.setItem(row, 4, enabled)
+        diameter = QTableWidgetItem("" if e.clear_diameter is None else f"{e.clear_diameter*1e3:.12g}")
+        if e.kind != "lens":
+            diameter.setFlags(diameter.flags() & ~Qt.ItemIsEditable)
+        self.table.setItem(row, 5, diameter)
 
     def read_project(self):
         elements = []
         try:
             for row in range(self.table.rowCount()):
+                diameter = self.table.item(row, 5).text().strip()
                 elements.append(Element("lens" if self.table.item(row, 0).text() == "透镜" else "aperture",
                     float(self.table.item(row, 1).text())/1e3, float(self.table.item(row, 2).text())/1e3,
-                    self.table.item(row, 3).text(), self.table.item(row, 4).checkState() == Qt.Checked))
+                    self.table.item(row, 3).text(), self.table.item(row, 4).checkState() == Qt.Checked,
+                    float(diameter)/1e3 if diameter else None))
         except (ValueError, AttributeError) as exc:
-            raise ValueError("元件位置与焦距/直径须为数值，不得为空") from exc
+            raise ValueError("元件位置与焦距/直径须为数值，透镜口径可留空") from exc
         return Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
                        self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
                        int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value()).validate()
@@ -556,6 +621,10 @@ class MainWindow(QMainWindow):
             changed = self.result is not result
             self.result = result
             if changed:
+                if self.longitudinal_result is not None:
+                    self.longitudinal_result = None
+                    self.longitudinal_plot.reset()
+                    self.longitudinal_plot.draw_idle()
                 self.scene.set_result(result)
             ref = result.reference
             k = result.focus_index
@@ -617,6 +686,71 @@ class MainWindow(QMainWindow):
     def locate_focus(self):
         if self.result is not None:
             self.plane_slider.setValue(self.result.focus_index)
+
+    def full_snapshot(self):
+        if (self.result is None or self.dirty or
+                self.result.provenance.get("quality") == "preview"):
+            raise ValueError("请先对当前参数完成一次光场计算")
+        return self.result
+
+    def pin_baseline(self):
+        try:
+            self.baseline = self.full_snapshot()
+        except ValueError as exc:
+            self.status.setText(str(exc))
+            return
+        self.clear_comparison()
+        self.baseline_label.setText(f"A · {self.baseline.project.name} · N={self.baseline.project.grid}")
+
+    def clear_comparison(self):
+        self.comparison = None
+        self.compare_plot.figure.clear()
+        self.compare_plot.draw_idle()
+
+    def clear_baseline(self):
+        self.baseline = None
+        self.baseline_label.setText("尚未固定方案 A")
+        self.clear_comparison()
+
+    def compare_results(self):
+        try:
+            a, b = self.baseline, self.full_snapshot()
+            if a is None:
+                raise ValueError("请先固定方案 A")
+            mode = self.compare_mode.currentText()
+            if self.compare_mode.currentIndex() == 1:
+                i, j = a.focus_index, b.focus_index
+            else:
+                # 只比较双方实际采样面；容差用于消除坐标浮点舍入差异。
+                ia = np.abs(a.z[:, None] - b.z[None, :]).argmin(axis=0)
+                common = np.flatnonzero(np.abs(a.z[ia] - b.z) <= 1e-12)
+                if not len(common):
+                    raise ValueError("没有共同采样面，请统一传播长度与轴向采样")
+                target = b.z[self.plane_slider.value()]
+                j = int(common[np.argmin(np.abs(b.z[common] - target))])
+                i = int(ia[j])
+            self.compare_plot.compare(a, i, b, j, mode)
+            self.comparison = a, i, b, j, mode
+            self.status.setText(f"对比已生成 · A {a.z[i]*1e3:.3f} mm · B {b.z[j]*1e3:.3f} mm")
+        except ValueError as exc:
+            self.status.setText(str(exc))
+
+    def show_longitudinal(self):
+        if self.result is None or self.dirty:
+            self.status.setText("请先更新当前光场结果")
+            return
+        self.longitudinal_result = self.result
+        self.longitudinal_plot.longitudinal(self.result)
+        quality = "快速预览" if self.result.provenance.get("quality") == "preview" else "完整计算"
+        self.longitudinal_plot.figure.suptitle(f"{quality} · N={self.result.project.grid}")
+
+    def locate_longitudinal_plane(self, event):
+        if event.inaxes is not self.longitudinal_plot.ax or event.xdata is None:
+            return
+        if self.longitudinal_result is not self.result:
+            self.status.setText("请用当前结果重新生成纵向强度图")
+            return
+        self.plane_slider.setValue(int(np.argmin(abs(self.result.z - event.xdata * 1e-3))))
 
     def toggle_play(self):
         if self.result is None:
@@ -698,8 +832,18 @@ class MainWindow(QMainWindow):
             if key == "current":
                 key = ("spot", "profile", "surface", "energy")[self.tabs.currentIndex()]
             labels = {"spot": "光斑图", "profile": "剖面强度曲线", "surface": "强度曲面",
-                      "energy": "包围能量", "beam": "轴向传播", "scan": "参数扫描"}
-            if key == "scan":
+                      "energy": "包围能量", "beam": "轴向传播", "scan": "参数扫描",
+                      "compare": "A/B 对比", "longitudinal": "纵向强度"}
+            if key == "compare":
+                comparison = self.comparison
+                if comparison is None:
+                    raise ValueError("请先生成 A/B 对比")
+            elif key == "longitudinal":
+                r = self.longitudinal_result
+                if r is None:
+                    raise ValueError("请先生成纵向强度图")
+                preview = r.provenance.get("quality") == "preview"
+            elif key == "scan":
                 if not self.scan_rows:
                     raise ValueError("请先完成参数扫描")
                 kind = self.scan_project.elements[self.scan_options[0]].kind
@@ -724,7 +868,12 @@ class MainWindow(QMainWindow):
             if path:
                 # 文件对话框打开期间允许自动预览继续，导出使用独立画布固定调用时的快照。
                 plot = PlotCanvas(surface=key == "surface")
-                if key == "scan":
+                if key == "compare":
+                    plot.figure.set_size_inches(10, 7)
+                    plot.compare(*comparison)
+                elif key == "longitudinal":
+                    plot.longitudinal(r)
+                elif key == "scan":
                     plot.scanning(scan_rows, kind)
                 elif key == "spot":
                     plot.spot(r, index, logarithmic)

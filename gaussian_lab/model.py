@@ -12,6 +12,7 @@ class Element:
     value: float = 0.12  # 透镜焦距或光阑直径，单位为米。
     label: str = "L1"
     enabled: bool = True
+    clear_diameter: float | None = None  # 透镜有效通光直径，单位为米；空值表示不限口径。
 
 
 @dataclass
@@ -53,6 +54,10 @@ class Project:
                 raise ValueError("透镜焦距不能为零")
             if e.kind == "aperture" and e.value <= 0:
                 raise ValueError("光阑直径必须大于零")
+            if e.clear_diameter is not None and (
+                e.kind != "lens" or not math.isfinite(e.clear_diameter) or e.clear_diameter <= 0
+            ):
+                raise ValueError("透镜有效通光直径须为空或有限正数，仅适用于透镜")
         return self
 
     def ordered(self):
@@ -70,7 +75,11 @@ def from_dict(data):
 
 def save_project(project, path):
     project.validate()
-    Path(path).write_text(json.dumps({"schema_version": 1, "units": "SI", "project": asdict(project)},
+    data = asdict(project)
+    for element in data["elements"]:
+        if element["clear_diameter"] is None:
+            del element["clear_diameter"]
+    Path(path).write_text(json.dumps({"schema_version": 1, "units": "SI", "project": data},
                                     ensure_ascii=False, indent=2), encoding="utf-8")
 
 

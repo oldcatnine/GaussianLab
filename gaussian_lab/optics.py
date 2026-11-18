@@ -21,7 +21,7 @@ from bisect import bisect_right
 from functools import lru_cache
 
 
-ALGORITHM_VERSION = "fresnel-segments-v3"
+ALGORITHM_VERSION = "fresnel-segments-v3.1"
 
 
 def source_fingerprint():
@@ -168,15 +168,16 @@ class Propagation:
         for element in project.ordered():
             check_cancel(cancel)
             value = self.at(element.z)
+            diameter = element.value if element.kind == "aperture" else element.clear_diameter
+            if diameter is not None:
+                if diameter / dx < 12:
+                    self.warnings.append(f"{element.label} 孔径不足 12 像素：请加密网格")
+                value *= r2 <= (diameter / 2)**2
             if element.kind == "lens":
                 illuminated = self.xp.sqrt(r2)[abs(value)**2 > abs(value).max()**2 * 1e-5]
                 if illuminated.size and float(illuminated.max()) * 2 * dx > project.wavelength * abs(element.value):
                     self.warnings.append(f"{element.label} 透镜相位采样偏粗：请加密网格")
                 value *= self.xp.exp(-1j * np.pi * r2 / (project.wavelength * element.value))
-            else:
-                if element.value / dx < 12:
-                    self.warnings.append(f"{element.label} 孔径不足 12 像素：请加密网格")
-                value *= r2 <= (element.value / 2)**2
             self.starts.append(element.z)
             self.fields.append(value)
             self.spectra.append(None)
@@ -352,6 +353,7 @@ def _simulate(project, cancel, progress, engine):
     result = Result(p, zs, x, images[:len(zs)], analytic(p, zs), sizes, np.asarray(powers),
                     theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
     result.provenance["backend"] = engine.information()
+    result.provenance["input_power_integral"] = input_energy * dx**2
     if focus["boundary_minimum"]:
         result.warnings.append("最小 r86 平台接触搜索区间边界；可能没有内部焦点，请检查传播范围")
     if sizes.min() < 3 * dx:

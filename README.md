@@ -2,7 +2,7 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-当前版本为 **V3.0.0**，将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
+当前源码版本为 **V3.1.0**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.0 版本说明](docs/release-notes-v3.1.0.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
 [V3.0.0 私有发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
 
@@ -42,13 +42,13 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 - 所有图形基于单色同轴、标量近轴、理想薄透镜与圆孔模型。解析 w 为高斯参考；衍射 r86 为 86% 包围能量半径，二者定义不同。
 - **当前版本不保证任意光路的精度**：Fresnel FFT 使用有限周期窗口，焦点采用粗搜索与局部离散细化；高 NA、复杂像差与 M² 不在当前范围。“多指标收敛”分别比较网格、窗口、轴向采样下的末端/焦区 r86、焦点位置、远场角、透过率与焦面剖面，但不自动给出精度认证。
 - 三维横向尺寸放大 25 倍，透镜外形及支座为示意；透明包络是 r86 轮廓，内部亮芯为展示辅助，不能当作三维强度测量。
-- 光阑目前为独立元件；透镜有效口径、光路行拖动排序和扫描动画播放留待后续版本。
+- 源码版可通过“口径”设置透镜有效通光直径，也可放置独立圆孔。光路行拖动排序和扫描动画播放留待后续版本。
 
 ## 项目文档
 
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
 - [V3.0.0 发布说明](docs/release-notes-v3.0.0.md)与[便携版验证](docs/release-validation-v3.0.0.md)：当前附件、版本属性、远端构建、回下载与 CPU/CUDA 检查；[V2.0.0 发布说明](docs/release-notes-v2.0.0.md)保留为历史资料。
-- [当前源码版使用说明](docs/USER_GUIDE.md)：说明自动预览、完整计算、后端切换、六类图像导出、扫描和数据文件。
+- [当前源码版使用说明](docs/USER_GUIDE.md)：说明自动预览、完整计算、后端切换、图像导出、A/B 对比、纵向强度图、扫描和数据文件。
 - [需求记录](docs/requirements.md)：用户已提出的需求、建议补充参数与验收规划。
 - [开源与 Skill 调研](docs/research.md)：来源、源码学习、许可和适用边界。
 - [产品设计草案](docs/product-design.md)：拟议界面、计算路线和待讨论事项。
@@ -90,4 +90,4 @@ $env:PYTHONUTF8 = '1'
 & .\scripts\build_release.ps1
 ```
 
-输出位于当前版本的 `releases/v3.0.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
+输出位于当前版本的 `releases/v3.1.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
