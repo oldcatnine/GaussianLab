@@ -46,6 +46,8 @@ requirements-lock.txt 是本次 Windows/Python 3.10 的运行环境版本快照�
 
 ## 项目文档
 
+- [V3.2 迭代计划（讨论稿）](docs/iteration-plan-v3.2.md)：市售与开源工具调研、单平面实测光斑对照的样本要求、排期与验收条件。
+
 - [项目学习手册（离线网页）](docs/项目学习手册.html)：从基础概念、操作与架构到逐文件用途、计算原理和技术自测问答；可直接打开、复制或打印。维护源文件为 [Markdown 手册](docs/项目学习手册.md)。
 - [V3.0.0 发布说明](docs/release-notes-v3.0.0.md)与[便携版验证](docs/release-validation-v3.0.0.md)：当前附件、版本属性、远端构建、回下载与 CPU/CUDA 检查；[V2.0.0 发布说明](docs/release-notes-v2.0.0.md)保留为历史资料。
 - [当前源码版使用说明](docs/USER_GUIDE.md)：说明自动预览、完整计算、后端切换、图像导出、A/B 对比、纵向强度图、扫描和数据文件。

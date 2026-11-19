@@ -200,6 +200,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/iteration-plan-v3.2.md",
+    "purpose": "基于商业和开源项目的 V3.2 讨论稿，给出单平面实测对照范围、工作量、数据前提及验收设计。",
+    "optional_local": false
+  },
+  {
     "path": "docs/numerical-validation-v2.json",
     "purpose": "数值增强的实际输入、输出、环境、源码摘要、孔径加密和峰值内存证据。",
     "optional_local": false

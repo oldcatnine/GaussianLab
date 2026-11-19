@@ -34,7 +34,7 @@ class ProjectDocsTests(unittest.TestCase):
     def test_development_journal_is_linked_and_traceable(self):
         journal = ROOT / "docs/development-log.md"
         text = journal.read_text(encoding="utf-8")
-        for index in range(1, 24):
+        for index in range(1, 25):
             self.assertIn(f"### DEV-{index:03d}｜", text)
         for commit in ("ae68e77", "939530a", "18df815", "0c03199"):
             self.assertIn(commit, text)
@@ -105,7 +105,7 @@ def test_current_guides_match_export_choices_and_resolve_local_links():
     for term in ("853e9b3", "300 dpi", "CPU", "快照", "V0.1.0", "白底"):
         assert term in guide, term
     assert "USER_GUIDE.md" in (ROOT / "docs/USER_GUIDE-v0.1.0.md").read_text(encoding="utf-8")
-    for filename in ("USER_GUIDE.md", "项目学习手册.md", "product-design.md", "product-plan.md", "requirements.md"):
+    for filename in ("USER_GUIDE.md", "项目学习手册.md", "product-design.md", "product-plan.md", "requirements.md", "iteration-plan-v3.2.md"):
         path = ROOT / "docs" / filename
         targets = re.findall(r"\]\(([^)]+)\)", path.read_text(encoding="utf-8"))
         assert targets, filename
