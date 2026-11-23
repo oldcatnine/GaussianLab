@@ -419,7 +419,8 @@ Actions 43613467773 的基础环境和 58 项发行/计算检查通过，安装�
 - 关联文件：README.md、LICENSE、THIRD-PARTY-NOTICES.md、prepare_release.py、test_project_docs.py、学习手册与文件用途清单。
 - 关联提交主题：`docs: 采用 MIT 开源并突出主页 Star 提示`。
 - 报告素材：公开源码许可与第三方许可边界、Git 历史检查、授权后的仓库设置与实际公开验证、首页传播与协作入口。
-- 下一步：完成必要测试与独立提交，先推送审核过的代码，再修改可见性并验证公开主页。
+- 公开结果补记：已将 48b6750 推送到 origin/master，GitHub 官方 API 返回 visibility=public；无认证会话读取仓库返回 HTTP 200。cua_repl 已打开并保留公开主页，页面实际显示 Public、MIT license 和“⭐ 如果喜欢，请给我一个 Star！”标题。未上传新的运行附件，既有发行记录保持原状。
+- 下一步：公开源码、首页与浏览器验收已完成；后续按正常开发流程维护。
 
 ## 5. 毕业设计报告素材映射
 
