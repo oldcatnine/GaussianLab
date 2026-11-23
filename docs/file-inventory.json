@@ -20,6 +20,11 @@
     "optional_local": false
   },
   {
+    "path": "LICENSE",
+    "purpose": "GaussianLab 自有源码的标准 MIT 开源许可证，保留版权、授权条件和免责声明。",
+    "optional_local": false
+  },
+  {
     "path": "README.md",
     "purpose": "项目总入口，说明运行、文档、验证、构建方式及当前能力边界。",
     "optional_local": false

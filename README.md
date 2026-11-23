@@ -1,10 +1,20 @@
 # 高斯光束传输计算器
 
+<div align="center">
+
+## ⭐ 如果喜欢，请给我一个 Star！
+
+**点击 GitHub 右上角的 Star，支持 GaussianLab 持续更新。**
+
+[GitHub 项目主页](https://github.com/oldcatnine/GaussianLab) · [MIT 开源许可](LICENSE)
+
+</div>
+
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
 当前源码版本为 **V3.1.1**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
-[V3.0.0 私有发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
+[V3.0.0 发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
 
 源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。源码用户可双击 [安装显卡加速.cmd](安装显卡加速.cmd)，或运行 `scripts/install_cuda_runtime.ps1`；便携版已随附 CuPy，无需手动安装，不会修改系统驱动。安装与交付证据见 [V3.1.1 验证](docs/release-validation-v3.1.1.md)。
 
@@ -94,4 +104,8 @@ $env:PYTHONUTF8 = '1'
 & .\scripts\build_release.ps1
 ```
 
-输出位于当前版本的 `releases/v3.1.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
+输出位于当前版本的 `releases/v3.1.1/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
+
+## 许可证
+
+GaussianLab 自有源码采用 [MIT 许可证](LICENSE)，允许使用、修改和分发，需保留版权与许可声明。Qt/PySide6、CuPy、NVIDIA CUDA 等第三方组件继续遵循各自许可证，详见 [第三方组件说明](docs/THIRD-PARTY-NOTICES.md)。

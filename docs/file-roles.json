@@ -103,5 +103,6 @@
   "docs/release-notes-v3.1.1.md":"V3.1.1 高精度采样、相干输入光与显卡安装交付的版本说明。",
   "docs/release-validation-v3.1.1.md":"本轮真实用户 CUDA 安装、沙箱诊断、全量回归和便携双后端冻结验证记录。",
   "docs/release-artifacts-v3.1.1.json":"V3.1.1 三个发行附件的大小、SHA-256、ZIP CRC、可执行文件摘要与双后端验收状态。",
-  "docs/release-smoke-v3.1.1.json":"解压 V3.1.1 EXE 在独立 CPU/CUDA 环境的实际运行、相干输入、高阶模式与首次头文件校验记录。"
+  "docs/release-smoke-v3.1.1.json":"解压 V3.1.1 EXE 在独立 CPU/CUDA 环境的实际运行、相干输入、高阶模式与首次头文件校验记录。",
+  "LICENSE":"GaussianLab 自有源码的标准 MIT 开源许可证，保留版权、授权条件和免责声明。"
 }

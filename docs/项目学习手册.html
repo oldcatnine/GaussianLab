@@ -15,6 +15,7 @@
 <p>V3.0.0 将 CUDA/响应式预览分支整理为正式便携版，包含区段频谱复用、自动预览和会话缓存；V2.0.0 历史文件保留。前次 CUDA 试验回退见 <a href="development-log.md">开发记录 DEV-013</a>。实现与性能见 <a href="acceleration.md">加速说明</a>，当前分发与首次 CUDA 联网补充说明见 <a href="USER_GUIDE-v3.0.0.md">V3 指南</a>。</p>
 <p>阅读证据时区分三种口径：validation-v2.md 是数值增强阶段的物理对照；acceleration-validation.json 和 interaction-validation.json 是开发分支固定场景的性能记录；github-release-v3.0.0.json 与 github-release-smoke-v3.0.0.json 是正式远端附件的摘要和 CPU/CUDA 冻结检查。它们不能互相替代。已发布 ZIP 内的手册是构建时快照，仓库内手册与离线 HTML 随文档维护更新。</p>
 <p>网络受限时可通过 <code>GAUSSIANLAB_CUDA_HEADERS_WHEEL</code> 指定用户从官方获取的固定轮子，软件照常校验字节数与 SHA-256；无需 Python，初始化后使用本机缓存。步骤见 <a href="USER_GUIDE-v3.1.1.md">V3.1.1 离线初始化</a>。</p>
+<p>项目自有源码采用 <a href="../LICENSE">MIT 许可证</a>，第三方依赖保留各自许可；标准源码和未来便携构建均提供许可文本。公开项目主页为 <a href="https://github.com/oldcatnine/GaussianLab">oldcatnine/GaussianLab</a>，如有帮助，可点击右上角 Star 支持更新。</p>
 <h2 id="section-1">1 项目解决什么问题</h2>
 <p>V3.1 支持两个仿真方案的对比。关于如何引入单平面实测数据、统一标尺并检验分析误差，见 <a href="iteration-plan-v3.2.md">V3.2 迭代计划（讨论稿）</a>。</p>
 <p>GaussianLab 是一个简单光学系统中的高斯光束传播与光斑分析应用。用户设置光源、透镜、光阑和距离，应用计算光束沿光路的变化，并通过三维光路、二维光斑、剖面、曲线和数据表展示结果。</p>
@@ -801,6 +802,10 @@ git diff --check
 <tr>
 <td><code>GaussianLab.spec</code></td>
 <td>可执行程序的打包配置，决定入口、资源、动态库、隐藏导入和组件排除。</td>
+</tr>
+<tr>
+<td><code>LICENSE</code></td>
+<td>GaussianLab 自有源码的标准 MIT 开源许可证，保留版权、授权条件和免责声明。</td>
 </tr>
 <tr>
 <td><code>README.md</code></td>

@@ -174,6 +174,7 @@ def stage(cache=None):
     (bundle / "使用说明.md").write_text(guide, encoding="utf-8")
     shutil.copy2(ROOT / f"docs/release-notes-{TAG}.md", bundle / "版本说明.md")
     shutil.copy2(ROOT / "README.md", bundle / "README.md")
+    shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")
     shutil.copy2(ROOT / "docs/THIRD-PARTY-NOTICES.md", bundle / "THIRD-PARTY-NOTICES.md")
     shutil.copytree(ROOT / "docs", bundle / "docs", dirs_exist_ok=True)
     examples = bundle / "examples"

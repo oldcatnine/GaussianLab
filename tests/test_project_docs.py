@@ -156,3 +156,20 @@ def test_coherent_modes_sampling_documentation_matches_model():
             assert term in text, (name, term)
     review = (ROOT / "docs/project-review-2026-11-23.md").read_text(encoding="utf-8")
     assert "未验证" in review and "便携包" in review
+
+
+
+def test_public_project_has_prominent_star_and_mit_license():
+    """公开首页应显眼呈现 Star 提示，自有和第三方许可边界清晰可查。"""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "⭐ 如果喜欢，请给我一个 Star！" in readme[:1000]
+    assert '<div align="center">' in readme[:1000]
+    assert "https://github.com/oldcatnine/GaussianLab" in readme[:1000]
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    assert "MIT License" in license_text and "Copyright (c) 2026 oldcatnine" in license_text
+    assert "Permission is hereby granted, free of charge" in license_text
+    assert "THE SOFTWARE IS PROVIDED" in license_text
+    notices = (ROOT / "docs/THIRD-PARTY-NOTICES.md").read_text(encoding="utf-8")
+    assert "不替代第三方组件" in notices
+    packaging = (ROOT / "scripts/prepare_release.py").read_text(encoding="utf-8")
+    assert 'shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")' in packaging

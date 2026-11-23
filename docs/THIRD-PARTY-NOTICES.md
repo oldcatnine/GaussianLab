@@ -23,7 +23,7 @@ Qt 动态库和 Python 扩展模块独立保留在 _internal 目录中。用户�
 
 ## 应用代码与其他组件
 
-本声明不为用户原创应用代码选择新的许可证，源码可见不自动等同于采用某一开源许可。第三方组件按随附的 BSD、MIT、PSF、Matplotlib 等许可证及 PyInstaller 引导程序例外条款使用，其权利、条件和免责声明保持有效。
+GaussianLab 自有源码经项目所有者选择，采用根目录 LICENSE 中的 MIT 许可证。该许可不替代第三方组件的许可。第三方组件按随附的 BSD、MIT、PSF、Matplotlib 等许可证及 PyInstaller 引导程序例外条款使用，其权利、条件和免责声明保持有效。
 
 ## V3 CUDA 可选组件
 
