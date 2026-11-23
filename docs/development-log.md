@@ -513,7 +513,14 @@ Actions 43613467773 的基础环境和 58 项发行/计算检查通过，安装�
 - 关联文件：gaussian_lab/__init__.py、packaging/windows-version-info.txt、agents.md、tests/test_release.py、发布脚本、工作流与第四代文档。
 - 关联提交主题：`release: prepare GaussianLab v4.0.0 and patch version policy`。
 - 报告素材：版本资源一致性、发行追溯、保留用户工作区、历史版本与新版本区分。
-- 下一步：完成测试后构建、下载校验并发布第四代附件。
+- 下一步：后续应用小更新按 0.0.1 递增，并沿用本版构建与下载验证流程。
+
+
+- 2026-11-24 续作与最终发行证据：GitHub Actions 45206439380 成功，标签 v4.0.0 指向 e391d4b；实际回下载三 ZIP 与校验清单，SHA-256/GitHub digest/ZIP CRC 全部通过。下载版 CPU 与真实 CUDA 冻结测试均退出码 0，窗口、报告与 Windows 文件/产品版本为 4.0.0；已发布为最新版本。证据见 github-release-v4.0.0.json、github-release-smoke-v4.0.0.json 与 release-validation-v4.0.0.md。
+- 下载问题处理：状态查询 TLS EOF 重试恢复；单连接速度偏低，验证官方 HTTP 206/Content-Range 后使用 24 路 2 MiB 分段，每段核对范围与长度，合并核对完整摘要。停止旧下载时初次命令筛选匹配了自身 PowerShell，随后限定 Python 和脚本文件名，旧下载中止不计成功，未终止用户应用。未关闭 TLS 校验或修改代理。
+- 交付整理：releases/v4.0.0 保存最终远端附件与运行目录；旧发行保留。原有 IDE 暂存、V3.2 规划和概念图未混入发行或证据提交。用户要求的补丁递增偏好已保存单条长期记忆更新。
+- 证据补录验证：发布、文档与中文规范相关 41 项通过，1.73 秒，退出码 0；规则、pip check 与差异检查通过。手册覆盖 139 个文件、102 个导航条目。
+- 证据提交主题：`docs: verify GaussianLab v4.0.0 published artifacts`。
 
 ## 5. 毕业设计报告素材映射
 

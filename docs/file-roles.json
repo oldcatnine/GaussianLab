@@ -120,5 +120,7 @@
   "docs/assets/tem-mode-grid.png": "TEM 两方向各 0—3 阶的 16 种预设入口面真实计算强度矩阵，分别峰值归一化。",
   "docs/USER_GUIDE-v4.0.0.md": "第四代便携版操作与模式、计算及显示设置说明。",
   "docs/release-notes-v4.0.0.md": "第四代已实现能力汇总与补丁版本递增约定。",
-  "docs/release-validation-v4.0.0.md": "第四代构建、测试、发布与附件核验状态记录。"
+  "docs/release-validation-v4.0.0.md": "第四代构建、测试、发布与附件核验状态记录。",
+  "docs/github-release-v4.0.0.json": "第四代实际回下载附件摘要、发布状态、构建与 Windows 版本证据。",
+  "docs/github-release-smoke-v4.0.0.json": "第四代实际下载 EXE 的 CPU/CUDA 独立冻结运行证据。"
 }

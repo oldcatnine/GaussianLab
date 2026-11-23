@@ -1,0 +1,196 @@
+{
+  "cpu": {
+    "version": "4.0.0",
+    "frozen": true,
+    "cases": [
+      {
+        "name": "单透镜聚焦",
+        "seconds": 6.094451099997968,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000009
+      },
+      {
+        "name": "双透镜扩束",
+        "seconds": 6.0524637999988045,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000009
+      },
+      {
+        "name": "光阑衍射",
+        "seconds": 6.239554699997825,
+        "backend": {
+          "requested": "cpu",
+          "used": "cpu",
+          "device": "CPU",
+          "reason": "兼容 CPU 计算",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 0.6159289042441446
+      }
+    ],
+    "preview": {
+      "quality": "preview",
+      "grid": 256,
+      "backend": {
+        "requested": "cpu",
+        "used": "cpu",
+        "device": "CPU",
+        "reason": "兼容 CPU 计算",
+        "precision": "complex128 / float64"
+      }
+    },
+    "coherent_input": {
+      "modes": 2,
+      "phase_deg": 90,
+      "backend": {
+        "requested": "cpu",
+        "used": "cpu",
+        "device": "CPU",
+        "reason": "兼容 CPU 计算",
+        "precision": "complex128 / float64"
+      }
+    },
+    "higher_modes": [
+      "HG12",
+      "LG12"
+    ],
+    "scan_points": 3,
+    "scan_statuses": [
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "exported_plots": [
+      "spot",
+      "profile",
+      "surface",
+      "energy",
+      "beam",
+      "scan"
+    ],
+    "formats": [
+      "png",
+      "svg",
+      "pdf"
+    ],
+    "theme": "white",
+    "window_title": "GaussianLab · 高斯光束传输与光斑分析 V4.0.0",
+    "status": "passed",
+    "backend": "cpu",
+    "exit_code": 0,
+    "environment": "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量",
+    "executable_sha256": "5e9846e590babb25ae1bc0e09416fab07bbe085952e93c011405ba6df420aa94"
+  },
+  "cuda": {
+    "version": "4.0.0",
+    "frozen": true,
+    "cases": [
+      {
+        "name": "单透镜聚焦",
+        "seconds": 39.664090700003726,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000007
+      },
+      {
+        "name": "双透镜扩束",
+        "seconds": 0.8859950999976718,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 1.0000000000000009
+      },
+      {
+        "name": "光阑衍射",
+        "seconds": 1.0244241999971564,
+        "backend": {
+          "requested": "cuda",
+          "used": "cuda",
+          "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+          "reason": "CUDA 光场与 FFT",
+          "precision": "complex128 / float64"
+        },
+        "transmission": 0.6159289042441447
+      }
+    ],
+    "preview": {
+      "quality": "preview",
+      "grid": 256,
+      "backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    "coherent_input": {
+      "modes": 2,
+      "phase_deg": 90,
+      "backend": {
+        "requested": "cuda",
+        "used": "cuda",
+        "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+        "reason": "CUDA 光场与 FFT",
+        "precision": "complex128 / float64"
+      }
+    },
+    "higher_modes": [
+      "HG12",
+      "LG12"
+    ],
+    "scan_points": 3,
+    "scan_statuses": [
+      "warning",
+      "warning",
+      "warning"
+    ],
+    "exported_plots": [
+      "spot",
+      "profile",
+      "surface",
+      "energy",
+      "beam",
+      "scan"
+    ],
+    "formats": [
+      "png",
+      "svg",
+      "pdf"
+    ],
+    "theme": "white",
+    "window_title": "GaussianLab · 高斯光束传输与光斑分析 V4.0.0",
+    "status": "passed",
+    "backend": "cuda",
+    "exit_code": 0,
+    "environment": "PATH 仅保留 Windows 系统目录，移除开发用 Python/Qt 环境变量",
+    "executable_sha256": "5e9846e590babb25ae1bc0e09416fab07bbe085952e93c011405ba6df420aa94",
+    "isolated_cuda_cache": "C:\\Users\\11795\\AppData\\Local\\Temp\\GL3-1795448945259118400",
+    "headers_verified": true,
+    "headers_source": [
+      "official-download"
+    ],
+    "headers_download_verified": true
+  }
+}

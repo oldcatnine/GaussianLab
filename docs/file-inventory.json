@@ -225,6 +225,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/github-release-smoke-v4.0.0.json",
+    "purpose": "第四代实际下载 EXE 的 CPU/CUDA 独立冻结运行证据。",
+    "optional_local": false
+  },
+  {
     "path": "docs/github-release-v0.1.0.json",
     "purpose": "已发布私有版本的地址、附件大小与服务器摘要核验记录。",
     "optional_local": false
@@ -232,6 +237,11 @@
   {
     "path": "docs/github-release-v3.0.0.json",
     "purpose": "V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/github-release-v4.0.0.json",
+    "purpose": "第四代实际回下载附件摘要、发布状态、构建与 Windows 版本证据。",
     "optional_local": false
   },
   {

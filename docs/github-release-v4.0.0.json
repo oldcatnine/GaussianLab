@@ -1,0 +1,51 @@
+{
+  "repository": "https://github.com/oldcatnine/GaussianLab",
+  "private": false,
+  "tag": "v4.0.0",
+  "release": "https://github.com/oldcatnine/GaussianLab/releases/tag/v4.0.0",
+  "draft": false,
+  "assets": [
+    {
+      "name": "GaussianLab-v4.0.0-Application-Source.zip",
+      "bytes": 7685864,
+      "sha256": "315bb7eadfdc61803bc1e9407f14a5e3edffe2d591eb5090c9ff79b0ec73c94d",
+      "github_digest": "sha256:315bb7eadfdc61803bc1e9407f14a5e3edffe2d591eb5090c9ff79b0ec73c94d",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v4.0.0/GaussianLab-v4.0.0-Application-Source.zip"
+    },
+    {
+      "name": "GaussianLab-v4.0.0-Qt-Corresponding-Source.zip",
+      "bytes": 73624348,
+      "sha256": "0670f83c4f1bf4ab000fc2617309539289f8b076c6e4400dea28e0d6a54d6b08",
+      "github_digest": "sha256:0670f83c4f1bf4ab000fc2617309539289f8b076c6e4400dea28e0d6a54d6b08",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v4.0.0/GaussianLab-v4.0.0-Qt-Corresponding-Source.zip"
+    },
+    {
+      "name": "GaussianLab-v4.0.0-Windows-x64.zip",
+      "bytes": 605230892,
+      "sha256": "e1bd1668ceb28620edf37c94186aab22f716037924d95b8d22564386ab068921",
+      "github_digest": "sha256:e1bd1668ceb28620edf37c94186aab22f716037924d95b8d22564386ab068921",
+      "url": "https://github.com/oldcatnine/GaussianLab/releases/download/v4.0.0/GaussianLab-v4.0.0-Windows-x64.zip"
+    }
+  ],
+  "verification": "已下载，SHA-256 与发布清单一致，压缩包完整性检查通过",
+  "frozen_smoke": {
+    "cpu": "passed",
+    "cuda": "passed"
+  },
+  "verified_as_draft": true,
+  "published_at": "2026-11-23T16:14:29Z",
+  "windows_version": {
+    "FileVersion": "4.0.0",
+    "ProductVersion": "4.0.0"
+  },
+  "workflow": {
+    "id": 45206439380,
+    "html_url": "https://github.com/oldcatnine/GaussianLab/actions/runs/45206439380",
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "e391d4b1862bb9d78f66741b4c0d1c2c1a49ea73",
+    "created_at": "2026-11-23T15:32:51Z",
+    "updated_at": "2026-11-23T15:38:28Z"
+  },
+  "local_distribution": "releases/v4.0.0"
+}

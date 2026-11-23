@@ -348,3 +348,24 @@ def test_release_verification_preserves_repository_visibility():
     assert "assert repo['private']" not in text
     assert "assert args.allow_draft or not release['draft']" in text
     assert "'private':repo['private']" in text
+
+
+def test_v4_published_artifacts_and_frozen_backends_are_verified():
+    """第四代真实附件与 CPU/CUDA 冻结证据必须对应同一可执行文件。"""
+    release = json.loads((ROOT / "docs/github-release-v4.0.0.json").read_text(encoding="utf-8"))
+    smoke = json.loads((ROOT / "docs/github-release-smoke-v4.0.0.json").read_text(encoding="utf-8"))
+    assert release["tag"] == "v4.0.0" and release["draft"] is False
+    assert release["workflow"]["conclusion"] == "success"
+    assert release["windows_version"]["FileVersion"] == "4.0.0"
+    assert release["windows_version"]["ProductVersion"] == "4.0.0"
+    assert len(release["assets"]) == 3
+    for asset in release["assets"]:
+        assert asset["bytes"] > 0 and asset["github_digest"] == "sha256:" + asset["sha256"]
+    assert set(smoke) == {"cpu", "cuda"}
+    for backend, data in smoke.items():
+        assert data["version"] == "4.0.0" and data["frozen"]
+        assert data["exit_code"] == 0 and data["status"] == "passed"
+        assert len(data["cases"]) == 3
+        assert all(case["backend"]["used"] == backend for case in data["cases"])
+    assert smoke["cpu"]["executable_sha256"] == smoke["cuda"]["executable_sha256"]
+    assert smoke["cuda"]["headers_verified"]
