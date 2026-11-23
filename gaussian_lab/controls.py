@@ -1,7 +1,36 @@
-"""统一下拉选择控件的细线符号、菜单行距与键盘交互。"""
-from PySide6.QtCore import Qt
+"""共用界面控件：统一下拉样式，并让长说明按实际换行高度显示。"""
+from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QComboBox, QListView, QStyle, QStyleOptionComboBox
+from PySide6.QtWidgets import QComboBox, QListView, QStyle, QStyleOptionComboBox, QLabel, QSizePolicy
+
+
+class WrappingLabel(QLabel):
+    """按实际换行高度约束长说明，避免表单布局压缩并裁切文本。"""
+
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self.setWordWrap(True)
+        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+    def fit_text_height(self):
+        required = self.heightForWidth(max(1, self.width()))
+        if required >= 0 and self.minimumHeight() != required:
+            self.setMinimumHeight(required)
+            self.updateGeometry()
+
+    def setText(self, text):
+        super().setText(text)
+        self.fit_text_height()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.fit_text_height()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() in (QEvent.FontChange, QEvent.StyleChange):
+            self.fit_text_height()
 
 
 class RefinedComboBox(QComboBox):

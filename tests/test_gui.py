@@ -922,3 +922,23 @@ def test_all_choice_controls_share_style_and_keep_selection(window, app):
     finally:
         editor.close()
         editor.deleteLater()
+
+
+def test_memory_details_never_clip_when_panel_width_or_text_changes(window, app):
+    """展开后的内存说明随宽度和警告换行增高，不截首尾，也不盖住后续按钮。"""
+    window.performance_panel.show()
+    window.grid.setCurrentText("1024")
+    for width in (330, 420, 330):
+        window.parameter_scroll.setFixedWidth(width)
+        window.storage_mode.setCurrentIndex(window.storage_mode.findData("ram"))
+        window.memory_limit.setValue(32)
+        window.update_sampling_info()
+        for _ in range(3):
+            app.processEvents()
+        label = window.memory_info
+        assert label.height() >= label.heightForWidth(label.width())
+        form = window.performance_panel.layout()
+        row, _ = form.getWidgetPosition(label)
+        following = form.itemAt(row + 1, type(form).ItemRole.SpanningRole).widget()
+        assert label.geometry().bottom() < following.geometry().top()
+        assert "结果数据" in label.text() and "结果超出上限" in label.text()

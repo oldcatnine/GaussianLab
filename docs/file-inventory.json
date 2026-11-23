@@ -120,6 +120,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/USER_GUIDE-v4.0.4.md",
+    "purpose": "V4.0.4 计算详情显示修复与操作说明。",
+    "optional_local": false
+  },
+  {
     "path": "docs/USER_GUIDE.md",
     "purpose": "当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。",
     "optional_local": false
@@ -380,6 +385,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-notes-v4.0.4.md",
+    "purpose": "V4.0.4 动态说明文字裁切修复记录。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-smoke-v0.1.0.json",
     "purpose": "本地独立发行包的冻结冒烟测试结果。",
     "optional_local": false
@@ -516,7 +526,7 @@
   },
   {
     "path": "gaussian_lab/controls.py",
-    "purpose": "统一下拉选择框的细线箭头、状态样式及弹出菜单，保留原生选择行为。",
+    "purpose": "统一下拉样式与动态换行说明标签，避免表单内容裁切。",
     "optional_local": false
   },
   {

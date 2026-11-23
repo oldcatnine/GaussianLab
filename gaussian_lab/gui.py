@@ -1,5 +1,5 @@
 """桌面界面及任务调度，连接输入、后台计算、图表和三维场景。"""
-from .controls import RefinedComboBox
+from .controls import RefinedComboBox, WrappingLabel
 import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
@@ -333,7 +333,7 @@ class MainWindow(QMainWindow):
         for text, key in (("2D 光路示意（低占用）", "2d"), ("3D 光路", "3d"), ("仅计算（关闭绘图）", "none")):
             self.display_mode.addItem(text, key)
         performance_form.addRow("显示模式", self.display_mode)
-        self.display_hint = QLabel("2D / 仅计算不创建 VTK 三维窗口。3D 额外占用 RAM/显存；切换后已加载库与驱动缓存可能保留。")
+        self.display_hint = WrappingLabel("2D / 仅计算不创建 VTK 三维窗口。3D 额外占用 RAM/显存；切换后已加载库与驱动缓存可能保留。")
         self.display_hint.setWordWrap(True)
         performance_form.addRow(self.display_hint)
         self.memory_limit = NumericSpinBox()
@@ -355,7 +355,7 @@ class MainWindow(QMainWindow):
         self.spot_render.setToolTip("平滑不增加采样精度；鼠标读数、曲线和导出数值仍来自原始数据。")
         self.spot_render.toggled.connect(self.draw_plane)
         performance_form.addRow("二维光斑", self.spot_render)
-        self.memory_info = QLabel()
+        self.memory_info = WrappingLabel()
         self.memory_info.setWordWrap(True)
         self.memory_info.setAccessibleName("内存估算")
         self.memory_info.setToolTip("运行范围为经验估算，FFT/驱动可能超出。显示的系统可用 RAM 会变化，不代表显存。")
