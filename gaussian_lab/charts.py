@@ -2,6 +2,7 @@
 import numpy as np
 import weakref
 from .optics import radial_energy
+from .model import input_mode_label
 from .theme import BACKGROUND, TEXT, BORDER, BLUE, ORANGE, INTENSITY_CMAP
 from matplotlib import rcParams
 from matplotlib.figure import Figure
@@ -196,7 +197,7 @@ class PlotCanvas(FigureCanvasQTAgg):
         limit = max(r.r86[index] * 2.2, 4 * dx) * 1e3
         limit = min(limit, r.project.window * 500)
         ax.set(xlim=(-limit, limit), ylim=(-limit, limit), xlabel="x / mm", ylabel="y / mm",
-               title=f"z = {r.z[index]*1e3:.4f} mm · 峰值归一化" + (" / dB" if log else ""))
+               title=f"{input_mode_label(r.project)}\nz = {r.z[index]*1e3:.4f} mm · 峰值归一化" + (" / dB" if log else ""))
         diameter_pixels = 2 * r.r86[index] / dx
         quality = "平滑仅改善显示；计算值未改变" if smooth else "原始像素，不做平滑插值"
         if diameter_pixels < 8:

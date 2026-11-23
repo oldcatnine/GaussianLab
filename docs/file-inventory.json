@@ -150,6 +150,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/assets/modes-3d-comparison.png",
+    "purpose": "实际 VTK 与同面二维光斑的六例截图对照，包含 TEM 多瓣、LG 空心与叠加相位变化。",
+    "optional_local": false
+  },
+  {
     "path": "docs/assets/white-theme-desktop.png",
     "purpose": "白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。",
     "optional_local": false
@@ -436,7 +441,7 @@
   },
   {
     "path": "gaussian_lab/scene.py",
-    "purpose": "将计算结果转换为三维光路、包络、元件示意及观察面。",
+    "purpose": "将实际强度有界抽样为三维多瓣/空心等值面，显示 r86 参考、元件及与二维同面的入口/当前观察屏。",
     "optional_local": false
   },
   {

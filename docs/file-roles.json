@@ -15,7 +15,7 @@
   "gaussian_lab/model.py":"定义光源相干模式、元件和项目数据，负责采样与模式校验、复制及兼容旧 JSON 的保存加载。",
   "gaussian_lab/optics.py":"实现 HG/LG 相干源场、菲涅耳传播、基模包络参考、焦区细化、收敛与采样证据导出。",
   "gaussian_lab/gui.py":"构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。",
-  "gaussian_lab/scene.py":"将计算结果转换为三维光路、包络、元件示意及观察面。",
+  "gaussian_lab/scene.py":"将实际强度有界抽样为三维多瓣/空心等值面，显示 r86 参考、元件及与二维同面的入口/当前观察屏。",
   "gaussian_lab/charts.py":"以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
   "gaussian_lab/release_smoke.py":"在冻结程序内部验证实际计算、三维渲染、配置与导出是否正常。",
   "scripts/build_release.ps1":"串联打包器与发行整理脚本，任一步失败即停止。",
@@ -113,5 +113,6 @@
   "tests/test_storage.py":"验证 LG/TEM 预设与功率、RAM/磁盘逐元素一致、自动缓存、焦面插入、视图生命周期和取消清理。",
   "docs/modes-storage-validation.md":"记录新增 LG/TEM 模式、平滑与原始像素显示、磁盘缓存及 2048/65 CPU 实测证据和限制。",
   "docs/assets/lg-tem-input-modes.png":"真实计算的 LG01—LG05 与 TEM 各预设入口面峰值归一化强度图，不代表聚焦形状或等功率色标。",
-  "gaussian_lab/axis_editor.py":"各定量图的中文坐标范围编辑窗口，支持数据子图、自动范围、科学计数输入与错误提示。"
+  "gaussian_lab/axis_editor.py":"各定量图的中文坐标范围编辑窗口，支持数据子图、自动范围、科学计数输入与错误提示。",
+  "docs/assets/modes-3d-comparison.png":"实际 VTK 与同面二维光斑的六例截图对照，包含 TEM 多瓣、LG 空心与叠加相位变化。"
 }

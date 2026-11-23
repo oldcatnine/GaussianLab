@@ -115,3 +115,5 @@ GaussianLab 自有源码采用 [MIT 许可证](LICENSE)，允许使用、修改�
 本轮内存、显示与焦面修复的公式、实际界面和验证数据见 [专项验证](docs/memory-display-validation.md)。
 
 当前源码新增“平滑显示”勾选开关，以及各图右上角“坐标轴…”范围设置，支持独立子图、扫描双纵轴、恢复自动范围和导出快照。操作见 [使用说明](docs/USER_GUIDE.md)。
+
+当前源码的 3D 彩色主体已显示实际强度抽样的多瓣/空心形状，入口屏和当前屏与二维同源，并标注 LG/TEM 模式与相干入口相位；可查看 [三维/二维对照](docs/assets/modes-3d-comparison.png)。

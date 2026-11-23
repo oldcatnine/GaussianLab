@@ -161,6 +161,18 @@ MODE_PRESET_KEYS = tuple(f"LG0{i}" for i in range(1, 6)) + (
     "TEM00", "TEM10", "TEM20", "TEM21", "TEM03", "TEM30", "TEM11", "TEM01+TEM10")
 
 
+def input_mode_label(project):
+    """二维与三维共用模式名称，叠加时明确振幅和入口相位。"""
+    labels = []
+    for mode in project.modes:
+        name = (f"TEM{mode.n}{mode.m}" if mode.family == "HG" else
+                f"LG{mode.n}{mode.m}" if mode.m >= 0 else f"LG(p={mode.n},l={mode.m})")
+        if len(project.modes) > 1 or mode.amplitude != 1 or mode.phase_deg != 0:
+            name += f" ×{mode.amplitude:g} ∠{mode.phase_deg:g}°"
+        labels.append(name)
+    return " + ".join(labels)
+
+
 def mode_preset(key):
     """LG 按 p、l 编号；本软件的 TEM 横模以 HG 的 x、y 阶数表示。"""
     if key in MODE_PRESET_KEYS[:5]:

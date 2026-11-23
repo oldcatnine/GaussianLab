@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
         if mode == "none":
             return
         if self.scene is not None:
-            self.scene.set_plane(i)
+            self.scene.set_plane(i, log=self.log_scale.isChecked(), smooth=self.spot_render.isChecked())
         elif mode == "2d":
             self.schematic_plot.schematic(r, i)
         if self.tabs.currentIndex() == 0:

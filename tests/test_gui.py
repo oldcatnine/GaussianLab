@@ -664,6 +664,62 @@ def test_smoothing_checkbox_and_export_axes_snapshot(window, app, tmp_path, monk
     assert saved == [((-.1,.1),(-.15,.15),"bilinear")]
 
 
+def test_all_input_modes_have_matching_true_3d_screens_and_shapes(window, app):
+    """逐一核验全部模式的三维原始点值、光轴、模式标识与二维同面映射。"""
+    from gaussian_lab.model import MODE_PRESET_KEYS, mode_preset, input_mode_label
+    for key in MODE_PRESET_KEYS:
+        p = window.result.project.clone()
+        p.modes = mode_preset(key)
+        if key == "LG03":
+            p.storage_mode = "disk"
+        window.fill_project(p)
+        window.job = Job("simulate",window.read_project())
+        window.job_done(simulate(window.job.project))
+        r, scene = window.result, window.scene
+        assert scene.result is r
+        assert scene.mode_volume.n_points <= 54*65*65
+        assert scene.mode_surface.n_points > 0
+        assert "mode_intensity" in scene.actors
+        assert len(scene.envelope_meshes) == 1
+        for index in (0,r.focus_index,len(r.z)-1):
+            window.plane_slider.setValue(index)
+            window.draw_plane()
+            indices = scene.screen_indices
+            raw = r.intensity[index]/r.intensity[index].max()
+            expected = raw[np.ix_(indices,indices)]
+            np.testing.assert_array_equal(scene.screen_mesh["Intensity"].reshape(expected.shape,order="F"),expected)
+            np.testing.assert_allclose(scene.screen_mesh.points[:,0],r.z[index]*1e3)
+            a,b = np.meshgrid(r.x[indices]*1e3*25,r.x[indices]*1e3*25,indexing="xy")
+            np.testing.assert_allclose(scene.screen_mesh.points[:,1],a.ravel(order="F"))
+            np.testing.assert_allclose(scene.screen_mesh.points[:,2],b.ravel(order="F"))
+            np.testing.assert_array_equal(window.spot_plot.ax.images[0].get_array()[np.ix_(indices,indices)],expected)
+            assert input_mode_label(r.project) in window.spot_plot.ax.get_title()
+            assert input_mode_label(r.project) in scene.actors["mode_label"].GetText(0)
+            assert bool(scene.input_actor.GetVisibility()) == (index != 0)
+        shape = (len(scene.mode_plane_indices),65,65)
+        volume = np.asarray(scene.mode_volume["Intensity"]).reshape(shape,order="F")
+        if key.startswith("LG") or key in ("TEM10","TEM21","TEM03","TEM30","TEM11","TEM01+TEM10"):
+            assert volume[0,32,32] == pytest.approx(0,abs=1e-12)
+    # 相干叠加的第二项相位改变，三维形状也必须随原始场更新。
+    old = volume[0].copy()
+    p = window.result.project.clone()
+    p.modes[1].phase_deg = 90
+    window.fill_project(p)
+    window.job = Job("simulate",window.read_project())
+    window.job_done(simulate(window.job.project))
+    scene = window.scene
+    new = np.asarray(scene.mode_volume["Intensity"]).reshape((len(scene.mode_plane_indices),65,65),order="F")[0]
+    assert not np.allclose(old,new)
+    np.testing.assert_allclose(new,new.T,atol=1e-6)
+    window.log_scale.setChecked(True)
+    window.spot_render.setChecked(False)
+    window.draw_plane()
+    assert scene.screen_options == (True,False)
+    data = window.spot_plot.ax.images[0].get_array()
+    indices = scene.screen_indices
+    np.testing.assert_array_equal(scene.screen_mesh["Intensity"].reshape((len(indices),len(indices)),order="F"),data[np.ix_(indices,indices)])
+
+
 def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):
     """发送真实 Matplotlib 鼠标事件，核验各曲线和双纵轴的点值与单位。"""
     from matplotlib.backend_bases import MouseEvent

@@ -148,3 +148,8 @@
 ### 图表范围编辑（2026-11-23）
 
 查看 [Matplotlib 原仓库 Qt 图形选项源码](https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/backends/qt_editor/figureoptions.py)，借鉴按坐标维度读取和应用范围、校验输入的交互方式。使用项目已有 Qt/Matplotlib API 自主实现中文精简范围编辑器，未复制第三方代码或新增依赖。每图一个按钮，多数据子图可选；排除颜色条，双轴共享横轴同步，先捕获所有自动范围再应用手动范围，避免共享轴污染默认值。范围与导出快照独立于物理输入。
+
+
+### 三维相干模式对应（2026-11-23）
+
+查看 [PyVista 原仓库 contouring 示例](https://github.com/pyvista/pyvista/blob/main/examples/01-filter/contouring.py)，参考 StructuredGrid 与 contour 的数据标量等值面方式；实际使用项目已安装的 PyVista、VTK、SciPy map_coordinates，自主实现有界的自适应横向抽样，未复制外部代码、未新增依赖。放弃以多层圆管模拟高阶模式，改由实际强度提取 0.15/0.5 的逐面归一化形状。保留 r86 外罩作低透明参考。屏幕选择原始像素并保留光轴，统一与二维的模式标签、z、归一化和对数。原理限制及实际截图见 USER_GUIDE.md。

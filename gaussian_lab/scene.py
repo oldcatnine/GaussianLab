@@ -1,8 +1,12 @@
 """三维场景：显示纵轴对应物理 z，横向坐标按视觉倍率放大。"""
 import numpy as np
+from pathlib import Path
+import os
+from scipy.ndimage import map_coordinates
 import pyvista as pv
 from pyvistaqt import QtInteractor
 from .theme import BACKGROUND, TEXT, INTENSITY_CMAP
+from .model import input_mode_label
 
 
 class OpticalScene(QtInteractor):
@@ -12,12 +16,19 @@ class OpticalScene(QtInteractor):
         self.scale_transverse = 25
         self.result = None
         self.screen_actor = None
+        self.screen_options = None
+        font = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts/msyh.ttc"
+        self.text_font = {"font_file": str(font)} if font.is_file() else {}
 
     def set_result(self, result):
         previous = self.suppress_rendering
         self.suppress_rendering = True
         try:
+            index = getattr(self,"plane_index",None)
             self._set_result(result)
+            self.update_mode_volume()
+            self.update_input_screen()
+            self.set_plane(min(index if index is not None else result.focus_index,len(result.z)-1))
         finally:
             self.suppress_rendering = previous
         self.render()
@@ -49,12 +60,8 @@ class OpticalScene(QtInteractor):
         mesh = pv.StructuredGrid(zz, yy, hh)
         self.envelope_meshes = [(mesh, 1.0)]
         mesh["energy"] = np.broadcast_to(result.transmission[:, None], zz.shape).ravel(order="F")
-        self.add_mesh(mesh, color="#0284c7", opacity=.23, smooth_shading=True,
+        self.add_mesh(mesh, color="#0284c7", opacity=.06, smooth_shading=True,
                       show_edges=False, name="energy_envelope")
-        for fraction, opacity in ((.68, .15), (.32, .25)):
-            core = pv.StructuredGrid(zz, yy*fraction, hh*fraction)
-            self.envelope_meshes.append((core, fraction))
-            self.add_mesh(core, color="#0369a1", opacity=opacity, lighting=False)
         floor = pv.Plane(center=(p.length*500, 0, -36), direction=(0, 0, 1),
                          i_size=p.length*1100, j_size=140, i_resolution=32, j_resolution=12)
         self.add_mesh(floor, color="#94a3b8", style="wireframe", opacity=.35, line_width=.7)
@@ -80,44 +87,94 @@ class OpticalScene(QtInteractor):
                                   z_length=2), color="#334155")
         focus = result.focus_index
         self.focus_origin_z = z[focus]
-        self.focus_actor = self.add_mesh(pv.Sphere(radius=2, center=(z[focus], 0, 0)), color="#c2410c",
+        self.focus_actor = self.add_mesh(pv.Sphere(radius=.8, center=(z[focus], 0, -32)), color="#c2410c",
                       ambient=.7, name="focus")
         self.add_axes(xlabel="z", ylabel="x", zlabel="y", line_width=2, color=TEXT)
-        self.add_text("r86 | x25",
-                      position="upper_left", font_size=10, color=TEXT, name="scale_label")
-        self.setToolTip("三维轮廓表示 r86；横向放大 25 倍，光学元件外形为示意。")
+        self.add_text("横向放大 25 倍；浅蓝外罩为 r86 参考\n彩色主体为逐面峰值归一化强度的抽样等值面",
+                      position="upper_left", font_size=9, color=TEXT, name="scale_label", **self.text_font)
+        self.setToolTip("三维浅蓝轮廓表示 r86；横向放大 25 倍。彩色主体来自实际强度的抽样等值面，入口屏与当前屏来自原始强度；不是矢量场或相位图。")
         if camera is None:
             self.reset_view()
         else:
             self.camera_position = camera
             self.render()
 
-    def set_plane(self, index):
+    def plane_samples(self, index, maximum=257):
+        """与二维光斑同视野，从原始像素选取坐标，保留光轴并限制渲染点数。"""
+        r = self.result
+        dx = r.project.window / r.project.grid
+        limit = min(max(float(r.r86[index])*2.2, 4*dx), r.project.window/2)
+        indices = np.flatnonzero(np.abs(r.x) <= limit)
+        if len(indices) > maximum:
+            indices = indices[np.unique(np.linspace(0,len(indices)-1,maximum,dtype=int))]
+        indices = np.unique(np.append(indices,r.project.grid//2))
+        image = r.intensity[index]
+        peak = max(float(image.max()),1e-30)
+        return indices, np.asarray(image[np.ix_(indices,indices)] / peak)
+
+    def update_mode_volume(self):
+        """用有界抽样网格提取真实多瓣/空心形状，不复制完整三维强度体积。"""
+        r = self.result
+        indices = np.unique(np.r_[np.linspace(0,len(r.z)-1,min(33,len(r.z)),dtype=int),r.focus_index,
+                                   [int(np.argmin(abs(r.z-e.z))) for e in r.project.ordered()]]).astype(int)
+        count = 65
+        shape = (len(indices),count,count)
+        zz, xx, yy = (np.empty(shape) for _ in range(3))
+        values = np.empty(shape,dtype=np.float32)
+        dx = r.project.window / r.project.grid
+        for k, index in enumerate(indices):
+            limit = min(max(float(r.r86[index])*2.2,4*dx),r.project.window/2)
+            coords = np.linspace(-limit,limit,count)
+            a,b = np.meshgrid(coords,coords,indexing="xy")
+            pixel_a, pixel_b = (a-r.x[0])/dx, (b-r.x[0])/dx
+            image = map_coordinates(r.intensity[index], [pixel_b,pixel_a], order=1, mode="constant", cval=0, prefilter=False)
+            values[k] = image / max(float(image.max()),1e-30)
+            zz[k] = r.z[index]*1e3
+            xx[k], yy[k] = a*1e3*self.scale_transverse, b*1e3*self.scale_transverse
+        self.mode_volume = pv.StructuredGrid(zz,xx,yy)
+        self.mode_volume["Intensity"] = values.ravel(order="F")
+        self.mode_plane_indices = indices
+        self.mode_surface = self.mode_volume.contour([.15,.5],scalars="Intensity")
+        self.remove_actor("mode_intensity",reset_camera=False,render=False)
+        if self.mode_surface.n_points:
+            self.add_mesh(self.mode_surface,scalars="Intensity",cmap=INTENSITY_CMAP,clim=(0,1),
+                          opacity=.45,lighting=False,show_scalar_bar=False,name="mode_intensity",reset_camera=False,render=False)
+
+    def make_screen(self, index, name, log=False, smooth=True):
+        """观察屏点值对应原始采样；零强度透明，避免黑底平面遮住多瓣主体。"""
+        r = self.result
+        indices,image = self.plane_samples(index)
+        coords = r.x[indices]*1e3*self.scale_transverse
+        a,b = np.meshgrid(coords,coords,indexing="xy")
+        mesh = pv.StructuredGrid(np.full_like(a,r.z[index]*1e3),a,b)
+        if log:
+            image = 10*np.log10(np.maximum(image,1e-6))
+        mesh["Intensity"] = image.ravel(order="F")
+        actor = self.add_mesh(mesh,scalars="Intensity",cmap=INTENSITY_CMAP,clim=(-50,0) if log else (0,1),
+                              opacity=[0,.12,.35,.7,1],lighting=False,show_scalar_bar=False,
+                              interpolate_before_map=smooth,name=name,reset_camera=False,render=False)
+        return actor, mesh, indices
+
+    def update_input_screen(self, log=False, smooth=True):
+        self.remove_actor("input_screen",reset_camera=False,render=False)
+        self.input_actor,self.input_mesh,self.input_indices = self.make_screen(0,"input_screen",log,smooth)
+
+    def set_plane(self, index, log=False, smooth=True):
         r = self.result
         if r is None:
             return
-        if getattr(self, "plane_index", None) == index:
+        if getattr(self, "plane_index", None) == index and self.screen_options == (log,smooth):
             return
+        if self.screen_options != (log,smooth):
+            self.update_input_screen(log,smooth)
         self.plane_index = index
+        self.screen_options = (log,smooth)
         if self.screen_actor is not None:
             self.remove_actor(self.screen_actor, reset_camera=False, render=False)
-        # 裁剪显示切片，使观察屏相对于纵向光路保持可读尺寸。
-        crop = max(float(r.r86[index] * 1.7), .25e-3)
-        mask = np.abs(r.x) <= min(crop, r.project.window * .48)
-        coords = r.x[mask][::2] * 1e3 * self.scale_transverse
-        if len(coords) < 3:
-            coords = r.x[mask] * 1e3 * self.scale_transverse
-            step = 1
-        else:
-            step = 2
-        a, b = np.meshgrid(coords, coords, indexing="xy")
-        plane = pv.StructuredGrid(np.full_like(a, r.z[index] * 1e3), a, b)
-        image = r.intensity[index][np.ix_(mask, mask)][::step, ::step]
-        peak = max(float(image.max()), 1e-30)
-        plane["Intensity"] = (image / peak).ravel(order="F")
-        self.screen_actor = self.add_mesh(plane, scalars="Intensity", cmap=INTENSITY_CMAP, clim=(0, 1),
-                                          opacity=.92, lighting=False, show_scalar_bar=False,
-                                          name="observation_screen", reset_camera=False, render=False)
+        self.screen_actor,self.screen_mesh,self.screen_indices = self.make_screen(index,"observation_screen",log,smooth)
+        self.input_actor.SetVisibility(index != 0)
+        self.add_text(f"输入：{input_mode_label(r.project)}\n入口屏 z={r.z[0]*1e3:.4f} mm；当前屏 z={r.z[index]*1e3:.4f} mm\n当前屏与右侧二维图同一观察面、同一峰值归一化" + (" / dB" if log else ""),
+                      position="lower_left",font_size=9,color=TEXT,name="mode_label",render=False,**self.text_font)
         self.render()
 
     def reset_view(self):
