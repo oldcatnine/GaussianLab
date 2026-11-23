@@ -9,11 +9,12 @@ import threading
 import sys
 import numpy as np
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSettings
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
-    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea, QStackedWidget)
+    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea, QStackedWidget,
+    QStyle, QStyleOptionSpinBox, QAbstractSpinBox)
 from . import __version__
 from .model import Project, Element, Mode, preset, load_project, save_project, MODE_PRESET_KEYS, mode_preset
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
@@ -37,6 +38,12 @@ QPushButton#primary:hover {background:#1d4ed8;}
 QPushButton#primary:disabled {background:#e2e8f0;border-color:#e2e8f0;color:#64748b;}
 QComboBox,QDoubleSpinBox,QSpinBox {background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:5px;min-height:20px;}
 QComboBox QAbstractItemView {background:#f8fafc;selection-background-color:#dbeafe;}
+QDoubleSpinBox,QSpinBox {padding-right:27px;min-height:24px;}
+QDoubleSpinBox::up-button,QSpinBox::up-button {subcontrol-origin:border;subcontrol-position:top right;width:23px;border:0;border-top-right-radius:8px;background:transparent;}
+QDoubleSpinBox::down-button,QSpinBox::down-button {subcontrol-origin:border;subcontrol-position:bottom right;width:23px;border:0;border-bottom-right-radius:8px;background:transparent;}
+QDoubleSpinBox::up-button:hover,QSpinBox::up-button:hover,QDoubleSpinBox::down-button:hover,QSpinBox::down-button:hover {background:#e8eef7;}
+QDoubleSpinBox::up-button:pressed,QSpinBox::up-button:pressed,QDoubleSpinBox::down-button:pressed,QSpinBox::down-button:pressed {background:#dce7f6;}
+QDoubleSpinBox::up-arrow,QSpinBox::up-arrow,QDoubleSpinBox::down-arrow,QSpinBox::down-arrow {image:none;width:0;height:0;}
 QTableWidget {background:#ffffff;gridline-color:#e2e8f0;border:1px solid #cbd5e1;selection-background-color:#dbeafe;}
 QHeaderView::section {background:#f1f5f9;color:#334155;padding:6px;border:0;}
 QTabWidget::pane {border:1px solid #cbd5e1;border-radius:4px;}
@@ -55,6 +62,44 @@ QScrollBar::add-line:vertical,QScrollBar::sub-line:vertical {height:0;}
 QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical {background:none;}
 QToolTip {background:#ffffff;color:#1f2937;border:1px solid #94a3b8;}
 """
+
+
+class ChevronStepper:
+    """用抗锯齿细线绘制步进符号，点击、长按、键盘及无障碍行为由 Qt 保持。"""
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        option = QStyleOptionSpinBox()
+        self.initStyleOption(option)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        for control, direction, flag in (
+            (QStyle.SC_SpinBoxUp, -1, QAbstractSpinBox.StepUpEnabled),
+            (QStyle.SC_SpinBoxDown, 1, QAbstractSpinBox.StepDownEnabled),
+        ):
+            rect = self.style().subControlRect(QStyle.CC_SpinBox, option, control, self)
+            if rect.isEmpty():
+                continue
+            active = self.isEnabled() and bool(self.stepEnabled() & flag)
+            pen = QPen(QColor("#64748b" if active else "#cbd5e1"), 1.4)
+            pen.setCapStyle(Qt.RoundCap)
+            pen.setJoinStyle(Qt.RoundJoin)
+            painter.setPen(pen)
+            cx, cy = rect.center().x(), rect.center().y()
+            path = QPainterPath()
+            path.moveTo(cx-3, cy-direction*1.5)
+            path.lineTo(cx, cy+direction*1.5)
+            path.lineTo(cx+3, cy-direction*1.5)
+            painter.drawPath(path)
+        painter.end()
+
+
+class NumericSpinBox(ChevronStepper, QSpinBox):
+    """采用细线步进按钮的整数输入框。"""
+
+
+class NumericDoubleSpinBox(ChevronStepper, QDoubleSpinBox):
+    """采用细线步进按钮的小数输入框。"""
 
 
 class Job(QThread):
@@ -133,7 +178,7 @@ def button(text, callback, primary=False):
 
 
 def spin(value, low, high, decimals=3, suffix=""):
-    widget = QDoubleSpinBox()
+    widget = NumericDoubleSpinBox()
     widget.setRange(low, high)
     widget.setDecimals(decimals)
     widget.setValue(value)
@@ -228,10 +273,10 @@ class MainWindow(QMainWindow):
         self.grid = QComboBox()
         self.grid.addItems(["128", "256", "512", "1024", "2048", "4096"])
         self.grid.setCurrentText("256")
-        self.samples = QSpinBox()
+        self.samples = NumericSpinBox()
         self.samples.setRange(17, 2049)
         self.samples.setValue(65)
-        self.focus_refinement = QSpinBox()
+        self.focus_refinement = NumericSpinBox()
         self.focus_refinement.setRange(0, 4)
         self.focus_refinement.setValue(2)
         for label, widget in (("波长 λ", self.wave), ("束腰半径 w₀", self.waist),
@@ -290,7 +335,7 @@ class MainWindow(QMainWindow):
         self.display_hint = QLabel("2D / 仅计算不创建 VTK 三维窗口。3D 额外占用 RAM/显存；切换后已加载库与驱动缓存可能保留。")
         self.display_hint.setWordWrap(True)
         performance_form.addRow(self.display_hint)
-        self.memory_limit = QSpinBox()
+        self.memory_limit = NumericSpinBox()
         self.memory_limit.setRange(32, 65536)
         self.memory_limit.setSingleStep(128)
         self.memory_limit.setSuffix(" MiB")
@@ -350,7 +395,7 @@ class MainWindow(QMainWindow):
         self.scan_target.currentIndexChanged.connect(self.scan_defaults)
         self.scan_low = spin(60, -2000, 2000, 3, " mm")
         self.scan_high = spin(180, -2000, 2000, 3, " mm")
-        self.scan_count = QSpinBox()
+        self.scan_count = NumericSpinBox()
         self.scan_count.setRange(3, 51)
         self.scan_count.setValue(9)
         sf.addRow("扫描元件", self.scan_target)

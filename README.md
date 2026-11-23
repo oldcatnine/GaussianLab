@@ -12,7 +12,7 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-当前源码版本为 **V4.0.1（第四代）**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
+当前源码版本为 **V4.0.2（第四代）**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
 [V3.0.0 发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
 
@@ -136,3 +136,6 @@ TEM 预设已补齐 0—3 阶全部 16 种组合（含 TEM01、TEM02、TEM12）�
 三维使用 PBR 金属台面、导轨、曲面镜片、两盏场景灯、FXAA 与正交构图；提供侧视、正看光斑和复位。实际本机 OpenGL 报告为 NVIDIA GeForce RTX 4060 Laptop GPU。强度等值面仍来自原始计算数组；镜片曲率为示意，不代表新增厚透镜求解。没有使用路径追踪、真实玻璃折射或测得帧率；仅按需渲染，交互响应会受到场景与设备影响。当前是 V4.0.1 源码更新，GitHub V4.0.0 发行包保持原样。
 
 设计参考：Apple 的层级与简洁原则（https://developer.apple.com/design/human-interface-guidelines/design-principles/）；Ray Optics 元件工作流（https://github.com/ricktu288/ray-optics）；PyVista PBR 官方示例（https://docs.pyvista.org/examples/02-plot/pbr.html）。未复制第三方代码，无新增依赖。
+
+
+V4.0.2 源码更新：数值框采用抗锯齿细线步进符号与轻量按钮反馈，保持原数值输入行为；便携 EXE 仍按既有发布版本获取。

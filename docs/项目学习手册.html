@@ -886,6 +886,10 @@ git diff --check
 <td>工作区、折叠设置和实时材质场景的源码操作说明。</td>
 </tr>
 <tr>
+<td><code>docs/USER_GUIDE-v4.0.2.md</code></td>
+<td>V4.0.2 数值步进外观与工作区操作说明。</td>
+</tr>
+<tr>
 <td><code>docs/USER_GUIDE.md</code></td>
 <td>当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。</td>
 </tr>
@@ -1084,6 +1088,10 @@ git diff --check
 <tr>
 <td><code>docs/release-notes-v4.0.1.md</code></td>
 <td>V4.0.1 工作区与 PBR 渲染更新说明。</td>
+</tr>
+<tr>
+<td><code>docs/release-notes-v4.0.2.md</code></td>
+<td>V4.0.2 轻量步进按钮更新说明。</td>
 </tr>
 <tr>
 <td><code>docs/release-smoke-v0.1.0.json</code></td>
@@ -1433,4 +1441,5 @@ git diff --check
 <p>顶部工作区可切换光路搭建、结果分析、参数扫描。透镜参数已前置；精细采样、计算与性能、输入横模按需展开。完整计算与自动预览共用现有快照逻辑。每个图表组提供导出此图/导出本页，扫描数据页导出 CSV。全局“当前光斑分析”明确只指光斑、剖面、强度曲面、包围能量。</p>
 <p>三维使用 PBR 金属台面、导轨、曲面镜片、两盏场景灯、FXAA 与正交构图；提供侧视、正看光斑和复位。实际本机 OpenGL 报告为 NVIDIA GeForce RTX 4060 Laptop GPU。强度等值面仍来自原始计算数组；镜片曲率为示意，不代表新增厚透镜求解。没有使用路径追踪、真实玻璃折射或测得帧率；仅按需渲染，交互响应会受到场景与设备影响。当前是 V4.0.1 源码更新，GitHub V4.0.0 发行包保持原样。</p>
 <p>设计参考：Apple 的层级与简洁原则（https://developer.apple.com/design/human-interface-guidelines/design-principles/）；Ray Optics 元件工作流（https://github.com/ricktu288/ray-optics）；PyVista PBR 官方示例（https://docs.pyvista.org/examples/02-plot/pbr.html）。未复制第三方代码，无新增依赖。</p>
+<p>V4.0.2 源码更新：数值框采用抗锯齿细线步进符号与轻量按钮反馈，保持原数值输入行为；便携 EXE 仍按既有发布版本获取。</p>
 </main></body></html>

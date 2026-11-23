@@ -1,6 +1,6 @@
 # GaussianLab 当前源码版使用说明
 
-更新日期：2026-11-23。本说明针对 V4.0.1（第四代）。便携启动见 [V4.0.0 指南](USER_GUIDE-v4.0.0.md)，旧版保留 [V2.0.0 指南](USER_GUIDE-v2.0.0.md)。白色界面与图片导出功能源自 `853e9b3`，CUDA/交互功能源自 `a2a7363`。完整原理、架构和逐文件说明见 [项目学习手册](项目学习手册.md) 与 [离线阅读版](项目学习手册.html)。
+更新日期：2026-11-23。本说明针对 V4.0.2（第四代）。便携启动见 [V4.0.0 指南](USER_GUIDE-v4.0.0.md)，旧版保留 [V2.0.0 指南](USER_GUIDE-v2.0.0.md)。白色界面与图片导出功能源自 `853e9b3`，CUDA/交互功能源自 `a2a7363`。完整原理、架构和逐文件说明见 [项目学习手册](项目学习手册.md) 与 [离线阅读版](项目学习手册.html)。
 
 历史 V0.1.0 操作见 [初版指南](USER_GUIDE-v0.1.0.md)，不把旧版截图或按钮说明当作 V3 界面。
 
@@ -203,3 +203,6 @@
 三维使用 PBR 金属台面、导轨、曲面镜片、两盏场景灯、FXAA 与正交构图；提供侧视、正看光斑和复位。实际本机 OpenGL 报告为 NVIDIA GeForce RTX 4060 Laptop GPU。强度等值面仍来自原始计算数组；镜片曲率为示意，不代表新增厚透镜求解。没有使用路径追踪、真实玻璃折射或测得帧率；仅按需渲染，交互响应会受到场景与设备影响。当前是 V4.0.1 源码更新，GitHub V4.0.0 发行包保持原样。
 
 设计参考：Apple 的层级与简洁原则（https://developer.apple.com/design/human-interface-guidelines/design-principles/）；Ray Optics 元件工作流（https://github.com/ricktu288/ray-optics）；PyVista PBR 官方示例（https://docs.pyvista.org/examples/02-plot/pbr.html）。未复制第三方代码，无新增依赖。
+
+
+V4.0.2 源码更新：数值框采用抗锯齿细线步进符号与轻量按钮反馈，保持原数值输入行为；便携 EXE 仍按既有发布版本获取。

@@ -125,5 +125,7 @@
   "docs/github-release-smoke-v4.0.0.json": "第四代实际下载 EXE 的 CPU/CUDA 独立冻结运行证据。",
   "docs/ui-review-v4.0.0.md": "第四代界面的实窗观察、易用性问题、优先级建议与尚待实施的验收任务。",
   "docs/USER_GUIDE-v4.0.1.md": "工作区、折叠设置和实时材质场景的源码操作说明。",
-  "docs/release-notes-v4.0.1.md": "V4.0.1 工作区与 PBR 渲染更新说明。"
+  "docs/release-notes-v4.0.1.md": "V4.0.1 工作区与 PBR 渲染更新说明。",
+  "docs/USER_GUIDE-v4.0.2.md": "V4.0.2 数值步进外观与工作区操作说明。",
+  "docs/release-notes-v4.0.2.md": "V4.0.2 轻量步进按钮更新说明。"
 }

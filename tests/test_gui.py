@@ -12,6 +12,40 @@ from gaussian_lab.model import preset, load_project
 from gaussian_lab.optics import simulate, scan
 
 
+@pytest.mark.parametrize("integer", [False, True])
+def test_chevron_stepper_keeps_click_keyboard_and_limits(app, integer):
+    """新步进外观保留递增、递减、边界和键盘行为。"""
+    from gaussian_lab.gui import NumericDoubleSpinBox, NumericSpinBox, STYLE
+    from PySide6.QtWidgets import QStyle, QStyleOptionSpinBox
+    widget = NumericSpinBox() if integer else NumericDoubleSpinBox()
+    widget.setStyleSheet(STYLE)
+    widget.setRange(0, 2)
+    widget.setValue(1)
+    widget.resize(200, 40)
+    widget.show()
+    app.processEvents()
+    try:
+        def click(control):
+            option = QStyleOptionSpinBox()
+            widget.initStyleOption(option)
+            rect = widget.style().subControlRect(QStyle.CC_SpinBox, option, control, widget)
+            assert rect.width() >= 20 and rect.height() > 0
+            QTest.mouseClick(widget, Qt.LeftButton, pos=rect.center())
+        click(QStyle.SC_SpinBoxUp)
+        assert widget.value() == 2
+        click(QStyle.SC_SpinBoxUp)
+        assert widget.value() == 2
+        click(QStyle.SC_SpinBoxDown)
+        assert widget.value() == 1
+        QTest.keyClick(widget, Qt.Key_Down)
+        assert widget.value() == 0
+        widget.setEnabled(False)
+        assert not widget.grab().isNull()
+    finally:
+        widget.close()
+        widget.deleteLater()
+
+
 @pytest.fixture(scope="session")
 def app():
     application = QApplication.instance() or QApplication([])
