@@ -143,3 +143,8 @@
 内存扩展查看 [NumPy memmap 官方接口](https://numpy.org/doc/stable/reference/generated/numpy.memmap.html)：文件映射支持 ndarray 式切片，但页缓存与子类视图生命周期不能忽略。实现私有临时文件、发布前批次写回/重映射、发布后由视图共享所有者，最后引用释放时清理；没有新安装依赖。不能宣称磁盘映射等于零 RAM。
 
 显示参考 [Matplotlib 插值方法](https://matplotlib.org/stable/gallery/images_contours_and_fields/interpolation_methods.html)。保留像素中心对齐，默认 bilinear、data 阶段插值，提供 nearest 检查原始像素；曲线与悬停数据仍读原始数组。以已有解析/独立传播验证和新增模式、存储及真实界面测试验收，见 modes-storage-validation.md。
+
+
+### 图表范围编辑（2026-11-23）
+
+查看 [Matplotlib 原仓库 Qt 图形选项源码](https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/backends/qt_editor/figureoptions.py)，借鉴按坐标维度读取和应用范围、校验输入的交互方式。使用项目已有 Qt/Matplotlib API 自主实现中文精简范围编辑器，未复制第三方代码或新增依赖。每图一个按钮，多数据子图可选；排除颜色条，双轴共享横轴同步，先捕获所有自动范围再应用手动范围，避免共享轴污染默认值。范围与导出快照独立于物理输入。

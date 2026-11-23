@@ -1,11 +1,12 @@
 """二维分析图和强度曲面，读取计算结果并生成可导出的图像。"""
 import numpy as np
+import weakref
 from .optics import radial_energy
 from .theme import BACKGROUND, TEXT, BORDER, BLUE, ORANGE, INTENSITY_CMAP
 from matplotlib import rcParams
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from PySide6.QtWidgets import QToolTip
+from PySide6.QtWidgets import QToolTip, QPushButton
 from PySide6.QtGui import QCursor
 
 rcParams.update({"font.family": "sans-serif", "font.sans-serif": ["Microsoft YaHei", "SimHei", "DejaVu Sans"],
@@ -19,8 +20,77 @@ class PlotCanvas(FigureCanvasQTAgg):
         self.surface = surface
         self.ax = None
         self.hover_data = None
+        self.axis_limits = {}
+        self._axis_defaults = weakref.WeakKeyDictionary()
+        self.axes_button = QPushButton("坐标轴…", self)
+        self.axes_button.setToolTip("调整本图各子图的横轴、纵轴范围；支持恢复自动范围。")
+        self.axes_button.clicked.connect(self.edit_axes)
+        self.axes_button.setGeometry(max(0, self.width()-86), 2, 82, 26)
         self.mpl_connect("motion_notify_event", self.show_nearest_data)
         self.mpl_connect("figure_leave_event", self.hide_data)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "axes_button"):
+            self.axes_button.move(max(0, self.width()-86), 2)
+
+    def data_axes(self):
+        """仅编辑数据坐标，不将颜色条当作曲线子图。"""
+        return [ax for ax in self.figure.axes if ax.get_label() != "<colorbar>"]
+
+    def draw_idle(self):
+        """每次重绘恢复本次自动范围，再应用会话内独立的用户范围。"""
+        axes = self.data_axes()
+        # 先读取全部自动范围，避免共享轴在逐个应用时污染后续子图的默认值。
+        for ax in axes:
+            names = ("x", "y", "z") if ax.name == "3d" else ("x", "y")
+            if ax not in self._axis_defaults:
+                self._axis_defaults[ax] = {name: getattr(ax, f"get_{name}lim")() for name in names}
+        for index, ax in enumerate(axes):
+            names = ("x", "y", "z") if ax.name == "3d" else ("x", "y")
+            for name in names:
+                limits = self.axis_limits.get(index, {}).get(name, self._axis_defaults[ax][name])
+                getattr(ax, f"set_{name}lim")(*limits)
+        super().draw_idle()
+
+    def set_axis_ranges(self, index, ranges):
+        """先校验所有输入再应用；共享坐标同步，防止双轴覆盖冲突。"""
+        axes = self.data_axes()
+        ax = axes[index]
+        parsed = {}
+        for name, limits in ranges.items():
+            if name not in (("x", "y", "z") if ax.name == "3d" else ("x", "y")):
+                raise ValueError("未知坐标轴")
+            if limits is None:
+                continue
+            low, high = map(float, limits)
+            if not np.isfinite([low, high]).all() or low >= high:
+                raise ValueError("坐标范围须为有限数值，且最小值小于最大值")
+            if getattr(ax, f"get_{name}scale")() == "log" and low <= 0:
+                raise ValueError("对数坐标的最小值须大于零")
+            parsed[name] = (low, high)
+        for name in ranges:
+            for other_index, other in enumerate(axes):
+                shared = name in ("x", "y") and getattr(ax, f"get_shared_{name}_axes")().joined(ax, other)
+                if other is ax or shared:
+                    self.axis_limits.setdefault(other_index, {}).pop(name, None)
+                    if name in parsed:
+                        self.axis_limits[other_index][name] = parsed[name]
+        self.draw_idle()
+
+    def edit_axes(self):
+        """以非模态中文窗口编辑各数据子图，关闭窗口不影响计算。"""
+        if not self.data_axes():
+            QToolTip.showText(QCursor.pos(), "请先生成此图的数据。", self)
+            return
+        from .axis_editor import AxisEditor
+        if getattr(self, "axis_editor", None) is not None:
+            self.axis_editor.close()
+        self.axis_editor = AxisEditor(self)
+        editor = self.axis_editor
+        editor.destroyed.connect(lambda: setattr(self, "axis_editor", None)
+                                if self.axis_editor is editor else None)
+        self.axis_editor.show()
 
     def hide_data(self, event=None):
         """悬停提示使用 Qt 浮窗，不写进导出的图形。"""

@@ -2,6 +2,7 @@
 import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
+import copy
 from dataclasses import asdict
 from pathlib import Path
 import threading
@@ -275,11 +276,10 @@ class MainWindow(QMainWindow):
             self.storage_mode.addItem(text, key)
         self.storage_mode.currentIndexChanged.connect(self.mark_dirty)
         performance_form.addRow("结果存储", self.storage_mode)
-        self.spot_render = QComboBox()
-        self.spot_render.addItem("平滑显示（仅视觉插值）", True)
-        self.spot_render.addItem("原始像素（检查采样）", False)
+        self.spot_render = QCheckBox("平滑显示")
+        self.spot_render.setChecked(True)
         self.spot_render.setToolTip("平滑不增加采样精度；鼠标读数、曲线和导出数值仍来自原始数据。")
-        self.spot_render.currentIndexChanged.connect(self.draw_plane)
+        self.spot_render.toggled.connect(self.draw_plane)
         performance_form.addRow("二维光斑", self.spot_render)
         self.memory_info = QLabel()
         self.memory_info.setWordWrap(True)
@@ -919,7 +919,7 @@ class MainWindow(QMainWindow):
         elif mode == "2d":
             self.schematic_plot.schematic(r, i)
         if self.tabs.currentIndex() == 0:
-            self.spot_plot.spot(r, i, self.log_scale.isChecked(), smooth=self.spot_render.currentData())
+            self.spot_plot.spot(r, i, self.log_scale.isChecked(), smooth=self.spot_render.isChecked())
         elif self.tabs.currentIndex() == 1:
             self.profile_plot.profile(r, i)
         elif self.tabs.currentIndex() == 2:
@@ -1098,11 +1098,13 @@ class MainWindow(QMainWindow):
                 comparison = self.comparison
                 if comparison is None:
                     raise ValueError("请先生成 A/B 对比")
+                plot = self.compare_plot
             elif key == "longitudinal":
                 r = self.longitudinal_result
                 if r is None:
                     raise ValueError("请先生成纵向强度图")
                 preview = r.provenance.get("quality") == "preview"
+                plot = self.longitudinal_plot
             elif key == "scan":
                 if not self.scan_rows:
                     raise ValueError("请先完成参数扫描")
@@ -1116,7 +1118,7 @@ class MainWindow(QMainWindow):
                 r = self.result
                 preview = r.provenance.get("quality") == "preview"
                 logarithmic = self.log_scale.isChecked()
-                smooth = self.spot_render.currentData()
+                smooth = self.spot_render.isChecked()
                 index = min(self.plane_slider.value(), len(r.z) - 1)
                 plot = {"spot": self.spot_plot, "profile": self.profile_plot, "surface": self.surface_plot,
                         "energy": self.energy_plot, "beam": self.beam_plot}[key]
@@ -1125,10 +1127,12 @@ class MainWindow(QMainWindow):
                 else:
                     method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
                     getattr(plot, method)(r, index)
+            axis_limits = copy.deepcopy(plot.axis_limits)
             path = self.choose_path("导出" + labels[key], key + ("-preview.png" if preview else ".png"), "PNG (*.png);;SVG (*.svg);;PDF (*.pdf)")
             if path:
                 # 文件对话框打开期间允许自动预览继续，导出使用独立画布固定调用时的快照。
                 plot = PlotCanvas(surface=key == "surface")
+                plot.axis_limits = axis_limits
                 if key == "compare":
                     plot.figure.set_size_inches(10, 7)
                     plot.compare(*comparison)

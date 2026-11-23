@@ -391,6 +391,7 @@ def test_comparison_pins_full_result_and_exports_joint_scale(window, app, monkey
     window.compare_mode.setCurrentIndex(1)
     window.compare_results()
     assert window.comparison[1:4:2] == (a.focus_index, second.focus_index)
+    window.compare_plot.set_axis_ranges(2, {"x":(-.12,.12)})
     path = tmp_path / "comparison.png"
     monkeypatch.setattr(window, "choose_path", lambda *args: str(path))
     window.export_target.setCurrentIndex(window.export_target.findData("compare"))
@@ -410,6 +411,7 @@ def test_longitudinal_uses_computed_slices_and_links_observer(window, monkeypatc
     np.testing.assert_allclose(np.asarray(ax.collections[0].get_array()).reshape(expected.T.shape), expected.T)
     window.locate_longitudinal_plane(SimpleNamespace(inaxes=ax, xdata=r.z[3]*1e3))
     assert window.plane_slider.value() == 3
+    window.longitudinal_plot.set_axis_ranges(0, {"x":(0,300), "y":(-1,1)})
     path = tmp_path / "longitudinal.svg"
     monkeypatch.setattr(window, "choose_path", lambda *args: str(path))
     window.export_target.setCurrentIndex(window.export_target.findData("longitudinal"))
@@ -546,8 +548,8 @@ def test_requested_presets_smoothing_and_automatic_disk_worker(window, app, tmp_
     window.fill_project(window.result.project)
     assert window.mode_preset.currentData() == "TEM00"
     original, revision = window.result, window.revision
-    window.spot_render.setCurrentIndex(1)
-    window.spot_render.setCurrentIndex(0)
+    window.spot_render.setChecked(False)
+    window.spot_render.setChecked(True)
     assert window.result is original and window.revision == revision
     assert window.spot_plot.ax.images[0].get_interpolation() == "bilinear"
     k = window.plane_slider.value()
@@ -569,6 +571,97 @@ def test_requested_presets_smoothing_and_automatic_disk_worker(window, app, tmp_
     save_project(window.read_project(), path)
     window.fill_project(load_project(path))
     assert window.storage_mode.currentData() == "auto"
+
+
+def test_every_chart_axis_ranges_redraw_restore_and_editor(window, app):
+    """各图独立范围覆盖重绘、双轴、多子图和三维，并验证真实编辑窗口。"""
+    r = window.result
+    rows = scan(r.project, 0, .1, .14, 3)
+    charts = [(window.spot_plot, lambda: window.spot_plot.spot(r, 0)),
+              (window.profile_plot, lambda: window.profile_plot.profile(r, 0)),
+              (window.surface_plot, lambda: window.surface_plot.intensity_surface(r, 0)),
+              (window.energy_plot, lambda: window.energy_plot.energy(r, 0)),
+              (window.beam_plot, lambda: window.beam_plot.beam(r, 0)),
+              (window.scan_plot, lambda: window.scan_plot.scanning(rows, "lens")),
+              (window.compare_plot, lambda: window.compare_plot.compare(r, 0, r, 1, "共用观察面")),
+              (window.longitudinal_plot, lambda: window.longitudinal_plot.longitudinal(r)),
+              (window.schematic_plot, lambda: window.schematic_plot.schematic(r, 0))]
+    for plot, render in charts:
+        render()
+        axes = plot.data_axes()
+        assert all(ax.get_label() != "<colorbar>" for ax in axes)
+        defaults = [(ax.get_xlim(), ax.get_ylim()) for ax in axes]
+        ranges = {"x": (-.02,.02), "y": (-.01,.01)}
+        if axes[0].name == "3d":
+            ranges["z"] = (0,.8)
+        plot.set_axis_ranges(0, ranges)
+        render()
+        np.testing.assert_allclose(plot.data_axes()[0].get_xlim(), ranges["x"])
+        np.testing.assert_allclose(plot.data_axes()[0].get_ylim(), ranges["y"])
+        if axes[0].name == "3d":
+            np.testing.assert_allclose(plot.ax.get_zlim(), (0,.8))
+        if plot is window.scan_plot:
+            np.testing.assert_allclose(plot.data_axes()[1].get_xlim(), ranges["x"])
+            assert plot.data_axes()[1].get_ylim() == defaults[1][1]
+        if plot is window.compare_plot:
+            assert len(plot.data_axes()) == 4
+            assert plot.data_axes()[1].get_xlim() == defaults[1][0]
+        plot.axis_limits.clear()
+        plot.draw_idle()
+        for ax, (x,y) in zip(plot.data_axes(), defaults):
+            np.testing.assert_allclose(ax.get_xlim(), x)
+            np.testing.assert_allclose(ax.get_ylim(), y)
+    plot = window.scan_plot
+    plot.edit_axes()
+    app.processEvents()
+    editor = plot.axis_editor
+    assert editor.selector.count() == 2
+    editor.selector.setCurrentIndex(1)
+    auto, low, high, *_ = editor.fields["y"]
+    auto.setChecked(False)
+    low.setText("nan")
+    high.setText("2")
+    editor.apply_button.click()
+    assert "无法应用" in editor.error.text()
+    assert not any(plot.axis_limits.values())
+    low.setText("1e-3")
+    editor.apply_button.click()
+    np.testing.assert_allclose(plot.data_axes()[1].get_ylim(), (.001,2))
+    editor.reset_button.click()
+    assert not plot.axis_limits
+    editor.close()
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    plot.edit_axes()
+    assert plot.axis_editor is not None
+    plot.axis_editor.close()
+
+
+def test_smoothing_checkbox_and_export_axes_snapshot(window, app, tmp_path, monkeypatch):
+    """开关不重算；文件对话期间变化不影响已固定的插值和坐标范围。"""
+    from matplotlib.figure import Figure
+    r, revision = window.result, window.revision
+    window.spot_render.click()
+    assert not window.spot_render.isChecked()
+    assert window.spot_plot.ax.images[0].get_interpolation() == "nearest"
+    window.spot_render.click()
+    assert window.result is r and window.revision == revision
+    window.spot_plot.set_axis_ranges(0, {"x":(-.1,.1),"y":(-.15,.15)})
+    window.export_target.setCurrentIndex(window.export_target.findData("spot"))
+    path = tmp_path/"axes.png"
+    def choose(*_):
+        window.spot_plot.set_axis_ranges(0, {"x":(-.2,.2)})
+        window.spot_render.setChecked(False)
+        return str(path)
+    monkeypatch.setattr(window, "choose_path", choose)
+    saved = []
+    original = Figure.savefig
+    def save(figure, *args, **kwargs):
+        saved.append((figure.axes[0].get_xlim(),figure.axes[0].get_ylim(),figure.axes[0].images[0].get_interpolation()))
+        return original(figure,*args,**kwargs)
+    monkeypatch.setattr(Figure, "savefig", save)
+    window.export_plot()
+    assert path.stat().st_size > 5000
+    assert saved == [((-.1,.1),(-.15,.15),"bilinear")]
 
 
 def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):

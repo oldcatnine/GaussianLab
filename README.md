@@ -113,3 +113,5 @@ $env:PYTHONUTF8 = '1'
 GaussianLab 自有源码采用 [MIT 许可证](LICENSE)，允许使用、修改和分发，需保留版权与许可声明。Qt/PySide6、CuPy、NVIDIA CUDA 等第三方组件继续遵循各自许可证，详见 [第三方组件说明](docs/THIRD-PARTY-NOTICES.md)。
 
 本轮内存、显示与焦面修复的公式、实际界面和验证数据见 [专项验证](docs/memory-display-validation.md)。
+
+当前源码新增“平滑显示”勾选开关，以及各图右上角“坐标轴…”范围设置，支持独立子图、扫描双纵轴、恢复自动范围和导出快照。操作见 [使用说明](docs/USER_GUIDE.md)。

@@ -112,5 +112,6 @@
   "gaussian_lab/storage.py":"完整 float32 强度结果的 RAM/磁盘映射分配、发布前分批写回、切片所有权与临时文件清理。",
   "tests/test_storage.py":"验证 LG/TEM 预设与功率、RAM/磁盘逐元素一致、自动缓存、焦面插入、视图生命周期和取消清理。",
   "docs/modes-storage-validation.md":"记录新增 LG/TEM 模式、平滑与原始像素显示、磁盘缓存及 2048/65 CPU 实测证据和限制。",
-  "docs/assets/lg-tem-input-modes.png":"真实计算的 LG01—LG05 与 TEM 各预设入口面峰值归一化强度图，不代表聚焦形状或等功率色标。"
+  "docs/assets/lg-tem-input-modes.png":"真实计算的 LG01—LG05 与 TEM 各预设入口面峰值归一化强度图，不代表聚焦形状或等功率色标。",
+  "gaussian_lab/axis_editor.py":"各定量图的中文坐标范围编辑窗口，支持数据子图、自动范围、科学计数输入与错误提示。"
 }
