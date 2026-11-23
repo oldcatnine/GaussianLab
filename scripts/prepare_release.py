@@ -170,8 +170,10 @@ def stage(cache=None):
                     shutil.copy2(path, dest)
     guide = (ROOT / f"docs/USER_GUIDE-{TAG}.md").read_text(encoding="utf-8")
     guide = guide.replace("](USER_GUIDE.md)", "](docs/USER_GUIDE.md)").replace("](项目学习手册.html)", "](docs/项目学习手册.html)")
+    guide = guide.replace("](项目学习手册.md)", "](docs/项目学习手册.md)").replace("](../README.md)", "](docs/USER_GUIDE.md)")
     (bundle / "使用说明.md").write_text(guide, encoding="utf-8")
     shutil.copy2(ROOT / f"docs/release-notes-{TAG}.md", bundle / "版本说明.md")
+    shutil.copy2(ROOT / "README.md", bundle / "README.md")
     shutil.copy2(ROOT / "docs/THIRD-PARTY-NOTICES.md", bundle / "THIRD-PARTY-NOTICES.md")
     shutil.copytree(ROOT / "docs", bundle / "docs", dirs_exist_ok=True)
     examples = bundle / "examples"

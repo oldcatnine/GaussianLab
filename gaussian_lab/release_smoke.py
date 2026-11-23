@@ -8,7 +8,7 @@ import gc
 from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
 from . import __version__
-from .model import preset, save_project, load_project
+from .model import Mode, preset, save_project, load_project
 from .optics import simulate, scan, export_csv
 from .gui import MainWindow, Job
 from .backend import preview_project
@@ -29,7 +29,7 @@ def run(output: Path):
             start = time.perf_counter()
             result = simulate(p, backend=requested)
             assert result.provenance["backend"]["used"] == requested, result.provenance["backend"]
-            assert result.intensity.shape[1:] == (512, 512)
+            assert result.intensity.shape[1:] == (p.grid, p.grid) == (1024, 1024)
             assert result.r86.min() > 0
             assert .1 < result.transmission[-1] < 1.000001
             if slug == "focus":
@@ -98,6 +98,26 @@ def run(output: Path):
         window.auto_preview.setChecked(False)
         report["preview"] = {"quality": "preview", "grid": window.result.project.grid,
                              "backend": window.result.provenance["backend"]}
+        window.mode_preset.setCurrentIndex(5)
+        window.apply_mode_preset()
+        window.mode_table.item(1, 4).setText("90")
+        window.compute()
+        deadline = time.monotonic() + 90
+        while (window.job.isRunning() or window.dirty) and time.monotonic() < deadline:
+            app.processEvents()
+            time.sleep(.01)
+        assert not window.job.isRunning() and not window.dirty, errors
+        assert window.result.project.modes == [Mode(), Mode("HG", 1, 0, 1, 90)]
+        assert window.result.provenance["backend"]["used"] == requested
+        report["coherent_input"] = {"modes": 2, "phase_deg": 90,
+                                     "backend": window.result.provenance["backend"]}
+        for family in ("HG", "LG"):
+            q = p.clone()
+            q.modes = [Mode(family, 1, 2, .8, 35)]
+            result = simulate(q, backend=requested)
+            assert result.provenance["backend"]["used"] == requested
+            assert result.r86.min() > 0
+        report["higher_modes"] = ["HG12", "LG12"]
         report.update({"scan_points": len(rows), "scan_statuses": [row["status"] for row in rows],
                        "exported_plots": exported, "formats": ["png", "svg", "pdf"],
                        "theme": "white", "window_title": window.windowTitle(), "status": "passed"})

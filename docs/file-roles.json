@@ -97,5 +97,11 @@
   "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。",
   "docs/release-artifacts-v3.1.0.json":"V3.1.0 本地便携附件大小、摘要、压缩完整性和解压验证记录。",
   "docs/release-smoke-v3.1.0.json":"实际解压 V3.1.0 EXE 的 CPU、CUDA、预览和导出验证记录。",
-  "docs/project-review-2026-11-23.md":"本轮全项目文件盘点、采样限制与相干横模扩展的检查证据和适用边界。"
+  "docs/project-review-2026-11-23.md":"本轮全项目文件盘点、采样限制与相干横模扩展的检查证据和适用边界。",
+  "安装显卡加速.cmd":"源码用户的双击显卡依赖安装入口，选择可用 PowerShell 并显示实际安装和设备自检结果。",
+  "docs/USER_GUIDE-v3.1.1.md":"V3.1.1 便携解压、随包 CuPy、首次 CUDA 和相干模式输入的操作指南。",
+  "docs/release-notes-v3.1.1.md":"V3.1.1 高精度采样、相干输入光与显卡安装交付的版本说明。",
+  "docs/release-validation-v3.1.1.md":"本轮真实用户 CUDA 安装、沙箱诊断、全量回归和便携双后端冻结验证记录。",
+  "docs/release-artifacts-v3.1.1.json":"V3.1.1 三个发行附件的大小、SHA-256、ZIP CRC、可执行文件摘要与双后端验收状态。",
+  "docs/release-smoke-v3.1.1.json":"解压 V3.1.1 EXE 在独立 CPU/CUDA 环境的实际运行、相干输入、高阶模式与首次头文件校验记录。"
 }

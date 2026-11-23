@@ -2,17 +2,17 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-当前源码版本为 **V3.1.0**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.0 版本说明](docs/release-notes-v3.1.0.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
+当前源码版本为 **V3.1.1**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
 [V3.0.0 私有发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
 
-源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。可选安装脚本为 `scripts/install_cuda_runtime.ps1`，不会修改系统驱动。
+源码启动默认在停止改参 400 ms 后自动更新预览；点击“计算光场”运行原始网格与焦区细化。左侧可关闭自动预览，或选择 CPU、自动、CUDA 优先。没有 CUDA 依赖或兼容设备时仍能使用 CPU。源码用户可双击 [安装显卡加速.cmd](安装显卡加速.cmd)，或运行 `scripts/install_cuda_runtime.ps1`；便携版已随附 CuPy，无需手动安装，不会修改系统驱动。安装与交付证据见 [V3.1.1 验证](docs/release-validation-v3.1.1.md)。
 
-当前源码新增更精细采样与相干 HG/LG 输入：完整网格默认 1024、最高 2048，轴向最高 641 点（组合受内存限制），支持阶数、振幅及相位配置。历史便携包尚未包含这些更新，请运行根目录 `启动软件.cmd`；自动预览保持 256/33，精细结果点击“计算光场”。见 [本轮检查与操作](docs/project-review-2026-11-23.md)。
+当前源码新增更精细采样与相干 HG/LG 输入：完整网格默认 1024、最高 2048，轴向最高 641 点（组合受内存限制），支持阶数、振幅及相位配置。这些更新已纳入 V3.1.1 便携包；源码运行可用根目录 `启动软件.cmd`；自动预览保持 256/33，精细结果点击“计算光场”。见 [本轮检查与操作](docs/project-review-2026-11-23.md)。
 
 ## 启动
 
-**便携版运行：** 将本机构建的 `releases/v3.1.0/GaussianLab-v3.1.0-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.1.0 便携版指南](docs/USER_GUIDE-v3.1.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
+**便携版运行：** 将本机构建的 `releases/v3.1.1/GaussianLab-v3.1.1-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.1.1 便携版指南](docs/USER_GUIDE-v3.1.1.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 

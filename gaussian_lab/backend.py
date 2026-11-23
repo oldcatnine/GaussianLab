@@ -60,17 +60,32 @@ def ensure_cuda_headers(runtime):
     if not record["url"].startswith("https://files.pythonhosted.org/") or record["bytes"] > 16 * 1024**2:
         raise RuntimeError("CUDA 头文件官方来源配置无效")
     import requests
+    import time
     wheel = runtime / ("headers-" + uuid.uuid4().hex[:8] + ".whl")
+    local_wheel = os.environ.get("GAUSSIANLAB_CUDA_HEADERS_WHEEL", "")
     try:
-        with requests.get(record["url"], stream=True, timeout=(10, 30)) as response:
-            response.raise_for_status()
-            size = 0
-            with wheel.open("wb") as stream:
-                for block in response.iter_content(1024**2):
-                    size += len(block)
-                    if size > record["bytes"]:
-                        raise RuntimeError("CUDA 头文件下载大小超出固定清单")
-                    stream.write(block)
+        if local_wheel:
+            source = Path(local_wheel)
+            if source.stat().st_size != record["bytes"]:
+                raise RuntimeError("本地 CUDA 官方轮子的大小与固定清单不符")
+            shutil.copyfile(source, wheel)
+        for attempt in range(0 if local_wheel else 3):
+            try:
+                with requests.get(record["url"], stream=True, timeout=(10, 30)) as response:
+                    response.raise_for_status()
+                    size = 0
+                    with wheel.open("wb") as stream:
+                        for block in response.iter_content(1024**2):
+                            size += len(block)
+                            if size > record["bytes"]:
+                                raise RuntimeError("CUDA 头文件下载大小超出固定清单")
+                            stream.write(block)
+                break
+            except requests.RequestException:
+                if attempt == 2:
+                    raise
+                # TLS 中断和临时网络故障有限重试，每次覆盖不完整下载；始终校验 HTTPS 与摘要。
+                time.sleep(.5 * 2**attempt)
         if wheel.stat().st_size != record["bytes"] or hashlib.sha256(wheel.read_bytes()).hexdigest() != record["sha256"]:
             raise RuntimeError("CUDA 头文件下载摘要不匹配")
         with zipfile.ZipFile(wheel) as archive:
@@ -83,6 +98,7 @@ def ensure_cuda_headers(runtime):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(archive.read(entry))
         marker.write_text(record["sha256"], encoding="ascii")
+        (runtime / ".headers-source").write_text("local-wheel" if local_wheel else "official-download", encoding="ascii")
     finally:
         wheel.unlink(missing_ok=True)
 

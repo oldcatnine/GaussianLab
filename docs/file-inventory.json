@@ -60,6 +60,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/USER_GUIDE-v3.1.1.md",
+    "purpose": "V3.1.1 便携解压、随包 CuPy、首次 CUDA 和相干模式输入的操作指南。",
+    "optional_local": false
+  },
+  {
     "path": "docs/USER_GUIDE.md",
     "purpose": "当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。",
     "optional_local": false
@@ -225,6 +230,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-artifacts-v3.1.1.json",
+    "purpose": "V3.1.1 三个发行附件的大小、SHA-256、ZIP CRC、可执行文件摘要与双后端验收状态。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-notes-v0.1.0.md",
     "purpose": "首版发布说明，列出功能、附件、平台和已知限制。",
     "optional_local": false
@@ -242,6 +252,11 @@
   {
     "path": "docs/release-notes-v3.1.0.md",
     "purpose": "记录 V3.1.0 更新内容和发行验证状态。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-notes-v3.1.1.md",
+    "purpose": "V3.1.1 高精度采样、相干输入光与显卡安装交付的版本说明。",
     "optional_local": false
   },
   {
@@ -265,6 +280,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-smoke-v3.1.1.json",
+    "purpose": "解压 V3.1.1 EXE 在独立 CPU/CUDA 环境的实际运行、相干输入、高阶模式与首次头文件校验记录。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-validation-v0.1.0.md",
     "purpose": "独立可执行版本的构建、摘要、解压与运行验证说明。",
     "optional_local": false
@@ -277,6 +297,11 @@
   {
     "path": "docs/release-validation-v3.0.0.md",
     "purpose": "V3 构建、冻结环境修复、双后端验证和远端发布证据说明。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-validation-v3.1.1.md",
+    "purpose": "本轮真实用户 CUDA 安装、沙箱诊断、全量回归和便携双后端冻结验证记录。",
     "optional_local": false
   },
   {
@@ -537,6 +562,11 @@
   {
     "path": "启动软件.ps1",
     "purpose": "PowerShell 源码启动器，检查项目虚拟环境并运行应用。",
+    "optional_local": false
+  },
+  {
+    "path": "安装显卡加速.cmd",
+    "purpose": "源码用户的双击显卡依赖安装入口，选择可用 PowerShell 并显示实际安装和设备自检结果。",
     "optional_local": false
   }
 ]

@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 from gaussian_lab import backend
-from gaussian_lab.model import Element, Project, preset
+from gaussian_lab.model import Element, Mode, Project, preset
 from gaussian_lab.optics import Propagation, coordinates, initial_field, fresnel, simulate, Cancelled
 from gaussian_lab.session import ResultCache
 
@@ -117,3 +117,34 @@ def test_real_cuda_matches_cpu(name):
     assert gpu.theta86 == pytest.approx(cpu.theta86, rel=1e-10)
     assert gpu.focus == cpu.focus
     assert gpu.warnings == cpu.warnings
+
+
+@pytest.mark.parametrize("modes", [[Mode("HG", 2, 1)], [Mode("LG", 1, -2)],
+                                  [Mode(), Mode("HG", 1, 0, .7, 90)]])
+def test_real_cuda_higher_and_coherent_modes_match_cpu(modes):
+    """在真实显卡核验新增递推和复振幅叠加，避免仅验证旧基模分支。"""
+    engine = backend.select_backend("cuda")
+    if engine.name != "cuda":
+        pytest.skip(engine.reason)
+    p = Project(grid=256, samples=17, modes=modes, focus_refinement=0, elements=[])
+    cpu, gpu = simulate(p), simulate(p, backend="cuda")
+    assert gpu.provenance["backend"]["used"] == "cuda"
+    np.testing.assert_allclose(gpu.intensity, cpu.intensity, atol=1e-7, rtol=1e-5)
+    np.testing.assert_allclose(gpu.r86, cpu.r86, atol=1e-14)
+    np.testing.assert_allclose(gpu.transmission, cpu.transmission, atol=1e-12)
+    assert gpu.theta86 == pytest.approx(cpu.theta86, rel=1e-10)
+
+
+def test_cuda_install_entry_and_minimum_pinned_runtime():
+    """安装入口必须固定版本、处理中文编码，并与随包组件清单一致。"""
+    from pathlib import Path
+    from scripts.stage_cuda_runtime import PACKAGES
+    root = Path(__file__).resolve().parents[1]
+    requirements = (root / "requirements-cuda.txt").read_text(encoding="utf-8")
+    rows = [line for line in requirements.splitlines() if line and not line.startswith("#")]
+    assert len(rows) == len(PACKAGES) == 6
+    assert all("==" in row for row in rows)
+    script = (root / "scripts/install_cuda_runtime.ps1").read_text(encoding="utf-8-sig")
+    assert "-X utf8 -m pip" in script and "--only-binary=:all:" in script
+    assert "select_backend('cuda')" in script
+    assert "install_cuda_runtime.ps1" in (root / "安装显卡加速.cmd").read_text(encoding="utf-8")

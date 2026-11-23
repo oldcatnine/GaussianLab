@@ -47,7 +47,7 @@ def verify_archives(release, destination):
             names = archive.namelist()
             if "Windows-x64" in name:
                 prefix = f"GaussianLab-{TAG}-Windows-x64/"
-                for required in ("GaussianLab.exe", "_internal/python310.dll", "使用说明.md",
+                for required in ("GaussianLab.exe", "_internal/python310.dll", "使用说明.md", "README.md",
                                  "docs/项目学习手册.html", "docs/USER_GUIDE.md",
                                  "THIRD_PARTY_LICENSES/CPython/LICENSE.txt"):
                     if prefix + required not in names:
@@ -95,9 +95,14 @@ def run_frozen_smoke(bundle, output, backend="cpu"):
     report["executable_sha256"] = digest(bundle / "GaussianLab.exe")
     if backend == "cuda":
         report["isolated_cuda_cache"] = environment["GAUSSIANLAB_CUDA_CACHE"]
-        report["headers_download_verified"] = any(Path(environment["GAUSSIANLAB_CUDA_CACHE"]).rglob(".headers-ready"))
-        if not report["headers_download_verified"]:
-            raise RuntimeError("CUDA 冻结验证没有完成独立缓存的官方头文件补充")
+        markers = list(Path(environment["GAUSSIANLAB_CUDA_CACHE"]).rglob(".headers-ready"))
+        report["headers_verified"] = bool(markers)
+        sources = [marker.with_name(".headers-source").read_text(encoding="ascii")
+                   for marker in markers if marker.with_name(".headers-source").is_file()]
+        report["headers_source"] = sources
+        report["headers_download_verified"] = "official-download" in sources
+        if not report["headers_verified"]:
+            raise RuntimeError("CUDA 冻结验证没有完成独立缓存的官方头文件摘要校验")
     return report
 
 
@@ -108,7 +113,8 @@ def main():
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--backend", choices=["cpu", "cuda", "both"], default="both")
     args = parser.parse_args()
-    destination = args.extract_to or ROOT / "outputs" / f"portable-{TAG}-{time.time_ns()}"
+    # CuPy 头文件目录较深，使用短临时路径避免项目嵌套导致 Windows MAX_PATH 错误。
+    destination = args.extract_to or Path(tempfile.gettempdir()) / f"GL-verify-{TAG}-{time.time_ns()}"
     assets, bundle = verify_archives(args.release_dir, destination)
     report = {"version": __version__, "assets": assets, "bundle_name": bundle.name,
               "executable_sha256": digest(bundle / "GaussianLab.exe")}

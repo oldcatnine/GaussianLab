@@ -72,10 +72,10 @@ def test_published_private_release_has_verified_frozen_evidence():
 
 def test_current_versions_and_export_backends_are_consistent():
     from gaussian_lab import __version__
-    assert __version__ == "3.1.0"
+    assert __version__ == "3.1.1"
     text = (ROOT / "packaging/windows-version-info.txt").read_text(encoding="utf-8")
-    assert "filevers=(3, 1, 0, 0)" in text and "prodvers=(3, 1, 0, 0)" in text
-    assert "StringStruct('ProductVersion', '3.1.0')" in text
+    assert "filevers=(3, 1, 1, 0)" in text and "prodvers=(3, 1, 1, 0)" in text
+    assert "StringStruct('ProductVersion', '3.1.1')" in text
     spec = (ROOT / "GaussianLab.spec").read_text(encoding="utf-8")
     assert "packaging/windows-version-info.txt" in spec
     assert "matplotlib.backends.backend_svg" in spec and "matplotlib.backends.backend_pdf" in spec
@@ -225,3 +225,106 @@ def test_v3_published_assets_have_real_cpu_and_cuda_download_evidence():
         assert report['preview']['quality'] == 'preview' and report['preview']['backend']['used'] == kind
     assert smoke['cuda']['headers_download_verified'] is True
     assert smoke['cuda']['executable_sha256'] == smoke['cpu']['executable_sha256']
+
+
+
+def test_cuda_stage_accepts_nvidia_namespace_without_init(tmp_path):
+    """新安装的官方轮子使用命名空间包时，仍须完整整理可用运行组件。"""
+    from scripts.stage_cuda_runtime import stage, PACKAGES
+    source, target = tmp_path / "input", tmp_path / "staged"
+    for name in ("cupy", "cupyx", "cupy_backends", "cuda") + PACKAGES:
+        folder = source / name
+        folder.mkdir(parents=True)
+        (folder / "LICENSE.txt").write_text("fixture license", encoding="utf-8")
+    for component in ("cuda_runtime", "cuda_nvrtc", "cufft", "nvjitlink"):
+        folder = source / "nvidia" / component / "bin"
+        folder.mkdir(parents=True)
+        (folder / (component + ".dll")).write_bytes(b"fixture")
+    stage(source, target)
+    report = json.loads((target / "RUNTIME-MANIFEST.json").read_text(encoding="utf-8"))
+    assert len([row for row in report["files"] if row["path"].endswith(".dll")]) == 4
+    assert not (target / "nvidia/__init__.py").exists()
+    assert (target / "CUDA-HEADERS.json").is_file()
+
+
+
+def test_v311_portable_covers_cuda_and_coherent_input():
+    """冻结证据须来自同一个可执行文件，并实际覆盖高阶与相干输入光。"""
+    artifacts = json.loads((ROOT / "docs/release-artifacts-v3.1.1.json").read_text(encoding="utf-8"))
+    smoke = json.loads((ROOT / "docs/release-smoke-v3.1.1.json").read_text(encoding="utf-8"))
+    assert artifacts["version"] == "3.1.1"
+    assert len(artifacts["assets"]) == 3
+    assert all(row["zip_crc"] == "passed" for row in artifacts["assets"])
+    for backend in ("cpu", "cuda"):
+        report = smoke[backend]
+        assert report["version"] == "3.1.1" and report["frozen"]
+        assert report["status"] == "passed" and report["exit_code"] == 0
+        assert report["executable_sha256"] == artifacts["executable_sha256"]
+        assert report["coherent_input"]["backend"]["used"] == backend
+        assert report["coherent_input"]["modes"] == 2
+        assert report["higher_modes"] == ["HG12", "LG12"]
+        assert all(case["backend"]["used"] == backend for case in report["cases"])
+    assert smoke["cuda"]["headers_verified"]
+    assert smoke["cuda"]["headers_source"] in (["local-wheel"], ["official-download"])
+
+
+
+def test_cuda_headers_retry_tls_then_verify_before_extract(tmp_path, monkeypatch):
+    """首次网络握手中断应自动恢复，仍必须对完整官方轮子做摘要验证。"""
+    import hashlib
+    import io
+    import zipfile
+    import requests
+    import time
+    from gaussian_lab.backend import ensure_cuda_headers
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("nvidia/cuda_runtime/include/cuda_runtime.h", b"verified fixture header")
+    payload = buffer.getvalue()
+    record = {"url": "https://files.pythonhosted.org/fixture.whl", "bytes": len(payload),
+              "sha256": hashlib.sha256(payload).hexdigest()}
+    (tmp_path / "CUDA-HEADERS.json").write_text(json.dumps(record), encoding="utf-8")
+    calls = []
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def raise_for_status(self): pass
+        def iter_content(self, size): yield payload
+    def get(*args, **kwargs):
+        calls.append(1)
+        if len(calls) < 3:
+            raise requests.exceptions.SSLError("temporary TLS EOF")
+        return Response()
+    monkeypatch.setattr(requests, "get", get)
+    monkeypatch.setattr(time, "sleep", lambda _: None)
+    ensure_cuda_headers(tmp_path)
+    assert len(calls) == 3
+    assert (tmp_path / ".headers-ready").read_text(encoding="ascii") == record["sha256"]
+    assert (tmp_path / "nvidia/cuda_runtime/include/cuda_runtime.h").read_bytes() == b"verified fixture header"
+    assert not list(tmp_path.glob("headers-*.whl"))
+
+
+
+def test_cuda_headers_local_official_wheel_needs_no_network(tmp_path, monkeypatch):
+    """离线使用者提供官方轮子后，按相同摘要检查并完成私有头文件初始化。"""
+    import hashlib
+    import zipfile
+    import requests
+    from gaussian_lab.backend import ensure_cuda_headers
+    local = tmp_path / "official.whl"
+    with zipfile.ZipFile(local, "w") as archive:
+        archive.writestr("nvidia/cuda_runtime/include/cuda_runtime.h", b"offline header fixture")
+    record = {"url": "https://files.pythonhosted.org/fixture.whl", "bytes": local.stat().st_size,
+              "sha256": hashlib.sha256(local.read_bytes()).hexdigest()}
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    (runtime / "CUDA-HEADERS.json").write_text(json.dumps(record), encoding="utf-8")
+    monkeypatch.setenv("GAUSSIANLAB_CUDA_HEADERS_WHEEL", str(local))
+    def forbidden(*args, **kwargs):
+        raise AssertionError("本地轮子初始化不应访问网络")
+    monkeypatch.setattr(requests, "get", forbidden)
+    ensure_cuda_headers(runtime)
+    assert (runtime / ".headers-source").read_text(encoding="ascii") == "local-wheel"
+    assert (runtime / ".headers-ready").read_text(encoding="ascii") == record["sha256"]
+    assert (runtime / "nvidia/cuda_runtime/include/cuda_runtime.h").is_file()
+    assert local.is_file()

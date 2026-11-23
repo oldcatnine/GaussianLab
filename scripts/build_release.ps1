@@ -1,8 +1,10 @@
-param([string]$SourceCache = '', [string]$CudaRuntime = (Join-Path $env:LOCALAPPDATA 'GaussianLab\cuda-v2-dev'))
+param([string]$SourceCache = '', [string]$CudaRuntime = (Join-Path $env:LOCALAPPDATA 'GaussianLab\cuda-v2-dev'),
+      [string]$PythonExecutable = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $projectRoot
-$pythonPath = Join-Path $projectRoot '.venv\Scripts\python.exe'
+$pythonPath = if ($PythonExecutable) { [IO.Path]::GetFullPath($PythonExecutable) } else { Join-Path $projectRoot '.venv\Scripts\python.exe' }
+if (-not (Test-Path -LiteralPath $pythonPath)) { throw '构建解释器不存在，请创建项目 .venv 或指定 -PythonExecutable。' }
 $releaseVersion = (& $pythonPath -c "from gaussian_lab import __version__; print(__version__)").Trim()
 if ($LASTEXITCODE -ne 0 -or $releaseVersion -notmatch '^\d+\.\d+\.\d+$') { throw '应用版本无效。' }
 $releaseTag = 'v' + $releaseVersion

@@ -1,4 +1,4 @@
-param([string]$RuntimeDirectory = (Join-Path $env:LOCALAPPDATA 'GaussianLab\cuda-v2-dev'))
+﻿param([string]$RuntimeDirectory = (Join-Path $env:LOCALAPPDATA 'GaussianLab\cuda-v2-dev'))
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $pythonExe = Join-Path $projectRoot '.venv\Scripts\python.exe'
@@ -6,7 +6,7 @@ if (-not (Test-Path -LiteralPath $pythonExe)) { throw '请先按 README 创建�
 $runtimePath = [IO.Path]::GetFullPath($RuntimeDirectory)
 if ($runtimePath -match '[^\x00-\x7F]') { throw 'CUDA 编译头文件需要 ASCII 路径，请通过 -RuntimeDirectory 指定英文目录。' }
 # 仅安装固定的可选显卡库，不替换基础环境，也不安装或修改系统显卡驱动。
-& $pythonExe -m pip install --upgrade --target $runtimePath --no-deps -r (Join-Path $projectRoot 'requirements-cuda.txt')
+& $pythonExe -X utf8 -m pip install --upgrade --only-binary=:all: --target $runtimePath --no-deps -r (Join-Path $projectRoot 'requirements-cuda.txt')
 if ($LASTEXITCODE -ne 0) { throw 'CUDA 可选库安装失败；CPU 模式仍然可用。' }
 $env:GAUSSIANLAB_CUDA_PATH = $runtimePath
 Push-Location $projectRoot

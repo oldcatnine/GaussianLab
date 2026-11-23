@@ -1,0 +1,29 @@
+{
+  "version": "3.1.1",
+  "assets": [
+    {
+      "name": "GaussianLab-v3.1.1-Application-Source.zip",
+      "bytes": 3443395,
+      "sha256": "94e247b89101f9712cd5583760f3db093e78a83eb5fd4ae808b96112ab3dd4a8",
+      "zip_crc": "passed"
+    },
+    {
+      "name": "GaussianLab-v3.1.1-Qt-Corresponding-Source.zip",
+      "bytes": 73624348,
+      "sha256": "ce50f834f0d7809bc5aba9ff69c137352a89a9f406a0fb3534681700c33a0aea",
+      "zip_crc": "passed"
+    },
+    {
+      "name": "GaussianLab-v3.1.1-Windows-x64.zip",
+      "bytes": 601126878,
+      "sha256": "151ff28719731bd5f15f464a2abcb10286e106d796e46668b456e9194fb8fb6e",
+      "zip_crc": "passed"
+    }
+  ],
+  "bundle_name": "GaussianLab-v3.1.1-Windows-x64",
+  "executable_sha256": "1f6ef84b7a3ef6cfe9f19271e2993eda45099b8358748b8099aebeaab4bbc504",
+  "frozen_smoke": {
+    "cpu": "passed",
+    "cuda": "passed"
+  }
+}

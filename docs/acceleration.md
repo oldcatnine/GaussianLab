@@ -4,6 +4,11 @@ V3.0.0 已正式发布，继承 a2a7363 的 CUDA/响应式预览实现。便携�
 
 更新日期：2026-11-15。开发基线为 V2.0.0（afaef29），功能来源为 feature/cuda-responsive-preview；正式应用标签为 v3.0.0（b4806c3）。[远端发行与双后端回下载证据](release-validation-v3.0.0.md)已归档，V2.0.0 原始附件保留。
 
+V3.1.1 当前便携包包含 CuPy 与 CUDA FFT 组件，用户无需自行 pip 安装。源码用户双击根目录 `安装显卡加速.cmd`，安装器会执行实际设备/FFT 自检；安装后重启应用。依赖清单缩减为当前传播与 FFT 所需的 6 个固定包，保留完整官方头文件的私有安装。自定义运行库需设置 `GAUSSIANLAB_CUDA_PATH`。本轮包含 HG/LG/相干叠加真实 GPU 验证，见 [交付验证](release-validation-v3.1.1.md)。
+
+网络受限时可通过 `GAUSSIANLAB_CUDA_HEADERS_WHEEL` 指定用户从官方获取的固定轮子，软件照常校验字节数与 SHA-256；无需 Python，初始化后使用本机缓存。步骤见 [V3.1.1 离线初始化](USER_GUIDE-v3.1.1.md)。
+
+
 ## 已实现
 
 - 可选 CuPy CUDA 后端：复光场、FFT、传递函数、能量统计与焦区细化在设备上执行，结果图像传回内存供 Qt/VTK 使用。CPU/GPU 均采用 complex128/float64，结果图像沿用 float32。

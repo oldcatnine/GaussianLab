@@ -24,7 +24,9 @@ def stage(source, target):
     for name in ("cupy", "cupyx", "cupy_backends", "cuda") + PACKAGES:
         shutil.copytree(source / name, target / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     (target / "nvidia").mkdir()
-    shutil.copy2(source / "nvidia/__init__.py", target / "nvidia/__init__.py")
+    # 新版 NVIDIA 轮子可使用 PEP 420 命名空间包，没有顶层初始化文件。
+    if (source / "nvidia/__init__.py").is_file():
+        shutil.copy2(source / "nvidia/__init__.py", target / "nvidia/__init__.py")
     for component in ("cuda_runtime", "cuda_nvrtc", "cufft", "nvjitlink"):
         root = source / "nvidia" / component
         for path in root.rglob("*"):
