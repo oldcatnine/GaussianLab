@@ -430,6 +430,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/ui-review-v4.0.0.md",
+    "purpose": "第四代界面的实窗观察、易用性问题、优先级建议与尚待实施的验收任务。",
+    "optional_local": false
+  },
+  {
     "path": "docs/validation-v0.1.json",
     "purpose": "首轮数值验证的机器可读数据，包括环境、案例结果、耗时和末端比较。",
     "optional_local": false

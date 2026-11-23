@@ -199,3 +199,18 @@ def test_modes_storage_guides_match_current_source():
     assert "1,107,296,256" in text and "819.1" in text
     assert "不是实体光学实验" in text
     assert (ROOT/"docs/assets/lg-tem-input-modes.png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_v4_ui_review_links_and_scope_are_traceable():
+    """评审引用须可定位，并明确区别设计建议与已发布实现。"""
+    path = ROOT / "docs/ui-review-v4.0.0.md"
+    text = path.read_text(encoding="utf-8")
+    assert "状态：设计建议，尚未实施" in text
+    assert "V4.0.0" in text and "V4.0.1" in text
+    links = re.findall(r"\]\(([^)]+)\)", text)
+    assert links
+    for link in links:
+        if not link.startswith(("https://", "http://")):
+            assert (path.parent / link.split("#", 1)[0]).is_file(), link
+    handbook = (ROOT / "docs/项目学习手册.md").read_text(encoding="utf-8")
+    assert "](ui-review-v4.0.0.md)" in handbook
