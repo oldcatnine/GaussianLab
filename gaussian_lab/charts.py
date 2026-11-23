@@ -112,7 +112,7 @@ class PlotCanvas(FigureCanvasQTAgg):
         ax.legend(facecolor=BACKGROUND, edgecolor=BORDER, labelcolor=TEXT, fontsize=8)
         self.draw_idle()
 
-    def spot(self, r, index, log=False):
+    def spot(self, r, index, log=False, smooth=True):
         ax = self.reset()
         image = r.intensity[index]
         image = image / max(float(image.max()), 1e-30)
@@ -121,13 +121,16 @@ class PlotCanvas(FigureCanvasQTAgg):
         dx = r.project.window / r.project.grid
         extent = [(r.x[0] - dx / 2) * 1e3, (r.x[-1] + dx / 2) * 1e3] * 2
         plot = ax.imshow(image, origin="lower", extent=extent, cmap=INTENSITY_CMAP,
-                         vmin=-50 if log else 0, vmax=0 if log else 1, interpolation="nearest", aspect="equal")
+                         vmin=-50 if log else 0, vmax=0 if log else 1,
+                         interpolation="bilinear" if smooth else "nearest", interpolation_stage="data", aspect="equal")
         limit = max(r.r86[index] * 2.2, 4 * dx) * 1e3
         limit = min(limit, r.project.window * 500)
         ax.set(xlim=(-limit, limit), ylim=(-limit, limit), xlabel="x / mm", ylabel="y / mm",
                title=f"z = {r.z[index]*1e3:.4f} mm · 峰值归一化" + (" / dB" if log else ""))
         diameter_pixels = 2 * r.r86[index] / dx
-        quality = "采样偏粗，请完整计算/加密网格" if diameter_pixels < 8 else "显示原始采样，不做平滑插值"
+        quality = "平滑仅改善显示；计算值未改变" if smooth else "原始像素，不做平滑插值"
+        if diameter_pixels < 8:
+            quality += "；采样偏粗，请完整计算/加密网格"
         ax.text(.02, .02, f"Δx={dx*1e6:.3f} μm · 2r86≈{diameter_pixels:.1f} 像素\n{quality}",
                 transform=ax.transAxes, fontsize=7, va="bottom", bbox={"facecolor":"white", "alpha":.85, "edgecolor":"none"})
         cb = self.figure.colorbar(plot, ax=ax, shrink=.8, pad=.025)

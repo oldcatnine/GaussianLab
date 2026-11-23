@@ -370,7 +370,7 @@ def test_finer_sampling_limits_and_actual_axial_planes():
     assert Project().grid == 1024
     small(grid=2048, samples=17).validate()
     with pytest.raises(ValueError, match="384 MiB"):
-        small(grid=2048, samples=65).validate()
+        small(grid=2048, samples=65, storage_mode="ram").validate()
     p = small(grid=128, samples=641, focus_refinement=0)
     r = simulate(p)
     assert len(r.z) == 641
@@ -406,7 +406,7 @@ def test_memory_limit_rejects_invalid_budget(budget):
 
 def test_custom_memory_limit_legacy_and_roundtrip(tmp_path):
     from gaussian_lab.model import from_dict
-    p = small(grid=2048, samples=65, memory_limit_mib=1536)
+    p = small(grid=2048, samples=65, memory_limit_mib=1536, storage_mode="ram")
     p.validate()
     assert p.result_storage_bytes() == 1056 * 1024**2
     path = tmp_path / "memory.json"

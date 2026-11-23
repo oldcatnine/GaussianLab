@@ -8,14 +8,17 @@ def estimate_memory(project):
     """结果体积精确按槽位计算；工作区按复场、缓存频谱及临时数组留出经验余量。"""
     pixels = project.grid**2
     segments = 1 + sum(1 for e in project.elements if e.enabled)
-    result = project.result_storage_bytes()
+    total_result = project.result_storage_bytes()
+    result = project.resident_result_bytes()
     # 每区段保留 complex128 场与频谱；额外 256 B/像素覆盖坐标、排序与 FFT 等工作区。
     work = pixels * (32 * segments + 256)
-    return {"result_bytes": result, "allocated_planes": len(project.sampling_positions()) + 1,
+    return {"result_bytes": total_result, "resident_result_bytes": result,
+            "disk_bytes": total_result if project.selected_storage() == "disk" else 0,
+            "storage_mode": project.selected_storage(), "allocated_planes": len(project.sampling_positions()) + 1,
             "cpu_increment_low_bytes": result + work, "cpu_increment_high_bytes": result + 2 * work,
             "cuda_host_low_bytes": result + 32 * pixels, "cuda_host_high_bytes": result + 64 * pixels,
             "cuda_device_low_bytes": work, "cuda_device_high_bytes": 2 * work,
-            "note": "结果包含一个焦面预留槽位；运行增量是经验范围，不含既有进程、A/B、缓存和绘图，FFT/驱动可能超出"}
+            "note": "结果含焦面槽位；磁盘模式按批重映射但 OS 文件缓存仍可占 RAM；工作区为估算，不含既有进程、A/B和绘图"}
 
 
 def system_memory():

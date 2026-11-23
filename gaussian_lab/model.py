@@ -41,6 +41,7 @@ class Project:
     focus_refinement: int = 2
     modes: list[Mode] = field(default_factory=lambda: [Mode()])
     memory_limit_mib: int = 384
+    storage_mode: str = "auto"
 
     def validate(self):
         numbers = (self.wavelength, self.waist, self.waist_z, self.length, self.window)
@@ -48,16 +49,18 @@ class Project:
             raise ValueError("光源与距离参数必须为有限数值")
         if min(self.wavelength, self.waist, self.length, self.window) <= 0:
             raise ValueError("波长、束腰、传播长度和窗口必须大于零")
-        if type(self.grid) is not int or self.grid not in (128, 256, 512, 1024, 2048):
-            raise ValueError("网格须为 128、256、512、1024 或 2048")
-        if type(self.samples) is not int or not 17 <= self.samples <= 641:
-            raise ValueError("轴向采样须为 17—641 点")
+        if type(self.grid) is not int or self.grid not in (128, 256, 512, 1024, 2048, 4096):
+            raise ValueError("网格须为 128、256、512、1024、2048 或 4096")
+        if type(self.samples) is not int or not 17 <= self.samples <= 2049:
+            raise ValueError("轴向采样须为 17—2049 点")
         if type(self.focus_refinement) is not int or not 0 <= self.focus_refinement <= 4:
             raise ValueError("焦区细化级数须为 0—4")
         if len(self.elements) > 20:
             raise ValueError("第一版最多支持 20 个元件")
         if type(self.memory_limit_mib) is not int or not 32 <= self.memory_limit_mib <= 65536:
             raise ValueError("结果数据上限须为 32—65536 MiB 的整数")
+        if self.storage_mode not in ("auto", "ram", "disk"):
+            raise ValueError("结果存储须为自动、RAM 或磁盘缓存")
         if not 1 <= len(self.modes) <= 8:
             raise ValueError("输入光须包含 1—8 个相干模式")
         for mode in self.modes:
@@ -85,9 +88,9 @@ class Project:
             ):
                 raise ValueError("透镜有效通光直径须为空或有限正数，仅适用于透镜")
         required = self.result_storage_bytes()
-        if required > self.memory_limit_mib * 1024**2:
+        if self.storage_mode == "ram" and required > self.memory_limit_mib * 1024**2:
             raise ValueError(f"结果体积预计 {required / 1024**2:.1f} MiB，超过已设 {self.memory_limit_mib} MiB 上限；"
-                             "请提高结果数据上限，或减少网格/轴向采样点")
+                             "请提高结果数据上限，或切换自动/磁盘存储，也可减少网格/轴向采样点")
         return self
 
     def sampling_positions(self):
@@ -100,6 +103,17 @@ class Project:
         """float32 强度体积的实际预分配字节数，包含一个额外焦面槽位。"""
         return self.grid**2 * (len(self.sampling_positions()) + 1) * 4
 
+    def selected_storage(self):
+        """自动存储仅在结果体积超出预算时启用磁盘，不降低空间或轴向分辨率。"""
+        return "disk" if self.storage_mode == "disk" or (
+            self.storage_mode == "auto" and self.result_storage_bytes() > self.memory_limit_mib * 1024**2) else "ram"
+
+    def resident_result_bytes(self):
+        """磁盘写入按最多 64 MiB 批次重映射；最少能容纳一张完整平面。"""
+        if self.selected_storage() == "ram":
+            return self.result_storage_bytes()
+        return min(self.result_storage_bytes(), max(self.grid**2 * 4, min(self.memory_limit_mib, 64) * 1024**2))
+
     def ordered(self):
         return sorted((e for e in self.elements if e.enabled), key=lambda e: e.z)
 
@@ -109,6 +123,7 @@ class Project:
 
 def from_dict(data):
     data = dict(data)
+    data.setdefault("storage_mode", "ram")
     data["elements"] = [Element(**e) for e in data.get("elements", [])]
     if "modes" in data:
         data["modes"] = [Mode(**m) for m in data["modes"]]
@@ -140,3 +155,18 @@ def preset(name):
         return Project(name=name, waist=.65e-3, length=.4,
                        elements=[Element("aperture", .06, .9e-3, "A1"), Element("lens", .1, .12, "L1")])
     return Project()
+
+
+MODE_PRESET_KEYS = tuple(f"LG0{i}" for i in range(1, 6)) + (
+    "TEM00", "TEM10", "TEM20", "TEM21", "TEM03", "TEM30", "TEM11", "TEM01+TEM10")
+
+
+def mode_preset(key):
+    """LG 按 p、l 编号；本软件的 TEM 横模以 HG 的 x、y 阶数表示。"""
+    if key in MODE_PRESET_KEYS[:5]:
+        return [Mode("LG", 0, int(key[-1]))]
+    if key == "TEM01+TEM10":
+        return [Mode("HG", 0, 1), Mode("HG", 1, 0)]
+    if key in MODE_PRESET_KEYS[5:]:
+        return [Mode("HG", int(key[-2]), int(key[-1]))]
+    raise ValueError("未知输入光预设")

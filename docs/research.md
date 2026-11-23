@@ -134,3 +134,12 @@
 复查 [PyVistaQt 原仓库](https://github.com/pyvista/pyvistaqt) 的 Qt 渲染集成，保留按需三维，新增不依赖 VTK 的 Matplotlib 二维示意；模块惰性导入，退出三维移除并关闭渲染上下文，明确库仍可能驻留。参考 Matplotlib 官方 [鼠标事件](https://matplotlib.org/stable/gallery/event_handling/coords_demo.html) 与 [imshow 坐标/插值说明](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html)，自行实现近点工具提示，不增加 mplcursors 依赖或复制上游代码。
 
 焦面检查发现：旧 imshow 将第一像素中心放在 x[0]+dx/2，光轴整体偏移半像素；bilinear 插值和固定最小 0.15 mm 半视野会掩盖小光斑的离散结构。修复范围是坐标映射、显示插值和视野，不将模拟光斑强制修改为理想高斯。孔径衍射、高阶模式、欠采样与有限窗口仍应区分；原始强度、解析基准与独立传播对照用于验证。
+
+
+### LG/TEM 与磁盘映射补充（2026-11-23）
+
+复用此前 LightPipes 原仓库的 HG/LG 模型调研，不引入额外物理库。用户确认 TEM00/10/20/21/03/30/11 和 TEM01+TEM10；横模按 HG 实现，LG01—05 按 p=0、l=1—5 解释。参考 [LightPipes core 源码](https://github.com/opticspy/lightpipes/blob/master/LightPipes/core.py)，不复制第三方代码。
+
+内存扩展查看 [NumPy memmap 官方接口](https://numpy.org/doc/stable/reference/generated/numpy.memmap.html)：文件映射支持 ndarray 式切片，但页缓存与子类视图生命周期不能忽略。实现私有临时文件、发布前批次写回/重映射、发布后由视图共享所有者，最后引用释放时清理；没有新安装依赖。不能宣称磁盘映射等于零 RAM。
+
+显示参考 [Matplotlib 插值方法](https://matplotlib.org/stable/gallery/images_contours_and_fields/interpolation_methods.html)。保留像素中心对齐，默认 bilinear、data 阶段插值，提供 nearest 检查原始像素；曲线与悬停数据仍读原始数组。以已有解析/独立传播验证和新增模式、存储及真实界面测试验收，见 modes-storage-validation.md。

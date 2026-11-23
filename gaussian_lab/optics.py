@@ -18,6 +18,7 @@ import numpy as np
 from scipy.fft import fft2, ifft2, fftfreq, fftshift
 from .model import Project
 from .memory import estimate_memory
+from .storage import allocate_intensity, checkpoint_intensity
 from .backend import Backend, array_module, select_backend, invalidate_cuda
 from bisect import bisect_right
 from functools import lru_cache
@@ -344,7 +345,7 @@ def _simulate(project, cancel, progress, engine):
     input_energy = float(xp.sum(abs(field)**2))
     dx = p.window / p.grid
     zs = np.asarray(p.sampling_positions())
-    images = np.empty((len(zs) + 1, p.grid, p.grid), dtype=np.float32)
+    images = allocate_intensity(p)
     propagation = Propagation(p, r2, engine, cancel)
     sizes, powers, warnings = [], [], list(propagation.warnings)
     if len(p.modes) != 1 or p.modes[0].n or p.modes[0].m:
@@ -358,6 +359,7 @@ def _simulate(project, cancel, progress, engine):
         field = propagation.at(float(z))
         intensity = abs(field)**2
         images[i] = engine.host(intensity)
+        images = checkpoint_intensity(images, p, i + 1)
         sizes.append(encircled_radius(intensity, rr, order=order))
         powers.append(float(intensity.sum() / input_energy))
         if float(intensity[border].sum()) / max(float(intensity.sum()), 1e-300) > .005:
@@ -380,6 +382,7 @@ def _simulate(project, cancel, progress, engine):
         j = int(np.searchsorted(zs, selected))
         for k in range(len(zs), j, -1):
             images[k] = images[k - 1]
+            images = checkpoint_intensity(images, p, len(zs) - k + 1)
         selected_intensity = abs(propagation.at(selected))**2
         images[j] = engine.host(selected_intensity)
         if float(selected_intensity[border].sum() / selected_intensity.sum()) > .005:
@@ -387,6 +390,7 @@ def _simulate(project, cancel, progress, engine):
         zs = np.insert(zs, j, selected)
         sizes = np.insert(sizes, j, focus["r86_m"])
         powers = np.insert(powers, j, float(selected_intensity.sum() / input_energy))
+    images = checkpoint_intensity(images, p, len(zs), force=True)
     result = Result(p, zs, x, images[:len(zs)], analytic(p, zs), sizes, np.asarray(powers),
                     theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
     result.provenance["backend"] = engine.information()
@@ -469,8 +473,8 @@ def result_summary(result):
 def convergence(project, cancel=None, backend="cpu"):
     """分别改变横向网格、窗口与轴向分辨率；报告多指标变化，不自动宣称通过。"""
     project.validate()
-    if project.grid > 1024 or project.focus_refinement >= 4 or project.samples > 321:
-        raise ValueError("收敛检查基准网格最多 1024、轴向最多 321 点，焦区细化级数最多 3；加密结果仍受内存限制")
+    if project.grid > 2048 or project.focus_refinement >= 4 or project.samples > 1025:
+        raise ValueError("收敛检查基准网格最多 2048、轴向最多 1025 点，焦区细化级数最多 3；工作内存和磁盘仍需足够")
     variants = {"base": project.clone()}
     fine = project.clone()
     fine.grid *= 2

@@ -148,3 +148,18 @@ def test_cuda_install_entry_and_minimum_pinned_runtime():
     assert "-X utf8 -m pip" in script and "--only-binary=:all:" in script
     assert "select_backend('cuda')" in script
     assert "install_cuda_runtime.ps1" in (root / "安装显卡加速.cmd").read_text(encoding="utf-8")
+
+
+def test_real_cuda_disk_storage_matches_cpu_ram():
+    """真实 GPU 写入磁盘缓存后的高阶模式与 CPU 内存结果一致。"""
+    engine = backend.select_backend("cuda")
+    if engine.name != "cuda":
+        pytest.skip(engine.reason)
+    p = Project(grid=128, samples=17, modes=[Mode("LG", 0, 5)])
+    cpu = simulate(p)
+    p.storage_mode = "disk"
+    gpu = simulate(p, backend="cuda")
+    assert gpu.provenance["backend"]["used"] == "cuda"
+    assert gpu.provenance["memory_estimate"]["storage_mode"] == "disk"
+    np.testing.assert_allclose(gpu.intensity, cpu.intensity, atol=1e-7, rtol=1e-5)
+    np.testing.assert_array_equal(gpu.r86, cpu.r86)

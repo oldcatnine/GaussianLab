@@ -150,9 +150,9 @@ def test_coherent_modes_sampling_documentation_matches_model():
     """核对新增需求、模型限制与源码操作入口同步，避免把旧便携包当新实现。"""
     from gaussian_lab.model import Project
     assert Project().grid == 1024
-    for name in ("requirements.md", "USER_GUIDE.md", "项目学习手册.md", "project-review-2026-11-23.md"):
+    for name in ("requirements.md", "USER_GUIDE.md", "项目学习手册.md"):
         text = (ROOT / "docs" / name).read_text(encoding="utf-8")
-        for term in ("相干", "HG", "LG", "2048", "641", "384 MiB"):
+        for term in ("相干", "HG", "LG", "4096", "2049", "384 MiB"):
             assert term in text, (name, term)
     review = (ROOT / "docs/project-review-2026-11-23.md").read_text(encoding="utf-8")
     assert "未验证" in review and "便携包" in review
@@ -187,3 +187,15 @@ def test_memory_display_controls_guides_and_validation_are_consistent():
     text = (ROOT / "docs/memory-display-validation.md").read_text(encoding="utf-8")
     assert "不是实体光学实验" in text
     assert "42,074,112" in text
+
+
+def test_modes_storage_guides_match_current_source():
+    """新模式、显示插值与存储限制须在用户文档和验证记录中明确。"""
+    for name in ("docs/USER_GUIDE.md", "docs/项目学习手册.md", "docs/modes-storage-validation.md"):
+        text = (ROOT/name).read_text(encoding="utf-8")
+        for term in ("TEM01+TEM10", "4096", "2049", "磁盘", "平滑", "原始像素"):
+            assert term in text, (name,term)
+    text = (ROOT/"docs/modes-storage-validation.md").read_text(encoding="utf-8")
+    assert "1,107,296,256" in text and "819.1" in text
+    assert "不是实体光学实验" in text
+    assert (ROOT/"docs/assets/lg-tem-input-modes.png").read_bytes().startswith(b"\x89PNG\r\n\x1a\n")

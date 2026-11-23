@@ -421,9 +421,9 @@ def test_longitudinal_uses_computed_slices_and_links_observer(window, monkeypatc
 def test_mode_controls_sampling_roundtrip_and_worker(window, app, tmp_path):
     """从模式控件经真实后台线程到结果和项目文件验证完整链路。"""
     from gaussian_lab.model import Mode
-    window.mode_preset.setCurrentIndex(5)
+    window.mode_preset.setCurrentIndex(window.mode_preset.findData("TEM01+TEM10"))
     window.apply_mode_preset()
-    assert window.read_project().modes == [Mode(), Mode("HG", 1, 0)]
+    assert window.read_project().modes == [Mode("HG", 0, 1), Mode("HG", 1, 0)]
     window.mode_table.item(1, 4).setText("90")
     window.compute()
     wait_until(app, lambda: window.job is not None and not window.job.isRunning() and not window.dirty)
@@ -439,6 +439,7 @@ def test_mode_controls_sampling_roundtrip_and_worker(window, app, tmp_path):
     window.samples.setValue(641)
     window.grid.setCurrentText("2048")
     assert window.grid.currentText() == "2048"
+    window.storage_mode.setCurrentIndex(window.storage_mode.findData("ram"))
     with pytest.raises(ValueError, match="384 MiB"):
         window.read_project()
     window.samples.setValue(17)
@@ -453,6 +454,7 @@ def test_memory_options_prediction_and_saved_project(window, app, tmp_path, monk
     import gaussian_lab.gui as gui
     window.grid.setCurrentText("2048")
     window.samples.setValue(65)
+    window.storage_mode.setCurrentIndex(window.storage_mode.findData("ram"))
     assert "1.03 GiB" in window.memory_info.text()
     assert "结果超出上限" in window.memory_info.text()
     with pytest.raises(ValueError, match="384 MiB"):
@@ -519,7 +521,7 @@ def test_focal_image_pixel_centers_zoom_and_raw_intensity(window, app):
     p = Project(grid=512, samples=17, window=.003, length=.18, elements=[Element("lens", .1, .04)])
     r = simulate(p)
     k = r.focus_index
-    window.spot_plot.spot(r, k)
+    window.spot_plot.spot(r, k, smooth=False)
     plot = window.spot_plot.ax.images[0]
     extent = plot.get_extent()
     dx = p.window / p.grid * 1e3
@@ -532,6 +534,41 @@ def test_focal_image_pixel_centers_zoom_and_raw_intensity(window, app):
     width = analytic(p, [r.z[k]])[0]
     expected = np.exp(-2 * (r.x / width)**2)
     np.testing.assert_allclose(r.intensity[k, p.grid//2]/r.intensity[k].max(), expected, atol=.02)
+
+
+def test_requested_presets_smoothing_and_automatic_disk_worker(window, app, tmp_path):
+    """新预设可应用保存；平滑不改数据/触发求解，超预算可完成真实后台计算。"""
+    from gaussian_lab.model import MODE_PRESET_KEYS, mode_preset, save_project
+    for key in MODE_PRESET_KEYS:
+        window.mode_preset.setCurrentIndex(window.mode_preset.findData(key))
+        window.apply_mode_preset()
+        assert window.read_project().modes == mode_preset(key)
+    window.fill_project(window.result.project)
+    assert window.mode_preset.currentData() == "TEM00"
+    original, revision = window.result, window.revision
+    window.spot_render.setCurrentIndex(1)
+    window.spot_render.setCurrentIndex(0)
+    assert window.result is original and window.revision == revision
+    assert window.spot_plot.ax.images[0].get_interpolation() == "bilinear"
+    k = window.plane_slider.value()
+    np.testing.assert_array_equal(window.spot_plot.ax.images[0].get_array(), original.intensity[k]/original.intensity[k].max())
+    window.grid.setCurrentText("4096")
+    window.samples.setValue(2049)
+    assert window.read_project().selected_storage() == "disk"
+    assert "磁盘缓存" in window.memory_info.text()
+    assert "结果超出上限" not in window.memory_info.text()
+    window.grid.setCurrentText("128")
+    window.samples.setValue(641)
+    window.memory_limit.setValue(32)
+    window.display_mode.setCurrentIndex(window.display_mode.findData("2d"))
+    window.compute()
+    wait_until(app, lambda: not window.job.isRunning() and not window.dirty)
+    assert window.result.provenance["memory_estimate"]["storage_mode"] == "disk"
+    assert window.result.intensity.shape[1:] == (128,128)
+    path = tmp_path/"automatic-disk.json"
+    save_project(window.read_project(), path)
+    window.fill_project(load_project(path))
+    assert window.storage_mode.currentData() == "auto"
 
 
 def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):

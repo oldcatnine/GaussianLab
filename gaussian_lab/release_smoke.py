@@ -98,7 +98,7 @@ def run(output: Path):
         window.auto_preview.setChecked(False)
         report["preview"] = {"quality": "preview", "grid": window.result.project.grid,
                              "backend": window.result.provenance["backend"]}
-        window.mode_preset.setCurrentIndex(5)
+        window.mode_preset.setCurrentIndex(window.mode_preset.findData("TEM01+TEM10"))
         window.apply_mode_preset()
         window.mode_table.item(1, 4).setText("90")
         window.compute()
@@ -107,7 +107,7 @@ def run(output: Path):
             app.processEvents()
             time.sleep(.01)
         assert not window.job.isRunning() and not window.dirty, errors
-        assert window.result.project.modes == [Mode(), Mode("HG", 1, 0, 1, 90)]
+        assert window.result.project.modes == [Mode("HG", 0, 1), Mode("HG", 1, 0, 1, 90)]
         assert window.result.provenance["backend"]["used"] == requested
         report["coherent_input"] = {"modes": 2, "phase_deg": 90,
                                      "backend": window.result.provenance["backend"]}

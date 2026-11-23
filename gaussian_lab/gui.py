@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
     QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea, QStackedWidget)
 from . import __version__
-from .model import Project, Element, Mode, preset, load_project, save_project
+from .model import Project, Element, Mode, preset, load_project, save_project, MODE_PRESET_KEYS, mode_preset
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
 from .charts import PlotCanvas
 from .backend import preview_project
@@ -197,10 +197,10 @@ class MainWindow(QMainWindow):
         self.length = spin(400, 10, 5000, 1, " mm")
         self.window_size = spin(6, .2, 100, 2, " mm")
         self.grid = QComboBox()
-        self.grid.addItems(["128", "256", "512", "1024", "2048"])
+        self.grid.addItems(["128", "256", "512", "1024", "2048", "4096"])
         self.grid.setCurrentText("256")
         self.samples = QSpinBox()
-        self.samples.setRange(17, 641)
+        self.samples.setRange(17, 2049)
         self.samples.setValue(65)
         self.focus_refinement = QSpinBox()
         self.focus_refinement.setRange(0, 4)
@@ -225,7 +225,10 @@ class MainWindow(QMainWindow):
         mode_box = QGroupBox("相干输入光 / 横模")
         mode_layout = QVBoxLayout(mode_box)
         self.mode_preset = QComboBox()
-        self.mode_preset.addItems(["基模 HG00", "双瓣 HG10", "四瓣 HG11", "涡旋 LG01", "径向 LG10", "HG00 + HG10 相干叠加"])
+        for key in MODE_PRESET_KEYS:
+            self.mode_preset.addItem(key.replace("+", " + ") + (" 相干叠加" if "+" in key else ""), key)
+        self.mode_preset.setCurrentIndex(self.mode_preset.findData("TEM00"))
+        self.mode_preset.setToolTip("LG 编号为径向 p、方位 l；TEM 以 HG 横模计算。TEM01+TEM10 默认为等振幅、同相，可在表中修改相位。")
         mode_layout.addWidget(self.mode_preset)
         mode_layout.addWidget(button("应用输入光", self.apply_mode_preset))
         self.mode_table = QTableWidget(0, 5)
@@ -263,10 +266,21 @@ class MainWindow(QMainWindow):
         self.memory_limit.setSingleStep(128)
         self.memory_limit.setSuffix(" MiB")
         self.memory_limit.setValue(384)
-        self.memory_limit.setAccessibleName("结果数据上限")
-        self.memory_limit.setToolTip("只限制保存的强度体积，额外计算工作区、绘图和 A/B 缓存另计；设置随项目保存。")
+        self.memory_limit.setAccessibleName("结果 RAM 预算")
+        self.memory_limit.setToolTip("自动模式超预算转存磁盘；仅 RAM 模式超预算阻止计算。FFT 工作区、绘图及系统文件缓存另计。")
         self.memory_limit.valueChanged.connect(self.mark_dirty)
-        performance_form.addRow("结果数据上限", self.memory_limit)
+        performance_form.addRow("结果 RAM 预算", self.memory_limit)
+        self.storage_mode = QComboBox()
+        for text, key in (("自动：超预算用磁盘（推荐）", "auto"), ("始终使用磁盘缓存", "disk"), ("仅 RAM：超预算停止", "ram")):
+            self.storage_mode.addItem(text, key)
+        self.storage_mode.currentIndexChanged.connect(self.mark_dirty)
+        performance_form.addRow("结果存储", self.storage_mode)
+        self.spot_render = QComboBox()
+        self.spot_render.addItem("平滑显示（仅视觉插值）", True)
+        self.spot_render.addItem("原始像素（检查采样）", False)
+        self.spot_render.setToolTip("平滑不增加采样精度；鼠标读数、曲线和导出数值仍来自原始数据。")
+        self.spot_render.currentIndexChanged.connect(self.draw_plane)
+        performance_form.addRow("二维光斑", self.spot_render)
         self.memory_info = QLabel()
         self.memory_info.setWordWrap(True)
         self.memory_info.setAccessibleName("内存估算")
@@ -577,6 +591,13 @@ class MainWindow(QMainWindow):
                               (self.focus_refinement, p.focus_refinement)):
             widget.setValue(value)
         self.grid.setCurrentText(str(p.grid))
+        self.storage_mode.setCurrentIndex(self.storage_mode.findData(p.storage_mode))
+        for key in MODE_PRESET_KEYS:
+            if mode_preset(key) == p.modes:
+                self.mode_preset.setCurrentIndex(self.mode_preset.findData(key))
+                break
+        else:
+            self.mode_preset.setCurrentIndex(-1)
         self.mode_table.setRowCount(0)
         for mode in p.modes:
             self.add_mode(mode)
@@ -606,7 +627,9 @@ class MainWindow(QMainWindow):
         cpu = f"{fmt(estimate['cpu_increment_low_bytes'])}—{fmt(estimate['cpu_increment_high_bytes'])}"
         host = f"{fmt(estimate['cuda_host_low_bytes'])}—{fmt(estimate['cuda_host_high_bytes'])}"
         device = f"{fmt(estimate['cuda_device_low_bytes'])}—{fmt(estimate['cuda_device_high_bytes'])}"
-        message = (f"结果数据：{fmt(estimate['result_bytes'])} / 上限 {fmt(p.memory_limit_mib * 1024**2)}\n"
+        message = (f"结果数据：{fmt(estimate['result_bytes'])} / RAM 预算 {fmt(p.memory_limit_mib * 1024**2)}\n"
+                   f"存储：{'磁盘缓存' if estimate['storage_mode'] == 'disk' else 'RAM'}；写入批次约 {fmt(estimate['resident_result_bytes'])}\n"
+                   f"磁盘文件：{fmt(estimate['disk_bytes'])}（文件页缓存由系统管理）\n"
                    f"CPU 计算新增 RAM 约 {cpu}\nCUDA 计算新增 RAM 约 {host}\nCUDA 显存工作区约 {device}\n"
                    f"当前进程 RAM：{fmt(system['process_bytes'])}\n"
                    f"系统可用 RAM：{fmt(system['available_bytes'])} / 总量 {fmt(system['total_bytes'])}")
@@ -615,7 +638,7 @@ class MainWindow(QMainWindow):
             message += "\n3D 场景/帧缓冲额外占用 RAM 和显存，可改为 2D 或仅计算。"
         if system["process_bytes"] is not None:
             message += f"\nCPU 进程峰值估计约 {fmt(system['process_bytes'] + estimate['cpu_increment_high_bytes'])}"
-        if estimate["result_bytes"] > p.memory_limit_mib * 1024**2:
+        if p.storage_mode == "ram" and estimate["result_bytes"] > p.memory_limit_mib * 1024**2:
             message += "\n结果超出上限：提高上限或减少采样后才能完整计算。"
             color = "#b91c1c"
         elif system["available_bytes"] is not None and estimate["cpu_increment_high_bytes"] > system["available_bytes"]:
@@ -650,11 +673,12 @@ class MainWindow(QMainWindow):
             self.mark_dirty()
 
     def apply_mode_preset(self):
-        choices = [[Mode()], [Mode("HG", 1, 0)], [Mode("HG", 1, 1)],
-                   [Mode("LG", 0, 1)], [Mode("LG", 1, 0)], [Mode(), Mode("HG", 1, 0)]]
+        key = self.mode_preset.currentData()
+        if key is None:
+            return
         self.loading = True
         self.mode_table.setRowCount(0)
-        for mode in choices[self.mode_preset.currentIndex()]:
+        for mode in mode_preset(key):
             self.add_mode(mode)
         self.loading = False
         self.mark_dirty()
@@ -699,7 +723,7 @@ class MainWindow(QMainWindow):
         project = Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
                        self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
                        int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value(),
-                       modes=modes, memory_limit_mib=self.memory_limit.value())
+                       modes=modes, memory_limit_mib=self.memory_limit.value(), storage_mode=self.storage_mode.currentData())
         return project.validate() if validate else project
 
     def add_element(self, kind):
@@ -895,7 +919,7 @@ class MainWindow(QMainWindow):
         elif mode == "2d":
             self.schematic_plot.schematic(r, i)
         if self.tabs.currentIndex() == 0:
-            self.spot_plot.spot(r, i, self.log_scale.isChecked())
+            self.spot_plot.spot(r, i, self.log_scale.isChecked(), smooth=self.spot_render.currentData())
         elif self.tabs.currentIndex() == 1:
             self.profile_plot.profile(r, i)
         elif self.tabs.currentIndex() == 2:
@@ -1092,11 +1116,12 @@ class MainWindow(QMainWindow):
                 r = self.result
                 preview = r.provenance.get("quality") == "preview"
                 logarithmic = self.log_scale.isChecked()
+                smooth = self.spot_render.currentData()
                 index = min(self.plane_slider.value(), len(r.z) - 1)
                 plot = {"spot": self.spot_plot, "profile": self.profile_plot, "surface": self.surface_plot,
                         "energy": self.energy_plot, "beam": self.beam_plot}[key]
                 if key == "spot":
-                    plot.spot(r, index, self.log_scale.isChecked())
+                    plot.spot(r, index, logarithmic, smooth=smooth)
                 else:
                     method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
                     getattr(plot, method)(r, index)
@@ -1112,7 +1137,7 @@ class MainWindow(QMainWindow):
                 elif key == "scan":
                     plot.scanning(scan_rows, kind)
                 elif key == "spot":
-                    plot.spot(r, index, logarithmic)
+                    plot.spot(r, index, logarithmic, smooth=smooth)
                 else:
                     method = {"profile": "profile", "surface": "intensity_surface", "energy": "energy", "beam": "beam"}[key]
                     getattr(plot, method)(r, index)

@@ -140,6 +140,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/assets/lg-tem-input-modes.png",
+    "purpose": "真实计算的 LG01—LG05 与 TEM 各预设入口面峰值归一化强度图，不代表聚焦形状或等功率色标。",
+    "optional_local": false
+  },
+  {
     "path": "docs/assets/memory-display-desktop.png",
     "purpose": "本轮实际后台计算后的 2D 光路、内存估算与焦面光斑界面截图。",
     "optional_local": false
@@ -197,6 +202,11 @@
   {
     "path": "docs/memory-display-validation.md",
     "purpose": "可配置内存、低占用三种显示、焦面像素修复、解析/独立对照与悬停数据的实际验收记录。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/modes-storage-validation.md",
+    "purpose": "记录新增 LG/TEM 模式、平滑与原始像素显示、磁盘缓存及 2048/65 CPU 实测证据和限制。",
     "optional_local": false
   },
   {
@@ -430,6 +440,11 @@
     "optional_local": false
   },
   {
+    "path": "gaussian_lab/storage.py",
+    "purpose": "完整 float32 强度结果的 RAM/磁盘映射分配、发布前分批写回、切片所有权与临时文件清理。",
+    "optional_local": false
+  },
+  {
     "path": "gaussian_lab/theme.py",
     "purpose": "定义白色绘图背景、深色文本、曲线颜色及低强度白底的共享强度色标。",
     "optional_local": false
@@ -572,6 +587,11 @@
   {
     "path": "tests/test_release.py",
     "purpose": "验证发行入口、上传保护和已发布版本的证据记录。",
+    "optional_local": false
+  },
+  {
+    "path": "tests/test_storage.py",
+    "purpose": "验证 LG/TEM 预设与功率、RAM/磁盘逐元素一致、自动缓存、焦面插入、视图生命周期和取消清理。",
     "optional_local": false
   },
   {
