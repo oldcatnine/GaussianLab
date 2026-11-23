@@ -115,6 +115,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/USER_GUIDE-v4.0.3.md",
+    "purpose": "V4.0.3 全局下拉框外观与工作区操作说明。",
+    "optional_local": false
+  },
+  {
     "path": "docs/USER_GUIDE.md",
     "purpose": "当前 V3 操作说明，区分便携初始化与源码安装，覆盖预览/完整计算、导出、扫描和快照。",
     "optional_local": false
@@ -370,6 +375,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-notes-v4.0.3.md",
+    "purpose": "V4.0.3 全局选择控件更新说明。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-smoke-v0.1.0.json",
     "purpose": "本地独立发行包的冻结冒烟测试结果。",
     "optional_local": false
@@ -502,6 +512,11 @@
   {
     "path": "gaussian_lab/charts.py",
     "purpose": "以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/controls.py",
+    "purpose": "统一下拉选择框的细线箭头、状态样式及弹出菜单，保留原生选择行为。",
     "optional_local": false
   },
   {

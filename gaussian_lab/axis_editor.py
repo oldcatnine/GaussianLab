@@ -1,4 +1,5 @@
 """各图独立的中文坐标范围编辑器；范围仅用于显示，不修改物理输入。"""
+from .controls import RefinedComboBox
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QFormLayout, QComboBox, QCheckBox,
                               QLineEdit, QLabel, QPushButton, QHBoxLayout)
@@ -11,7 +12,7 @@ class AxisEditor(QDialog):
         self.plot = plot
         self.setWindowTitle("坐标轴范围")
         layout = QVBoxLayout(self)
-        self.selector = QComboBox()
+        self.selector = RefinedComboBox()
         layout.addWidget(self.selector)
         self.form = QFormLayout()
         layout.addLayout(self.form)

@@ -892,3 +892,33 @@ def test_task_workspaces_and_local_export(window, app, monkeypatch):
     assert window.scene_frame.isHidden() and not window.main_views.isHidden()
     assert window.result is result
     assert window.scene.renderer.lights
+
+
+def test_all_choice_controls_share_style_and_keep_selection(window, app):
+    """主界面、表格和坐标轴弹窗的选择框统一，实际键盘和弹出菜单仍可选值。"""
+    from gaussian_lab.controls import RefinedComboBox
+    from PySide6.QtWidgets import QComboBox
+    controls = window.findChildren(QComboBox)
+    assert len(controls) >= 10
+    assert all(isinstance(control, RefinedComboBox) for control in controls)
+    window.raise_()
+    window.activateWindow()
+    assert QTest.qWaitForWindowActive(window, 3000)
+    original = window.presets.currentIndex()
+    QTest.keyClick(window.presets, Qt.Key_Down)
+    assert window.presets.currentIndex() == original + 1
+    window.presets.showPopup()
+    assert QTest.qWaitForWindowExposed(window.presets.view().window(), 3000)
+    app.processEvents()
+    assert window.presets.view().isVisible()
+    QTest.keyClick(window.presets.view(), Qt.Key_Down)
+    QTest.keyClick(window.presets.view(), Qt.Key_Return)
+    app.processEvents()
+    assert window.presets.currentIndex() == original + 2
+    from gaussian_lab.axis_editor import AxisEditor
+    editor = AxisEditor(window.spot_plot)
+    try:
+        assert isinstance(editor.selector, RefinedComboBox)
+    finally:
+        editor.close()
+        editor.deleteLater()

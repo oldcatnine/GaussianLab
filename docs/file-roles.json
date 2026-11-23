@@ -127,5 +127,8 @@
   "docs/USER_GUIDE-v4.0.1.md": "工作区、折叠设置和实时材质场景的源码操作说明。",
   "docs/release-notes-v4.0.1.md": "V4.0.1 工作区与 PBR 渲染更新说明。",
   "docs/USER_GUIDE-v4.0.2.md": "V4.0.2 数值步进外观与工作区操作说明。",
-  "docs/release-notes-v4.0.2.md": "V4.0.2 轻量步进按钮更新说明。"
+  "docs/release-notes-v4.0.2.md": "V4.0.2 轻量步进按钮更新说明。",
+  "gaussian_lab/controls.py": "统一下拉选择框的细线箭头、状态样式及弹出菜单，保留原生选择行为。",
+  "docs/USER_GUIDE-v4.0.3.md": "V4.0.3 全局下拉框外观与工作区操作说明。",
+  "docs/release-notes-v4.0.3.md": "V4.0.3 全局选择控件更新说明。"
 }

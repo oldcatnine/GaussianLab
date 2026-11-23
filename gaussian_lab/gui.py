@@ -1,4 +1,5 @@
 """桌面界面及任务调度，连接输入、后台计算、图表和三维场景。"""
+from .controls import RefinedComboBox
 import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
@@ -240,11 +241,11 @@ class MainWindow(QMainWindow):
         brand.addWidget(subtitle)
         toolbar.addLayout(brand)
         toolbar.addStretch()
-        self.workspace = QComboBox()
+        self.workspace = RefinedComboBox()
         self.workspace.addItems(["光路搭建", "结果分析", "参数扫描"])
         self.workspace.setAccessibleName("工作区")
         toolbar.addWidget(self.workspace)
-        self.presets = QComboBox()
+        self.presets = RefinedComboBox()
         self.presets.addItems(["单透镜聚焦", "双透镜扩束", "光阑衍射"])
         self.presets.setAccessibleName("预置案例")
         toolbar.addWidget(self.presets)
@@ -270,7 +271,7 @@ class MainWindow(QMainWindow):
         self.waist_z = spin(0, -5000, 5000, 2, " mm")
         self.length = spin(400, 10, 5000, 1, " mm")
         self.window_size = spin(6, .2, 100, 2, " mm")
-        self.grid = QComboBox()
+        self.grid = RefinedComboBox()
         self.grid.addItems(["128", "256", "512", "1024", "2048", "4096"])
         self.grid.setCurrentText("256")
         self.samples = NumericSpinBox()
@@ -298,7 +299,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(self.sampling_info)
         mode_box = QGroupBox("相干输入光 / 横模")
         mode_layout = QVBoxLayout(mode_box)
-        self.mode_preset = QComboBox()
+        self.mode_preset = RefinedComboBox()
         for key in MODE_PRESET_KEYS:
             self.mode_preset.addItem(key.replace("+", " + ") + (" 相干叠加" if "+" in key else ""), key)
         self.mode_preset.setCurrentIndex(self.mode_preset.findData("TEM00"))
@@ -322,13 +323,13 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(mode_box)
         performance_box = QGroupBox("计算与交互")
         performance_form = QFormLayout(performance_box)
-        self.backend_choice = QComboBox()
+        self.backend_choice = RefinedComboBox()
         for text, key in (("自动选择", "auto"), ("CPU 兼容模式", "cpu"), ("CUDA 优先", "cuda")):
             self.backend_choice.addItem(text, key)
         self.backend_choice.setToolTip("CUDA 不可用时回退 CPU；自动模式小网格优先 CPU。便携版首次 CUDA 需联网补充约 3.6 MB 头文件并建立缓存。")
         self.backend_choice.currentIndexChanged.connect(self.mark_dirty)
         performance_form.addRow("计算后端", self.backend_choice)
-        self.display_mode = QComboBox()
+        self.display_mode = RefinedComboBox()
         for text, key in (("2D 光路示意（低占用）", "2d"), ("3D 光路", "3d"), ("仅计算（关闭绘图）", "none")):
             self.display_mode.addItem(text, key)
         performance_form.addRow("显示模式", self.display_mode)
@@ -344,7 +345,7 @@ class MainWindow(QMainWindow):
         self.memory_limit.setToolTip("自动模式超预算转存磁盘；仅 RAM 模式超预算阻止计算。FFT 工作区、绘图及系统文件缓存另计。")
         self.memory_limit.valueChanged.connect(self.mark_dirty)
         performance_form.addRow("结果 RAM 预算", self.memory_limit)
-        self.storage_mode = QComboBox()
+        self.storage_mode = RefinedComboBox()
         for text, key in (("自动：超预算用磁盘（推荐）", "auto"), ("始终使用磁盘缓存", "disk"), ("仅 RAM：超预算停止", "ram")):
             self.storage_mode.addItem(text, key)
         self.storage_mode.currentIndexChanged.connect(self.mark_dirty)
@@ -391,7 +392,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(element_box)
         scan_box = QGroupBox("单参数扫描")
         sf = QFormLayout(scan_box)
-        self.scan_target = QComboBox()
+        self.scan_target = RefinedComboBox()
         self.scan_target.currentIndexChanged.connect(self.scan_defaults)
         self.scan_low = spin(60, -2000, 2000, 3, " mm")
         self.scan_high = spin(180, -2000, 2000, 3, " mm")
@@ -521,7 +522,7 @@ class MainWindow(QMainWindow):
         compare_controls.addWidget(self.baseline_label, 1)
         compare_controls.addWidget(button("固定当前为 A", self.pin_baseline))
         compare_controls.addWidget(button("清除 A", self.clear_baseline))
-        self.compare_mode = QComboBox()
+        self.compare_mode = RefinedComboBox()
         self.compare_mode.addItems(["共用观察面", "各自最小光斑面"])
         compare_controls.addWidget(self.compare_mode)
         compare_controls.addWidget(button("与当前 B 对比", self.compare_results, True))
@@ -549,7 +550,7 @@ class MainWindow(QMainWindow):
         self.result_state.setStyleSheet("color:#475569;")
         exports.addWidget(self.result_state, 1)
         exports.addWidget(button("导出 CSV", self.export_data))
-        self.export_target = QComboBox()
+        self.export_target = RefinedComboBox()
         self.export_target.setAccessibleName("导出图像类型")
         for label, key in (("当前光斑分析", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
                            ("强度曲面", "surface"), ("包围能量", "energy"), ("轴向传播", "beam"), ("参数扫描", "scan"),
@@ -772,7 +773,7 @@ class MainWindow(QMainWindow):
         if row >= 8:
             return
         self.mode_table.insertRow(row)
-        family = QComboBox()
+        family = RefinedComboBox()
         family.addItems(["HG", "LG"])
         family.setCurrentText(mode.family)
         family.currentTextChanged.connect(self.mark_dirty)
