@@ -157,8 +157,9 @@ def preset(name):
     return Project()
 
 
-MODE_PRESET_KEYS = tuple(f"LG0{i}" for i in range(1, 6)) + (
-    "TEM00", "TEM10", "TEM20", "TEM21", "TEM03", "TEM30", "TEM11", "TEM01+TEM10")
+MODE_PRESET_KEYS = (tuple(f"LG0{i}" for i in range(1, 6)) +
+                    tuple(f"TEM{n}{m}" for n in range(4) for m in range(4)) +
+                    ("TEM01+TEM10",))
 
 
 def input_mode_label(project):

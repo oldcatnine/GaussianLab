@@ -698,7 +698,7 @@ def test_all_input_modes_have_matching_true_3d_screens_and_shapes(window, app):
             assert bool(scene.input_actor.GetVisibility()) == (index != 0)
         shape = (len(scene.mode_plane_indices),65,65)
         volume = np.asarray(scene.mode_volume["Intensity"]).reshape(shape,order="F")
-        if key.startswith("LG") or key in ("TEM10","TEM21","TEM03","TEM30","TEM11","TEM01+TEM10"):
+        if key.startswith("LG") or "+" in key or any(int(order)%2 for order in key[-2:]):
             assert volume[0,32,32] == pytest.approx(0,abs=1e-12)
     # 相干叠加的第二项相位改变，三维形状也必须随原始场更新。
     old = volume[0].copy()

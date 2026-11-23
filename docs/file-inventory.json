@@ -155,6 +155,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/assets/tem-mode-grid.png",
+    "purpose": "TEM 两方向各 0—3 阶的 16 种预设入口面真实计算强度矩阵，分别峰值归一化。",
+    "optional_local": false
+  },
+  {
     "path": "docs/assets/white-theme-desktop.png",
     "purpose": "白色主题与图像导出功能基线的真实界面截图，用于当前使用说明和离线教学手册。",
     "optional_local": false

@@ -162,3 +162,8 @@
 查看 [CuPy 14.2 FFT 缓存原始源码](https://github.com/cupy/cupy/blob/v14.2.0/cupy/fft/_cache.pyx)：线程私有缓存析构会清理链表并显式调用 gc.collect。结合线程追踪，确定本次触发路径为线程退出时的全局回收与 VTK 对象生命周期冲突。参考 [Qt QThread finished/wait 文档](https://doc.qt.io/qt-6/qthread.html#finished)，finished 发出时线程局部析构仍可能未完成，因此仅监听信号不足，必须 wait 后释放持有引用。
 
 采用应用层持有线程 FFT 缓存、主线程队列完成通知、wait 后由主线程清理的修复；未修改 CuPy/VTK 第三方源码，也未重装依赖或关闭三维/CUDA。新增独立解释器回归真实启动顺序，覆盖先建三维、CPU 预览、首次 CUDA 和重复完整计算；避免既有测试先在主线程初始化显卡造成遗漏。具体结果见 startup-crash-validation.md。
+
+
+### TEM 预设完整性（2026-11-23）
+
+复用已完成的 LightPipes HG/LG 与标量横模调研及现有递推实现，本轮只补齐两个方向 0—3 阶的 TEM 预设，不引入新物理模型、第三方代码或依赖。逐模式验证归一功率，并沿避开节点的 x/y 截线计数符号变化，独立核对阶数与坐标对应；全部预设继续参与真实三维/二维原始点值对照。

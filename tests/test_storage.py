@@ -26,6 +26,12 @@ def test_requested_modes_and_power(key):
     power = np.sum(abs(field)**2) * (p.window/p.grid)**2
     expected = np.pi*p.waist**2/2 * (2 if "+" in key else 1)
     assert power == pytest.approx(expected, rel=1e-9)
+    if key.startswith("TEM") and "+" not in key:
+        # 沿非节点的偏轴截线计数符号变化，独立验证两个方向的阶数和轴向对应。
+        mid = p.grid//2
+        for line, order in ((field[mid+5,:].real,modes[0].n),(field[:,mid+5].real,modes[0].m)):
+            values = line[abs(line)>abs(line).max()*1e-10]
+            assert np.count_nonzero(np.diff(np.signbit(values))) == order
     if key.startswith("LG"):
         mid = p.grid//2
         assert field[mid, mid] == 0
@@ -45,6 +51,14 @@ def test_tem_axes_and_coherent_phase():
     quadrature = abs(initial_field(p, r2))**2
     assert quadrature[68, 60] > 0
     np.testing.assert_allclose(quadrature, quadrature.T, atol=1e-14)
+
+
+def test_all_requested_tem_combinations_are_available():
+    requested = {"TEM00","TEM01","TEM02","TEM10","TEM20","TEM21","TEM12","TEM30"}
+    complete = {f"TEM{n}{m}" for n in range(4) for m in range(4)}
+    assert requested <= set(MODE_PRESET_KEYS)
+    assert complete <= set(MODE_PRESET_KEYS)
+    assert len(MODE_PRESET_KEYS) == len(set(MODE_PRESET_KEYS)) == 22
 
 
 def test_storage_choices_extended_sampling_and_roundtrip(tmp_path):
