@@ -12,7 +12,8 @@ from .model import input_mode_label
 class OpticalScene(QtInteractor):
     def __init__(self, parent=None):
         super().__init__(parent, auto_update=False)
-        self.set_background(BACKGROUND)
+        self.set_background("#e8edf2", top="#fbfcfe")
+        self.enable_anti_aliasing("fxaa")
         self.scale_transverse = 25
         self.result = None
         self.screen_actor = None
@@ -45,7 +46,7 @@ class OpticalScene(QtInteractor):
         radii = result.r86 * 1e3 * self.scale_transverse
         yy = radii[:, None] * np.cos(aa)
         hh = radii[:, None] * np.sin(aa)
-        signature = (p.length, len(z), tuple((e.kind, e.z, e.value if e.kind == "aperture" else None, e.label)
+        signature = (p.length, len(z), tuple((e.kind, e.z, e.value, e.clear_diameter, e.label)
                                             for e in p.ordered()))
         if getattr(self, "geometry_signature", None) == signature:
             for mesh, fraction in self.envelope_meshes:
@@ -62,18 +63,28 @@ class OpticalScene(QtInteractor):
         mesh["energy"] = np.broadcast_to(result.transmission[:, None], zz.shape).ravel(order="F")
         self.add_mesh(mesh, color="#0284c7", opacity=.06, smooth_shading=True,
                       show_edges=False, name="energy_envelope")
-        floor = pv.Plane(center=(p.length*500, 0, -36), direction=(0, 0, 1),
-                         i_size=p.length*1100, j_size=140, i_resolution=32, j_resolution=12)
-        self.add_mesh(floor, color="#94a3b8", style="wireframe", opacity=.35, line_width=.7)
-        self.add_mesh(pv.Line((0, 0, 0), (p.length * 1e3, 0, 0)), color="#64748b", opacity=.5)
+        # 金属实验台和双导轨采用 PBR，材质只影响显示。
+        self.remove_all_lights()
+        for position, intensity in (((p.length*400,-180,240),1.2), ((p.length*800,150,120),.7)):
+            self.add_light(pv.Light(position=position, focal_point=(p.length*500,0,0), intensity=intensity, light_type="scene light"))
+        self.add_mesh(pv.Cube(center=(p.length*500,0,-43),x_length=p.length*1100,y_length=100,z_length=6),
+                      color="#b4bec9",pbr=True,metallic=.65,roughness=.38)
+        for rail_y in (-17,17):
+            self.add_mesh(pv.Cylinder(center=(p.length*500,rail_y,-34),direction=(1,0,0),radius=2,height=p.length*1050,resolution=48),
+                          color="#73808f",pbr=True,metallic=.85,roughness=.22)
         for e in p.ordered():
             center = (e.z * 1e3, 0, 0)
             if e.kind == "lens":
-                self.add_mesh(pv.Cylinder(center=center, direction=(1, 0, 0), radius=22, height=3,
-                                          resolution=80), color="#60a5fa", opacity=.3,
-                              smooth_shading=True)
-                ring = pv.Disc(center=center, inner=21.5, outer=23, normal=(1, 0, 0), c_res=80)
-                self.add_mesh(ring, color="#3b82f6", opacity=.8)
+                radius = e.clear_diameter*1e3/2*self.scale_transverse if e.clear_diameter else 16
+                radius = max(radius, 2)
+                radial, theta = np.meshgrid(np.linspace(0,radius,32),np.linspace(0,2*np.pi,128),indexing="ij")
+                bulge = 2.8*(1-(radial/radius)**2)
+                thickness = .8 + (bulge if e.value > 0 else 2.8-bulge)
+                for side in (-1,1):
+                    glass = pv.StructuredGrid(center[0]+side*thickness,radial*np.cos(theta),radial*np.sin(theta))
+                    self.add_mesh(glass,color="#b7e4f5",opacity=.32,smooth_shading=True,pbr=True,roughness=.08,metallic=.05)
+                ring = pv.Disc(center=center,inner=radius,outer=radius+2.5,normal=(1,0,0),c_res=128)
+                self.add_mesh(ring.extrude((2,0,0),capping=True),color="#344252",pbr=True,metallic=.8,roughness=.25)
             else:
                 hole = max(e.value * 1e3 / 2 * self.scale_transverse, .3)
                 disc = pv.Disc(center=center, inner=hole, outer=max(hole+5, 24),
@@ -181,8 +192,9 @@ class OpticalScene(QtInteractor):
         if self.result is None:
             return
         length = self.result.project.length * 1e3
-        self.camera_position = [(length * 1.3, -length * .85, length * .6),
+        self.camera_position = [(length * .85, -length * 1.05, length * .55),
                                 (length * .48, 0, 0), (0, 0, 1)]
+        self.enable_parallel_projection()
         self.reset_camera()
-        self.camera.zoom(1.35)
+        self.camera.zoom(.9)
         self.render()

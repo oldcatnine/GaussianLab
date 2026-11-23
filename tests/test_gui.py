@@ -123,6 +123,7 @@ def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatc
     window.scan_count.setValue(3)
     window.scan_low.setValue(100)
     window.scan_high.setValue(140)
+    window.workspace.setCurrentIndex(2)
     QTest.mouseClick(window.scan_button, Qt.LeftButton)
     assert window.job.kind == 'scan'
     deadline = time.monotonic() + 15
@@ -211,7 +212,7 @@ def test_all_plot_types_export_white_images_without_switching_tabs(window, app, 
         assert window.tabs.currentIndex() == 0
     assert not errors
     np.testing.assert_allclose(INTENSITY_CMAP(0)[:3], [1, 1, 1])
-    np.testing.assert_allclose(window.scene.background_color.float_rgb, [1, 1, 1])
+    np.testing.assert_allclose(window.scene.background_color.float_rgb, [232/255, 237/255, 242/255])
     np.testing.assert_allclose(window.profile_plot.figure.get_facecolor(), [1, 1, 1, 1])
     intensity = window.result.intensity[0]
     np.testing.assert_allclose(window.profile_plot.ax.lines[0].get_ydata(), intensity[p.grid//2] / intensity.max())
@@ -838,3 +839,22 @@ def test_actual_out_of_memory_has_actionable_chinese_message(app, monkeypatch):
     assert len(failures) == 1
     assert "实际可用内存不足" in failures[0]
     assert "保留上一次" in failures[0]
+
+
+def test_task_workspaces_and_local_export(window, app, monkeypatch):
+    """布局切换保持原结果，不重复计算，并让就地导出对应当前页面。"""
+    result = window.result
+    assert window.bottom.isHidden() and not window.element_panel.isHidden()
+    assert window.performance_panel.isHidden() and window.mode_panel.isHidden()
+    window.workspace.setCurrentIndex(2)
+    app.processEvents()
+    assert not window.scan_panel.isHidden() and window.main_views.isHidden()
+    assert window.bottom.currentIndex() == 1
+    captured = []
+    monkeypatch.setattr(window, "export_plot", lambda: captured.append(window.export_target.currentData()))
+    window.export_bottom()
+    assert captured == ["scan"]
+    window.workspace.setCurrentIndex(1)
+    assert window.scene_frame.isHidden() and not window.main_views.isHidden()
+    assert window.result is result
+    assert window.scene.renderer.lights

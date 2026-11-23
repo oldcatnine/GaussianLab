@@ -123,5 +123,7 @@
   "docs/release-validation-v4.0.0.md": "第四代构建、测试、发布与附件核验状态记录。",
   "docs/github-release-v4.0.0.json": "第四代实际回下载附件摘要、发布状态、构建与 Windows 版本证据。",
   "docs/github-release-smoke-v4.0.0.json": "第四代实际下载 EXE 的 CPU/CUDA 独立冻结运行证据。",
-  "docs/ui-review-v4.0.0.md": "第四代界面的实窗观察、易用性问题、优先级建议与尚待实施的验收任务。"
+  "docs/ui-review-v4.0.0.md": "第四代界面的实窗观察、易用性问题、优先级建议与尚待实施的验收任务。",
+  "docs/USER_GUIDE-v4.0.1.md": "工作区、折叠设置和实时材质场景的源码操作说明。",
+  "docs/release-notes-v4.0.1.md": "V4.0.1 工作区与 PBR 渲染更新说明。"
 }

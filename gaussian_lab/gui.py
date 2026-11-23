@@ -23,8 +23,8 @@ from .session import ResultCache
 from .memory import estimate_memory, system_memory, format_memory
 
 STYLE = """
-QMainWindow,QWidget {background:#ffffff;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
-QWidget#workspaceHeader {border:1px solid #e2e8f0;border-radius:12px;}
+QMainWindow,QWidget {background:#f5f5f7;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
+QWidget#workspaceHeader {background:#ffffff;border:1px solid #e5e5ea;border-radius:16px;}
 QLabel#productTitle {font-size:22px;font-weight:700;color:#0f172a;}
 QLabel#productCaption {font-size:11px;color:#475569;}
 QGroupBox {border:1px solid #e2e8f0;border-radius:10px;margin-top:15px;padding:13px 10px 9px;}
@@ -35,7 +35,7 @@ QPushButton:disabled {color:#94a3b8;background:#f1f5f9;}
 QPushButton#primary {background:#2563eb;border-color:#1d4ed8;color:white;font-weight:bold;}
 QPushButton#primary:hover {background:#1d4ed8;}
 QPushButton#primary:disabled {background:#e2e8f0;border-color:#e2e8f0;color:#64748b;}
-QComboBox,QDoubleSpinBox,QSpinBox {background:#f8fafc;border:1px solid #cbd5e1;border-radius:5px;padding:4px;min-height:20px;}
+QComboBox,QDoubleSpinBox,QSpinBox {background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:5px;min-height:20px;}
 QComboBox QAbstractItemView {background:#f8fafc;selection-background-color:#dbeafe;}
 QTableWidget {background:#ffffff;gridline-color:#e2e8f0;border:1px solid #cbd5e1;selection-background-color:#dbeafe;}
 QHeaderView::section {background:#f1f5f9;color:#334155;padding:6px;border:0;}
@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
         self.scene = None
         self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__}")
         self.resize(1520, 980)
-        self.setMinimumSize(1180, 780)
+        self.setMinimumSize(1060, 700)
         self.result = None
         self.baseline = None
         self.comparison = None
@@ -195,6 +195,10 @@ class MainWindow(QMainWindow):
         brand.addWidget(subtitle)
         toolbar.addLayout(brand)
         toolbar.addStretch()
+        self.workspace = QComboBox()
+        self.workspace.addItems(["光路搭建", "结果分析", "参数扫描"])
+        self.workspace.setAccessibleName("工作区")
+        toolbar.addWidget(self.workspace)
         self.presets = QComboBox()
         self.presets.addItems(["单透镜聚焦", "双透镜扩束", "光阑衍射"])
         self.presets.setAccessibleName("预置案例")
@@ -202,7 +206,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(button("加载案例", self.load_preset))
         toolbar.addWidget(button("打开", self.open_file))
         toolbar.addWidget(button("保存项目", self.save_file))
-        self.run_button = button("计算光场", self.compute, True)
+        self.run_button = button("完整计算", self.compute, True)
         toolbar.addWidget(self.run_button)
         self.cancel_button = button("取消", self.cancel_job)
         self.cancel_button.setEnabled(False)
@@ -358,6 +362,25 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(scan_box)
         self.convergence_button = button("检查多指标收敛", self.start_convergence)
         left_layout.addWidget(self.convergence_button)
+        # 将常用光路置顶，专业设置按需展开。
+        left_layout.removeWidget(element_box)
+        left_layout.insertWidget(1, element_box)
+        self.advanced_toggle = button("计算与性能设置 ▸", lambda: performance_box.setVisible(not performance_box.isVisible()))
+        left_layout.insertWidget(2, self.advanced_toggle)
+        performance_box.hide()
+        self.mode_toggle = button("输入横模与相干叠加 ▸", lambda: mode_box.setVisible(not mode_box.isVisible()))
+        left_layout.insertWidget(3, self.mode_toggle)
+        mode_box.hide()
+        self.sampling_toggle = QCheckBox("精细采样设置")
+        for row_index in range(4, 8):
+            form.setRowVisible(row_index, False)
+        self.sampling_toggle.toggled.connect(lambda shown: [form.setRowVisible(i, shown) for i in range(4, 8)])
+        form.addRow(self.sampling_toggle)
+        self.scan_panel = scan_box
+        self.source_panel = source_box
+        self.element_panel = element_box
+        self.performance_panel = performance_box
+        self.mode_panel = mode_box
         left_layout.addStretch()
         self.parameter_scroll = QScrollArea()
         self.parameter_scroll.setWidgetResizable(True)
@@ -397,6 +420,8 @@ class MainWindow(QMainWindow):
         scene_toolbar.addStretch()
         self.play_button = button("播放传播", self.toggle_play)
         scene_toolbar.addWidget(self.play_button)
+        scene_toolbar.addWidget(button("侧视", lambda: self.scene.view_xy() if self.scene else None))
+        scene_toolbar.addWidget(button("正看光斑", lambda: self.scene.view_yz() if self.scene else None))
         self.reset_view_button = button("复位视角", self.reset_scene_view)
         scene_toolbar.addWidget(self.reset_view_button)
         scene_toolbar.addWidget(button("场景截图", self.screenshot))
@@ -412,6 +437,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.energy_plot, "包围能量")
         self.tabs.setMinimumWidth(300)
         self.tabs.currentChanged.connect(self.draw_plane)
+        self.tabs.setCornerWidget(button("导出此图", lambda: self.export_named(("spot","profile","surface","energy")[self.tabs.currentIndex()])))
         main_views.addWidget(self.tabs)
         main_views.setSizes([720, 430])
         views = QSplitter(Qt.Vertical)
@@ -465,10 +491,13 @@ class MainWindow(QMainWindow):
         self.longitudinal_plot.mpl_connect("button_press_event", self.locate_longitudinal_plane)
         longitudinal_layout.addWidget(self.longitudinal_plot, 1)
         self.bottom.addTab(longitudinal_panel, "纵向强度")
+        self.bottom.setCornerWidget(button("导出本页", self.export_bottom))
         self.bottom.setMinimumHeight(200)
         views.addWidget(self.bottom)
         views.setStretchFactor(0, 5)
         views.setStretchFactor(1, 3)
+        self.main_views = main_views
+        self.workspace_views = views
         rv.addWidget(views, 1)
         exports = QHBoxLayout()
         self.result_state = QLabel("尚未计算")
@@ -477,7 +506,7 @@ class MainWindow(QMainWindow):
         exports.addWidget(button("导出 CSV", self.export_data))
         self.export_target = QComboBox()
         self.export_target.setAccessibleName("导出图像类型")
-        for label, key in (("当前分析图", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
+        for label, key in (("当前光斑分析", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
                            ("强度曲面", "surface"), ("包围能量", "energy"), ("轴向传播", "beam"), ("参数扫描", "scan"),
                            ("A/B 对比", "compare"), ("纵向强度", "longitudinal")):
             self.export_target.addItem(label, key)
@@ -497,6 +526,10 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         root.addWidget(self.progress)
         self.setCentralWidget(central)
+        self.workspace.currentIndexChanged.connect(self.change_workspace)
+        self.change_workspace(0)
+        self.scan_plot.figure.text(.5, .5, "选择左侧元件及范围，点击开始扫描", ha="center")
+        self.scan_plot.draw_idle()
         self.display_mode.setCurrentIndex(max(0, self.display_mode.findData(self.initial_display_mode)))
         self.display_mode.currentIndexChanged.connect(self.apply_display_mode)
         self.apply_display_mode()
@@ -507,6 +540,19 @@ class MainWindow(QMainWindow):
         self.memory_timer.start()
         if auto_compute:
             self.preview_timer.start()
+
+    def change_workspace(self, index):
+        """共享输入和结果，只切换任务布局，不触发重新求解。"""
+        self.scene_frame.setVisible(index == 0)
+        self.main_views.setVisible(index != 2)
+        self.bottom.setVisible(index != 0)
+        self.scan_panel.setVisible(index == 2)
+        self.source_panel.setVisible(index != 2)
+        self.element_panel.setVisible(index != 2)
+        if index == 2:
+            self.bottom.setCurrentIndex(1)
+        elif index == 1 and self.bottom.currentIndex() in (1, 2):
+            self.bottom.setCurrentIndex(0)
 
     def reset_scene_view(self):
         if self.scene is not None:
@@ -556,7 +602,7 @@ class MainWindow(QMainWindow):
         else:
             self.scene_stack.setCurrentWidget(self.schematic_plot if mode == "2d" else self.compute_placeholder)
         self.tabs.setVisible(mode != "none")
-        self.bottom.setVisible(mode != "none")
+        self.bottom.setVisible(mode != "none" and self.workspace.currentIndex() != 0)
         self.reset_view_button.setEnabled(mode == "3d")
         self.scene_caption.setText({"3d":"3D 光路 · r86 示意 · 横向 ×25", "2d":"2D 光路 · 无 VTK 渲染", "none":"仅计算 · 保留数值结果"}[mode])
         if mode == "none":
@@ -889,6 +935,7 @@ class MainWindow(QMainWindow):
                     f"{item['focus_z_m']*1e3:.2f}", f"{item['transmission']*100:.2f}", item["status"], item["note"])):
                     self.scan_table.setItem(row, col, QTableWidgetItem(value))
             self.scan_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.workspace.setCurrentIndex(2)
             self.bottom.setCurrentIndex(1)
             self.status.setText(f"扫描完成 · {len(result)} 点 · 末片透镜后搜索并局部细化；警告点需复核 · CSV 保留警告")
         elif self.job.kind == "convergence":
@@ -913,7 +960,7 @@ class MainWindow(QMainWindow):
             ref = result.reference
             k = result.focus_index
             self.cards[0].setText(f"高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
-            self.cards[1].setText(f"衍射最小 r86 / 细化点\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
+            self.cards[1].setText(f"最小光斑 r86 / 位置\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
             self.cards[1].setToolTip(f"焦区细化 {result.focus['levels']} 级；括区宽 {result.focus['axial_bracket_width_m']*1e3:.4f} mm。横向分位平台仍需复核。")
             self.cards[2].setText(f"参考 θ / 衍射 θ86\n{ref['divergence']*1e3:.2f} / {result.theta86*1e3:.2f} mrad")
             self.cards[3].setText(f"系统透过率 / 末端\n{result.transmission[-1]*100:.2f} %")
@@ -1117,6 +1164,22 @@ class MainWindow(QMainWindow):
                 self.status.setText("已导出数据和对应参数快照：" + path)
         except Exception as exc:
             self.show_error(str(exc))
+
+    def export_named(self, key):
+        """就地图表导出指定对象，保留全局导出选择。"""
+        previous = self.export_target.currentIndex()
+        try:
+            self.export_target.setCurrentIndex(self.export_target.findData(key))
+            self.export_plot()
+        finally:
+            self.export_target.setCurrentIndex(previous)
+
+    def export_bottom(self):
+        """数据表导出 CSV，其余页导出所见图像。"""
+        if self.bottom.currentIndex() == 2:
+            self.export_data()
+        else:
+            self.export_named(("beam","scan","scan","compare","longitudinal")[self.bottom.currentIndex()])
 
     def export_plot(self):
         """按明确选择导出结果快照，支持未打开过的分析标签和白底矢量图。"""

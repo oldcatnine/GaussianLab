@@ -100,7 +100,7 @@ def test_current_guides_match_export_choices_and_resolve_local_links():
     guide = (ROOT / "docs/USER_GUIDE.md").read_text(encoding="utf-8")
     manual = (ROOT / "docs/项目学习手册.md").read_text(encoding="utf-8")
     source = (ROOT / "gaussian_lab/gui.py").read_text(encoding="utf-8")
-    for label in ("当前分析图", "光斑图", "剖面强度曲线", "强度曲面", "包围能量", "轴向传播", "参数扫描"):
+    for label in ("当前光斑分析", "光斑图", "剖面强度曲线", "强度曲面", "包围能量", "轴向传播", "参数扫描"):
         assert label in source and label in guide and label in manual
     for term in ("853e9b3", "300 dpi", "CPU", "快照", "V0.1.0", "白底"):
         assert term in guide, term
