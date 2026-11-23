@@ -153,3 +153,12 @@
 ### 三维相干模式对应（2026-11-23）
 
 查看 [PyVista 原仓库 contouring 示例](https://github.com/pyvista/pyvista/blob/main/examples/01-filter/contouring.py)，参考 StructuredGrid 与 contour 的数据标量等值面方式；实际使用项目已安装的 PyVista、VTK、SciPy map_coordinates，自主实现有界的自适应横向抽样，未复制外部代码、未新增依赖。放弃以多层圆管模拟高阶模式，改由实际强度提取 0.15/0.5 的逐面归一化形状。保留 r86 外罩作低透明参考。屏幕选择原始像素并保留光轴，统一与二维的模式标签、z、归一化和对数。原理限制及实际截图见 USER_GUIDE.md。
+
+
+### 默认三维启动闪退与线程缓存生命周期（2026-11-23）
+
+检查用户当日三份 Windows minidump，发现 0xC0000409/0xC0000374，工作线程栈包含 CuPy fft/_cache、VTK、Qt；独立进程按实际启动顺序重复出现堆损坏及访问冲突。只运行 CPU 对照成功，关闭 Python 自动 GC 的对照仍失败，不能用永久关闭 GC 解决显式回收。
+
+查看 [CuPy 14.2 FFT 缓存原始源码](https://github.com/cupy/cupy/blob/v14.2.0/cupy/fft/_cache.pyx)：线程私有缓存析构会清理链表并显式调用 gc.collect。结合线程追踪，确定本次触发路径为线程退出时的全局回收与 VTK 对象生命周期冲突。参考 [Qt QThread finished/wait 文档](https://doc.qt.io/qt-6/qthread.html#finished)，finished 发出时线程局部析构仍可能未完成，因此仅监听信号不足，必须 wait 后释放持有引用。
+
+采用应用层持有线程 FFT 缓存、主线程队列完成通知、wait 后由主线程清理的修复；未修改 CuPy/VTK 第三方源码，也未重装依赖或关闭三维/CUDA。新增独立解释器回归真实启动顺序，覆盖先建三维、CPU 预览、首次 CUDA 和重复完整计算；避免既有测试先在主线程初始化显卡造成遗漏。具体结果见 startup-crash-validation.md。

@@ -350,6 +350,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/startup-crash-validation.md",
+    "purpose": "记录三维默认计算闪退的系统转储、可重复触发条件、CuPy 缓存回收修复与独立进程回归证据。",
+    "optional_local": false
+  },
+  {
     "path": "docs/test-results-release-v0.1.0.txt",
     "purpose": "首版发布阶段测试命令的原始输出，不代表后续测试数量。",
     "optional_local": false
@@ -547,6 +552,11 @@
   {
     "path": "scripts/validate_numerics.py",
     "purpose": "生成焦区细化、LightPipes 独立对照、孔径加密实验、分析图及独立进程内存记录。",
+    "optional_local": false
+  },
+  {
+    "path": "scripts/validate_startup_crash.py",
+    "purpose": "独立解释器按真实默认启动顺序验证 3D 预览、首次及重复 CUDA 计算，并记录主线程缓存清理和原生崩溃栈。",
     "optional_local": false
   },
   {

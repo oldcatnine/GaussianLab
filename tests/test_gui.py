@@ -720,6 +720,48 @@ def test_all_input_modes_have_matching_true_3d_screens_and_shapes(window, app):
     np.testing.assert_array_equal(scene.screen_mesh["Intensity"].reshape((len(indices),len(indices)),order="F"),data[np.ix_(indices,indices)])
 
 
+def test_job_pins_fft_cache_until_main_thread_release(window, monkeypatch):
+    """成功、取消和异常均持有线程缓存；拒绝后台清理，并覆盖主线程释放。"""
+    import sys
+    import threading
+    from types import SimpleNamespace
+    import gaussian_lab.gui as gui
+    class Device:
+        def __init__(self, device):
+            assert device == 0
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    cleared = []
+    cache = SimpleNamespace(clear=lambda: cleared.append(threading.get_ident()))
+    fake = SimpleNamespace(cuda=SimpleNamespace(runtime=SimpleNamespace(getDevice=lambda: 0),Device=Device),
+                           fft=SimpleNamespace(config=SimpleNamespace(get_plan_cache=lambda: cache)))
+    monkeypatch.setitem(sys.modules,"cupy",fake)
+    for error in (None,gui.Cancelled(),MemoryError(),ValueError("测试异常")):
+        def compute(*args, **kwargs):
+            if error is not None:
+                raise error
+            return window.result
+        monkeypatch.setattr(gui,"simulate",compute)
+        job = Job("simulate",window.result.project,backend="cuda")
+        job.run()
+        assert job.cuda_fft_cache is cache
+        errors = []
+        def wrong_thread():
+            try:
+                job.release_cuda_cache()
+            except RuntimeError as exc:
+                errors.append(str(exc))
+        thread = threading.Thread(target=wrong_thread)
+        thread.start()
+        thread.join()
+        assert errors and job.cuda_fft_cache is cache
+        job.release_cuda_cache()
+        assert job.cuda_fft_cache is None
+    assert cleared == [threading.get_ident()]*4
+
+
 def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):
     """发送真实 Matplotlib 鼠标事件，核验各曲线和双纵轴的点值与单位。"""
     from matplotlib.backend_bases import MouseEvent

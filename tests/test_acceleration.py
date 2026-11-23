@@ -163,3 +163,25 @@ def test_real_cuda_disk_storage_matches_cpu_ram():
     assert gpu.provenance["memory_estimate"]["storage_mode"] == "disk"
     np.testing.assert_allclose(gpu.intensity, cpu.intensity, atol=1e-7, rtol=1e-5)
     np.testing.assert_array_equal(gpu.r86, cpu.r86)
+
+
+def test_fresh_process_3d_preview_then_first_cuda_calculation(tmp_path):
+    """独立解释器复现曾闪退的启动顺序，不能先在同一进程预热 CUDA。"""
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    engine = backend.select_backend("cuda")
+    if engine.name != "cuda":
+        pytest.skip(engine.reason)
+    root = Path(__file__).resolve().parents[1]
+    output = tmp_path/"startup.json"
+    result = subprocess.run([sys.executable,"-X","faulthandler",str(root/"scripts/validate_startup_crash.py"),
+                             "--output",str(output),"--runs","3"],cwd=root,capture_output=True,timeout=150)
+    assert result.returncode == 0, (result.returncode,result.stderr.decode(errors="replace")[-5000:])
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["status"] == "passed" and report["preview_grid"] == 256
+    assert len(report["runs"]) == 3
+    assert all(row == {"grid":1024,"backend":"cuda","scene_matches":True,"fft_cache_released":True} for row in report["runs"])
+    assert len(report["cleanup_threads"]) >= 3
+    assert set(report["cleanup_threads"]) == {report["main_thread"]}

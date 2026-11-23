@@ -8,7 +8,7 @@ from pathlib import Path
 import threading
 import sys
 import numpy as np
-from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSettings
+from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSettings
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
@@ -69,6 +69,8 @@ class Job(QThread):
         self.request_project = project.clone()
         self.cache_hit = False
         self.cancel = threading.Event()
+        self.cuda_fft_cache = None
+        self.cuda_device = None
 
     def run(self):
         try:
@@ -98,6 +100,28 @@ class Job(QThread):
             self.failed.emit("实际可用内存不足：请降低网格或轴向采样、切换 2D/仅计算，或清空缓存与方案 A；保留上一次完成的结果")
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
+        finally:
+            # CuPy 的线程缓存析构会显式触发全局 GC；先持有引用，避免在工作线程回收 VTK 对象。
+            cp = sys.modules.get("cupy")
+            if cp is not None and self.backend != "cpu":
+                try:
+                    self.cuda_device = cp.cuda.runtime.getDevice()
+                    self.cuda_fft_cache = cp.fft.config.get_plan_cache()
+                except Exception:
+                    pass
+
+    def release_cuda_cache(self):
+        """线程及其 TLS 完全退出后，在主界面线程释放 FFT 缓存和触发的循环回收。"""
+        if self.cuda_fft_cache is None:
+            return
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("CUDA 任务缓存必须在界面主线程释放")
+        self.wait()
+        cp = sys.modules.get("cupy")
+        if cp is not None:
+            with cp.cuda.Device(self.cuda_device):
+                self.cuda_fft_cache.clear()
+                self.cuda_fft_cache = None
 
 
 def button(text, callback, primary=False):
@@ -766,6 +790,10 @@ class MainWindow(QMainWindow):
     def launch_job(self, kind, options=None, automatic=False):
         if self.job and self.job.isRunning():
             return
+        if self.job:
+            # finished 信号入队与线程 TLS 析构并不同时完成；替换任务引用前也必须等待。
+            self.job.wait()
+            self.job.release_cuda_cache()
         self.play_timer.stop()
         self.play_button.setText("播放传播")
         try:
@@ -783,10 +811,10 @@ class MainWindow(QMainWindow):
         actual = preview_project(p) if kind == "preview" else p
         self.job = Job(kind, actual, options, self.backend_choice.currentData(), self.revision, self.result_cache)
         self.job.request_project = p
-        self.job.completed.connect(self.job_done)
+        self.job.completed.connect(self.job_done, Qt.QueuedConnection)
         self.job.failed.connect(self.job_failed)
         self.job.progress.connect(self.progress.setValue)
-        self.job.finished.connect(self.job_finished)
+        self.job.finished.connect(self.job_finished, Qt.QueuedConnection)
         self.run_button.setEnabled(kind == "preview")
         self.scan_button.setEnabled(False)
         self.convergence_button.setEnabled(False)
@@ -817,7 +845,12 @@ class MainWindow(QMainWindow):
         if self.job:
             self.job.cancel.set()
 
+    @Slot()
     def job_finished(self):
+        job = self.sender()
+        if isinstance(job, Job):
+            job.wait()
+            job.release_cuda_cache()
         self.run_button.setEnabled(True)
         self.scan_button.setEnabled(True)
         self.convergence_button.setEnabled(True)
@@ -833,6 +866,7 @@ class MainWindow(QMainWindow):
         if "已取消" not in message and self.job.kind != "preview":
             self.show_error(message)
 
+    @Slot(object)
     def job_done(self, result):
         if self.job.kind in ("simulate", "preview") and self.job.revision is not None and self.job.revision != self.revision:
             return
@@ -1186,6 +1220,8 @@ class MainWindow(QMainWindow):
         if self.job and self.job.isRunning():
             self.job.cancel.set()
             self.job.wait()
+        if self.job:
+            self.job.release_cuda_cache()
         if self.scene is not None:
             self.scene.close()
         super().closeEvent(event)
