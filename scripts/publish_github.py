@@ -78,7 +78,7 @@ def main():
     parser.add_argument("--visibility", choices=["public", "private"])
     parser.add_argument("--notes", type=Path)
     parser.add_argument("--asset", type=Path, action="append", default=[])
-    parser.add_argument("--tag", default="v3.0.0")
+    parser.add_argument("--tag", required=True, help="明确指定本次发布标签，例如 v4.0.0")
     args = parser.parse_args()
     client = session()
     user = api(client, "GET", "/user")["login"]

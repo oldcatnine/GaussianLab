@@ -52,8 +52,8 @@ def verify_archives(release, destination):
                                  "THIRD_PARTY_LICENSES/CPython/LICENSE.txt"):
                     if prefix + required not in names:
                         raise RuntimeError("便携包缺少：" + required)
-                if __version__.startswith("3.") and prefix + "_internal/cuda_runtime/RUNTIME-MANIFEST.json" not in names:
-                    raise RuntimeError("V3 运行附件缺少随包 CUDA 组件")
+                if int(__version__.split(".")[0]) >= 3 and prefix + "_internal/cuda_runtime/RUNTIME-MANIFEST.json" not in names:
+                    raise RuntimeError("运行附件缺少随包 CUDA 组件")
                 if not any(item.endswith("/LGPL-3.0-only.txt") for item in names):
                     raise RuntimeError("便携包缺少原始 LGPL 许可")
                 forbidden = {"icuuc.dll", "qtvirtualkeyboardplugin.dll", "qpdf.dll", "Qt6DataVisualization.dll"}

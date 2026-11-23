@@ -12,7 +12,7 @@
 
 课题：高斯光束经简单光学系统的传输仿真与光斑质量分析软件设计。
 
-当前源码版本为 **V3.1.1**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
+当前源码版本为 **V4.0.0（第四代）**，新增透镜有效口径、A/B 光路对比与纵向强度图。见 [V3.1.1 版本说明](docs/release-notes-v3.1.1.md)。已发布的 V3.0.0 将 CUDA/响应式预览分支整理为正式 Windows x64 便携版，算法标识为 `fresnel-segments-v3`。本机附件位于 `releases/v3.0.0/`，无需 Python；首次 CUDA 需联网补充约 3.6 MB 固定官方头文件并建立缓存，失败时使用 CPU。V2.0.0 与 V0.1.0 历史文件保留。见 [V3 使用说明](docs/USER_GUIDE-v3.0.0.md)、[版本说明](docs/release-notes-v3.0.0.md)、[构建与发布验证](docs/release-validation-v3.0.0.md)。
 
 [V3.0.0 发行页](https://github.com/oldcatnine/GaussianLab/releases/tag/v3.0.0) 已发布；最终分发目录与远端回下载版一致。本机最初构建单独保存在 outputs/local-build-v3.0.0，其历史摘要不与云端附件混用。
 
@@ -24,7 +24,7 @@ V3.1.1 便携包已包含相干 HG/LG 输入与最高 2048 网格、641 轴向�
 
 ## 启动
 
-**便携版运行：** 将本机构建的 `releases/v3.1.1/GaussianLab-v3.1.1-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.1.1 便携版指南](docs/USER_GUIDE-v3.1.1.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
+**便携版运行：** 下载 [V4.0.0 发行](https://github.com/oldcatnine/GaussianLab/releases/tag/v4.0.0) 的 `GaussianLab-v4.0.0-Windows-x64.zip` 到 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V4.0.0 便携版指南](docs/USER_GUIDE-v4.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
@@ -106,7 +106,7 @@ $env:PYTHONUTF8 = '1'
 & .\scripts\build_release.ps1
 ```
 
-输出位于当前版本的 `releases/v3.1.1/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
+输出位于当前版本的 `releases/v4.0.0/`，不进入源码 Git。构建脚本优先复核已缓存的 Qt 对应源码，缺失时按固定官方 URL 和 SHA-256 下载；同时生成含随包 CUDA 的运行包、Qt 对应源码包、应用源码包和 SHA-256 清单。构建和发布过程见 [开发记录](docs/development-log.md)。
 
 ## 许可证
 
@@ -121,3 +121,9 @@ GaussianLab 自有源码采用 [MIT 许可证](LICENSE)，允许使用、修改�
 已修复默认 3D 预览后启动 CUDA 完整计算的闪退，保留三维及高采样；原因与独立进程验证见 [闪退修复记录](docs/startup-crash-validation.md)。
 
 TEM 预设已补齐 0—3 阶全部 16 种组合（含 TEM01、TEM02、TEM12），与 LG01—LG05、TEM01+TEM10 合计 22 项，二维/三维共用；见 [模式矩阵](docs/assets/tem-mode-grid.png)。
+
+## 第四代与后续版本
+
+当前已实现功能汇总为 [V4.0.0](docs/release-notes-v4.0.0.md)，运行方式见 [第四代指南](docs/USER_GUIDE-v4.0.0.md)，发行状态见 [验证记录](docs/release-validation-v4.0.0.md)。新增完整 TEM/LG 模式预设、三维相干模式对应、存储与显示设置及 CUDA 线程回收修复。设计规划继续按提案阅读。
+
+此后每次应用小更新递增 0.0.1：V4.0.0 → V4.0.1 → V4.0.2。旧版发行包、标签与验证记录保留原版本。

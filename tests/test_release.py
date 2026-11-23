@@ -29,7 +29,7 @@ def test_distribution_includes_guide_and_source_notice():
 
 def test_publisher_requires_explicit_action_and_has_no_hardcoded_token():
     command = subprocess.run([sys.executable, str(ROOT / "scripts/publish_github.py"), "--help"],
-                             capture_output=True, text=True)
+                             capture_output=True, text=True, encoding="utf-8")
     assert command.returncode == 0
     assert "--visibility" in command.stdout
     text = (ROOT / "scripts/publish_github.py").read_text(encoding="utf-8")
@@ -72,10 +72,10 @@ def test_published_private_release_has_verified_frozen_evidence():
 
 def test_current_versions_and_export_backends_are_consistent():
     from gaussian_lab import __version__
-    assert __version__ == "3.1.1"
+    assert __version__ == "4.0.0"
     text = (ROOT / "packaging/windows-version-info.txt").read_text(encoding="utf-8")
-    assert "filevers=(3, 1, 1, 0)" in text and "prodvers=(3, 1, 1, 0)" in text
-    assert "StringStruct('ProductVersion', '3.1.1')" in text
+    assert "filevers=(4, 0, 0, 0)" in text and "prodvers=(4, 0, 0, 0)" in text
+    assert "StringStruct('ProductVersion', '4.0.0')" in text
     spec = (ROOT / "GaussianLab.spec").read_text(encoding="utf-8")
     assert "packaging/windows-version-info.txt" in spec
     assert "matplotlib.backends.backend_svg" in spec and "matplotlib.backends.backend_pdf" in spec
@@ -328,3 +328,23 @@ def test_cuda_headers_local_official_wheel_needs_no_network(tmp_path, monkeypatc
     assert (runtime / ".headers-ready").read_text(encoding="ascii") == record["sha256"]
     assert (runtime / "nvidia/cuda_runtime/include/cuda_runtime.h").is_file()
     assert local.is_file()
+
+
+def test_patch_version_policy_and_explicit_release_tag():
+    """小更新规则持久化，发布命令不得隐式使用旧标签，第四代延续 CUDA 验证。"""
+    policy = (ROOT / "agents.md").read_text(encoding="utf-8")
+    assert "0.0.1" in policy and "4.0.0 → 4.0.1 → 4.0.2" in policy
+    workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    assert "default: v4.0.0" in workflow
+    publisher = (ROOT / "scripts/publish_github.py").read_text(encoding="utf-8")
+    assert 'parser.add_argument("--tag", required=True' in publisher
+    for name in ("prepare_release.py", "verify_release.py"):
+        assert 'int(__version__.split(".")[0]) >= 3' in (ROOT / "scripts" / name).read_text(encoding="utf-8")
+
+
+def test_release_verification_preserves_repository_visibility():
+    """附件核验适用于现有公开或私有仓库，不强制修改访问权限。"""
+    text = (ROOT / "scripts/verify_published_release.py").read_text(encoding="utf-8")
+    assert "assert repo['private']" not in text
+    assert "assert args.allow_draft or not release['draft']" in text
+    assert "'private':repo['private']" in text

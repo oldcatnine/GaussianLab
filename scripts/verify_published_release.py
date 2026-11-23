@@ -44,7 +44,7 @@ def main():
     repo = api(client, 'GET', '/repos/oldcatnine/GaussianLab')
     releases = api(client, 'GET', '/repos/oldcatnine/GaussianLab/releases')
     release = next(item for item in releases if item['tag_name'] == args.tag)
-    assert repo['private'] and (args.allow_draft or not release['draft'])
+    assert args.allow_draft or not release['draft']
     assets = {a['name']:a for a in release['assets']}
     expected_assets = {f'GaussianLab-{args.tag}-Windows-x64.zip',
                        f'GaussianLab-{args.tag}-Qt-Corresponding-Source.zip', 'SHA256SUMS.txt'}

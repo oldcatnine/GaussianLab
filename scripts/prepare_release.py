@@ -152,8 +152,8 @@ def stage(cache=None):
             raise RuntimeError("发行暂存路径不符合预期")
         shutil.rmtree(bundle)
     shutil.copytree(ROOT / "dist" / TAG / "GaussianLab", bundle, dirs_exist_ok=True)
-    if __version__.startswith("3.") and not (bundle / "_internal/cuda_runtime/RUNTIME-MANIFEST.json").is_file():
-        raise RuntimeError("V3 运行包缺少随包 CUDA 组件，拒绝把 CPU 包标为完整发行")
+    if int(__version__.split(".")[0]) >= 3 and not (bundle / "_internal/cuda_runtime/RUNTIME-MANIFEST.json").is_file():
+        raise RuntimeError("运行包缺少随包 CUDA 组件，拒绝把 CPU 包标为完整发行")
     # 拒绝混入可能覆盖 Windows 系统 ICU 的外部环境动态库。
     forbidden = [p for p in bundle.rglob('*.dll') if p.name.lower().startswith(('icudt', 'icuuc', 'icuin'))]
     if forbidden:
