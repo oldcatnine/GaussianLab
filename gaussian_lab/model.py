@@ -40,6 +40,7 @@ class Project:
 
     focus_refinement: int = 2
     modes: list[Mode] = field(default_factory=lambda: [Mode()])
+    memory_limit_mib: int = 384
 
     def validate(self):
         numbers = (self.wavelength, self.waist, self.waist_z, self.length, self.window)
@@ -55,8 +56,8 @@ class Project:
             raise ValueError("焦区细化级数须为 0—4")
         if len(self.elements) > 20:
             raise ValueError("第一版最多支持 20 个元件")
-        if self.grid**2 * (self.samples + len(self.elements) + 1) * 4 > 384 * 1024**2:
-            raise ValueError("结果体积超过 384 MiB 限制，请减少网格或轴向采样点；2048 网格建议先用 17 点")
+        if type(self.memory_limit_mib) is not int or not 32 <= self.memory_limit_mib <= 65536:
+            raise ValueError("结果数据上限须为 32—65536 MiB 的整数")
         if not 1 <= len(self.modes) <= 8:
             raise ValueError("输入光须包含 1—8 个相干模式")
         for mode in self.modes:
@@ -83,7 +84,21 @@ class Project:
                 e.kind != "lens" or not math.isfinite(e.clear_diameter) or e.clear_diameter <= 0
             ):
                 raise ValueError("透镜有效通光直径须为空或有限正数，仅适用于透镜")
+        required = self.result_storage_bytes()
+        if required > self.memory_limit_mib * 1024**2:
+            raise ValueError(f"结果体积预计 {required / 1024**2:.1f} MiB，超过已设 {self.memory_limit_mib} MiB 上限；"
+                             "请提高结果数据上限，或减少网格/轴向采样点")
         return self
+
+    def sampling_positions(self):
+        """统一观察面：均匀轴向面加启用元件面，同位置去重，端点精确取传播长度。"""
+        step = self.length / (self.samples - 1)
+        return sorted({*(i * step for i in range(self.samples - 1)), self.length,
+                       *(e.z for e in self.elements if e.enabled)})
+
+    def result_storage_bytes(self):
+        """float32 强度体积的实际预分配字节数，包含一个额外焦面槽位。"""
+        return self.grid**2 * (len(self.sampling_positions()) + 1) * 4
 
     def ordered(self):
         return sorted((e for e in self.elements if e.enabled), key=lambda e: e.z)

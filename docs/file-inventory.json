@@ -120,6 +120,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/assets/focal-spot-corrected.png",
+    "purpose": "按真实像素中心对齐和自动缩放后导出的数值焦面强度图，标明采样间距与像素数。",
+    "optional_local": false
+  },
+  {
     "path": "docs/assets/focus-desktop.png",
     "purpose": "单透镜聚焦历史应用界面截图，用于追溯界面与数值展示。",
     "optional_local": false
@@ -132,6 +137,11 @@
   {
     "path": "docs/assets/focus.json",
     "purpose": "单透镜聚焦预置项目输入参数，采用国际单位制。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/assets/memory-display-desktop.png",
+    "purpose": "本轮实际后台计算后的 2D 光路、内存估算与焦面光斑界面截图。",
     "optional_local": false
   },
   {
@@ -182,6 +192,11 @@
   {
     "path": "docs/iteration-plan-v3.2.md",
     "purpose": "基于商业和开源项目的 V3.2 讨论稿，给出单平面实测对照范围、工作量、数据前提及验收设计。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/memory-display-validation.md",
+    "purpose": "可配置内存、低占用三种显示、焦面像素修复、解析/独立对照与悬停数据的实际验收记录。",
     "optional_local": false
   },
   {
@@ -382,6 +397,11 @@
   {
     "path": "gaussian_lab/gui.py",
     "purpose": "构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。",
+    "optional_local": false
+  },
+  {
+    "path": "gaussian_lab/memory.py",
+    "purpose": "估算结果强度体积、CPU/CUDA 工作区，读取系统可用 RAM 与当前进程工作集，统一显示内存单位。",
     "optional_local": false
   },
   {

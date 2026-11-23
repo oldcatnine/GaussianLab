@@ -20,6 +20,8 @@
 
 当前源码新增更精细采样与相干 HG/LG 输入：完整网格默认 1024、最高 2048，轴向最高 641 点（组合受内存限制），支持阶数、振幅及相位配置。这些更新已纳入 V3.1.1 便携包；源码运行可用根目录 `启动软件.cmd`；自动预览保持 256/33，精细结果点击“计算光场”。见 [本轮检查与操作](docs/project-review-2026-11-23.md)。
 
+当前源码新增可配置结果数据上限与实时内存估算、2D/3D/仅计算模式、焦面像素对齐与自适应视野、曲线悬停读数。运行 `启动软件.cmd`，左侧“计算与交互”可调整；详细方法见 [当前使用说明](docs/USER_GUIDE.md)。
+
 ## 启动
 
 **便携版运行：** 将本机构建的 `releases/v3.1.1/GaussianLab-v3.1.1-Windows-x64.zip` 复制到其他 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V3.1.1 便携版指南](docs/USER_GUIDE-v3.1.1.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
@@ -109,3 +111,5 @@ $env:PYTHONUTF8 = '1'
 ## 许可证
 
 GaussianLab 自有源码采用 [MIT 许可证](LICENSE)，允许使用、修改和分发，需保留版权与许可声明。Qt/PySide6、CuPy、NVIDIA CUDA 等第三方组件继续遵循各自许可证，详见 [第三方组件说明](docs/THIRD-PARTY-NOTICES.md)。
+
+本轮内存、显示与焦面修复的公式、实际界面和验证数据见 [专项验证](docs/memory-display-validation.md)。

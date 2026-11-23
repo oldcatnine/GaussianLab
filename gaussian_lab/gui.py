@@ -5,20 +5,21 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 import threading
+import sys
 import numpy as np
-from PySide6.QtCore import Qt, QThread, Signal, QTimer
+from PySide6.QtCore import Qt, QThread, Signal, QTimer, QSettings
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
-    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea)
+    QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea, QStackedWidget)
 from . import __version__
 from .model import Project, Element, Mode, preset, load_project, save_project
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
-from .scene import OpticalScene
 from .charts import PlotCanvas
 from .backend import preview_project
 from .session import ResultCache
+from .memory import estimate_memory, system_memory, format_memory
 
 STYLE = """
 QMainWindow,QWidget {background:#ffffff;color:#1f2937;font-family:'Microsoft YaHei';font-size:12px;}
@@ -92,6 +93,8 @@ class Job(QThread):
             self.completed.emit(result)
         except Cancelled:
             self.failed.emit("计算已取消；保留上一次完成的结果")
+        except MemoryError:
+            self.failed.emit("实际可用内存不足：请降低网格或轴向采样、切换 2D/仅计算，或清空缓存与方案 A；保留上一次完成的结果")
         except Exception as exc:
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -115,8 +118,11 @@ def spin(value, low, high, decimals=3, suffix=""):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, auto_compute=True):
+    def __init__(self, auto_compute=True, display_mode=None):
         super().__init__()
+        self.settings = QSettings("GaussianLab", "GaussianLab") if display_mode is None else None
+        self.initial_display_mode = display_mode or str(self.settings.value("display_mode", "2d"))
+        self.scene = None
         self.setWindowTitle(f"GaussianLab · 高斯光束传输与光斑分析 V{__version__}")
         self.resize(1520, 980)
         self.setMinimumSize(1180, 780)
@@ -245,12 +251,35 @@ class MainWindow(QMainWindow):
         self.backend_choice.setToolTip("CUDA 不可用时回退 CPU；自动模式小网格优先 CPU。便携版首次 CUDA 需联网补充约 3.6 MB 头文件并建立缓存。")
         self.backend_choice.currentIndexChanged.connect(self.mark_dirty)
         performance_form.addRow("计算后端", self.backend_choice)
+        self.display_mode = QComboBox()
+        for text, key in (("2D 光路示意（低占用）", "2d"), ("3D 光路", "3d"), ("仅计算（关闭绘图）", "none")):
+            self.display_mode.addItem(text, key)
+        performance_form.addRow("显示模式", self.display_mode)
+        self.display_hint = QLabel("2D / 仅计算不创建 VTK 三维窗口。3D 额外占用 RAM/显存；切换后已加载库与驱动缓存可能保留。")
+        self.display_hint.setWordWrap(True)
+        performance_form.addRow(self.display_hint)
+        self.memory_limit = QSpinBox()
+        self.memory_limit.setRange(32, 65536)
+        self.memory_limit.setSingleStep(128)
+        self.memory_limit.setSuffix(" MiB")
+        self.memory_limit.setValue(384)
+        self.memory_limit.setAccessibleName("结果数据上限")
+        self.memory_limit.setToolTip("只限制保存的强度体积，额外计算工作区、绘图和 A/B 缓存另计；设置随项目保存。")
+        self.memory_limit.valueChanged.connect(self.mark_dirty)
+        performance_form.addRow("结果数据上限", self.memory_limit)
+        self.memory_info = QLabel()
+        self.memory_info.setWordWrap(True)
+        self.memory_info.setAccessibleName("内存估算")
+        self.memory_info.setToolTip("运行范围为经验估算，FFT/驱动可能超出。显示的系统可用 RAM 会变化，不代表显存。")
+        performance_form.addRow(self.memory_info)
+        performance_form.addRow(button("刷新可用内存", self.update_sampling_info))
+        performance_form.addRow(button("清空缓存与方案 A", self.release_memory_cache))
         self.auto_preview = QCheckBox("改参后自动预览")
         self.auto_preview.setChecked(auto_compute)
         self.auto_preview.setToolTip("停止输入 400 ms 后更新；预览最多 256 网格、33 个轴向点，不进行焦区细化。")
         self.auto_preview.toggled.connect(self.preview_toggled)
         performance_form.addRow(self.auto_preview)
-        left_layout.addWidget(performance_box)
+        left_layout.insertWidget(2, performance_box)
         element_box = QGroupBox("光路元件")
         el = QVBoxLayout(element_box)
         self.table = QTableWidget(0, 6)
@@ -313,20 +342,28 @@ class MainWindow(QMainWindow):
             metrics.addWidget(card)
         rv.addLayout(metrics)
         main_views = QSplitter(Qt.Horizontal)
-        scene_frame = QWidget()
-        sv = QVBoxLayout(scene_frame)
+        self.scene_frame = QWidget()
+        sv = QVBoxLayout(self.scene_frame)
         sv.setContentsMargins(0, 0, 0, 0)
-        self.scene = OpticalScene(scene_frame)
-        sv.addWidget(self.scene.interactor)
+        self.scene_stack = QStackedWidget()
+        self.schematic_plot = PlotCanvas()
+        self.compute_placeholder = QLabel("仅计算模式：已关闭绘图与三维渲染。\n计算强度数据仍保留，可保存项目或导出结果。")
+        self.compute_placeholder.setAlignment(Qt.AlignCenter)
+        self.compute_placeholder.setWordWrap(True)
+        self.scene_stack.addWidget(self.schematic_plot)
+        self.scene_stack.addWidget(self.compute_placeholder)
+        sv.addWidget(self.scene_stack)
         scene_toolbar = QHBoxLayout()
-        scene_toolbar.addWidget(QLabel("3D 光路 · r86 包络 · 横向 ×25"))
+        self.scene_caption = QLabel("2D 光路 · r86 示意")
+        scene_toolbar.addWidget(self.scene_caption)
         scene_toolbar.addStretch()
         self.play_button = button("播放传播", self.toggle_play)
         scene_toolbar.addWidget(self.play_button)
-        scene_toolbar.addWidget(button("复位视角", self.scene.reset_view))
+        self.reset_view_button = button("复位视角", self.reset_scene_view)
+        scene_toolbar.addWidget(self.reset_view_button)
         scene_toolbar.addWidget(button("场景截图", self.screenshot))
         sv.addLayout(scene_toolbar)
-        main_views.addWidget(scene_frame)
+        main_views.addWidget(self.scene_frame)
         self.tabs = QTabWidget()
         self.spot_plot, self.profile_plot = PlotCanvas(), PlotCanvas()
         self.surface_plot = PlotCanvas(surface=True)
@@ -422,12 +459,86 @@ class MainWindow(QMainWindow):
         self.progress.setValue(0)
         root.addWidget(self.progress)
         self.setCentralWidget(central)
+        self.display_mode.setCurrentIndex(max(0, self.display_mode.findData(self.initial_display_mode)))
+        self.display_mode.currentIndexChanged.connect(self.apply_display_mode)
+        self.apply_display_mode()
         self.fill_project(preset("单透镜聚焦"))
+        self.memory_timer = QTimer(self)
+        self.memory_timer.setInterval(5000)
+        self.memory_timer.timeout.connect(self.update_sampling_info)
+        self.memory_timer.start()
         if auto_compute:
             self.preview_timer.start()
 
+    def reset_scene_view(self):
+        if self.scene is not None:
+            self.scene.reset_view()
+
+    def release_memory_cache(self):
+        """显式释放可重建的结果和显卡缓存，保留当前计算结果供查看与导出。"""
+        if self.job and self.job.isRunning():
+            self.status.setText("请等待当前计算完成后清空缓存。")
+            return
+        self.result_cache.clear()
+        self.clear_baseline()
+        self.longitudinal_result = None
+        self.longitudinal_plot.figure.clear()
+        cp = sys.modules.get("cupy")
+        if cp is not None:
+            try:
+                cp.fft.config.get_plan_cache().clear()
+                cp.get_default_memory_pool().free_all_blocks()
+                cp.get_default_pinned_memory_pool().free_all_blocks()
+            except RuntimeError:
+                self.status.setText("结果缓存已清空；部分 CUDA 缓存未能释放。")
+                return
+        self.update_sampling_info()
+        self.status.setText("已清空缓存和方案 A，保留当前结果；系统和驱动可能保留部分内存。")
+
+    def apply_display_mode(self, *_):
+        """按需创建三维上下文；退出三维时释放场景，计算模式不自动绘图。"""
+        mode = self.display_mode.currentData()
+        if self.settings is not None:
+            self.settings.setValue("display_mode", mode)
+        if mode != "3d" and self.scene is not None:
+            old, self.scene = self.scene, None
+            self.scene_stack.removeWidget(old.interactor)
+            old.result = None
+            old.clear()
+            old.close()
+            old.deleteLater()
+        if mode == "3d":
+            if self.scene is None:
+                from .scene import OpticalScene
+                self.scene = OpticalScene(self.scene_stack)
+                self.scene_stack.addWidget(self.scene.interactor)
+                if self.result is not None:
+                    self.scene.set_result(self.result)
+            self.scene_stack.setCurrentWidget(self.scene.interactor)
+        else:
+            self.scene_stack.setCurrentWidget(self.schematic_plot if mode == "2d" else self.compute_placeholder)
+        self.tabs.setVisible(mode != "none")
+        self.bottom.setVisible(mode != "none")
+        self.reset_view_button.setEnabled(mode == "3d")
+        self.scene_caption.setText({"3d":"3D 光路 · r86 示意 · 横向 ×25", "2d":"2D 光路 · 无 VTK 渲染", "none":"仅计算 · 保留数值结果"}[mode])
+        if mode == "none":
+            self.longitudinal_result = None
+            self.comparison = None
+            for plot in (self.schematic_plot, self.spot_plot, self.profile_plot, self.surface_plot,
+                         self.energy_plot, self.beam_plot, self.scan_plot, self.compare_plot, self.longitudinal_plot):
+                plot.hide_data()
+                plot.figure.clear()
+                plot.ax = None
+                plot.beam_result = None
+                plot.draw_idle()
+        if self.result is not None:
+            self.draw_plane()
+        if hasattr(self, "project_name"):
+            self.update_sampling_info()
+
     def mark_dirty(self, *_):
         if not self.loading:
+            self.update_sampling_info()
             self.revision += 1
             self.dirty = True
             if hasattr(self, "result_state"):
@@ -462,6 +573,7 @@ class MainWindow(QMainWindow):
         for widget, value in ((self.wave, p.wavelength*1e9), (self.waist, p.waist*1e3),
                               (self.waist_z, p.waist_z*1e3), (self.length, p.length*1e3),
                               (self.window_size, p.window*1e3), (self.samples, p.samples),
+                              (self.memory_limit, p.memory_limit_mib),
                               (self.focus_refinement, p.focus_refinement)):
             widget.setValue(value)
         self.grid.setCurrentText(str(p.grid))
@@ -476,9 +588,46 @@ class MainWindow(QMainWindow):
         self.mark_dirty()
 
     def update_sampling_info(self, *_):
+        if self.loading or not hasattr(self, "table") or not hasattr(self, "memory_info"):
+            return
         dx = self.window_size.value() * 1000 / int(self.grid.currentText())
         dz = self.length.value() / (self.samples.value() - 1)
-        self.sampling_info.setText(f"完整计算：Δx={dx:.3f} μm，Δz={dz:.3f} mm。\n自动预览最多 256×256 / 33 点；精细结果请点计算光场。\n结果体积限制 384 MiB；2048 网格先用 17 点。")
+        self.sampling_info.setText(f"完整计算：Δx={dx:.3f} μm，Δz={dz:.3f} mm。\n自动预览最多 256×256 / 33 点；精细结果请点计算光场。")
+        try:
+            p = self.read_project(validate=False)
+            if not np.isfinite(p.length) or p.length <= 0 or any(not np.isfinite(e.z) for e in p.elements):
+                raise ValueError()
+            estimate = estimate_memory(p)
+        except (ValueError, AttributeError):
+            self.memory_info.setText("请完成有效的参数输入后查看内存估算。")
+            return
+        system = system_memory()
+        fmt = format_memory
+        cpu = f"{fmt(estimate['cpu_increment_low_bytes'])}—{fmt(estimate['cpu_increment_high_bytes'])}"
+        host = f"{fmt(estimate['cuda_host_low_bytes'])}—{fmt(estimate['cuda_host_high_bytes'])}"
+        device = f"{fmt(estimate['cuda_device_low_bytes'])}—{fmt(estimate['cuda_device_high_bytes'])}"
+        message = (f"结果数据：{fmt(estimate['result_bytes'])} / 上限 {fmt(p.memory_limit_mib * 1024**2)}\n"
+                   f"CPU 计算新增 RAM 约 {cpu}\nCUDA 计算新增 RAM 约 {host}\nCUDA 显存工作区约 {device}\n"
+                   f"当前进程 RAM：{fmt(system['process_bytes'])}\n"
+                   f"系统可用 RAM：{fmt(system['available_bytes'])} / 总量 {fmt(system['total_bytes'])}")
+        message += f"\n显示：{self.display_mode.currentText()}"
+        if self.display_mode.currentData() == "3d":
+            message += "\n3D 场景/帧缓冲额外占用 RAM 和显存，可改为 2D 或仅计算。"
+        if system["process_bytes"] is not None:
+            message += f"\nCPU 进程峰值估计约 {fmt(system['process_bytes'] + estimate['cpu_increment_high_bytes'])}"
+        if estimate["result_bytes"] > p.memory_limit_mib * 1024**2:
+            message += "\n结果超出上限：提高上限或减少采样后才能完整计算。"
+            color = "#b91c1c"
+        elif system["available_bytes"] is not None and estimate["cpu_increment_high_bytes"] > system["available_bytes"]:
+            message += "\nCPU 估算超过当前可用 RAM，可能内存不足。"
+            color = "#92400e"
+        else:
+            message += "\n运行范围为估算；保留旧结果、A/B、缓存与绘图会额外占用。"
+            color = "#334155"
+        self.memory_info.setText(message)
+        style = f"color:{color};font-size:11px;"
+        if self.memory_info.styleSheet() != style:
+            self.memory_info.setStyleSheet(style)
 
     def add_mode(self, mode):
         row = self.mode_table.rowCount()
@@ -528,7 +677,7 @@ class MainWindow(QMainWindow):
             diameter.setFlags(diameter.flags() & ~Qt.ItemIsEditable)
         self.table.setItem(row, 5, diameter)
 
-    def read_project(self):
+    def read_project(self, validate=True):
         elements = []
         modes = []
         try:
@@ -547,9 +696,11 @@ class MainWindow(QMainWindow):
                     float(diameter)/1e3 if diameter else None))
         except (ValueError, AttributeError) as exc:
             raise ValueError("元件位置与焦距/直径须为数值，透镜口径可留空") from exc
-        return Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
+        project = Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
                        self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
-                       int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value(), modes=modes).validate()
+                       int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value(),
+                       modes=modes, memory_limit_mib=self.memory_limit.value())
+        return project.validate() if validate else project
 
     def add_element(self, kind):
         n = self.table.rowCount() + 1
@@ -670,7 +821,8 @@ class MainWindow(QMainWindow):
             self.scan_project = self.job.project.clone()
             self.scan_options = self.job.options
             kind = self.job.project.elements[self.job.options[0]].kind
-            self.scan_plot.scanning(result, kind)
+            if self.display_mode.currentData() != "none":
+                self.scan_plot.scanning(result, kind)
             self.scan_table.setColumnCount(6)
             self.scan_table.setHorizontalHeaderLabels(["参数/mm", "最小r86/μm", "焦点/mm", "透过率/%", "状态", "说明"])
             self.scan_table.setRowCount(len(result))
@@ -698,7 +850,8 @@ class MainWindow(QMainWindow):
                     self.longitudinal_result = None
                     self.longitudinal_plot.reset()
                     self.longitudinal_plot.draw_idle()
-                self.scene.set_result(result)
+                if self.scene is not None:
+                    self.scene.set_result(result)
             ref = result.reference
             k = result.focus_index
             self.cards[0].setText(f"高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
@@ -734,7 +887,13 @@ class MainWindow(QMainWindow):
         r = self.result
         i = min(self.plane_slider.value(), len(r.z)-1)
         self.plane_label.setText(f"{r.z[i]*1e3:.2f} mm · r86={r.r86[i]*1e6:.1f} μm")
-        self.scene.set_plane(i)
+        mode = self.display_mode.currentData()
+        if mode == "none":
+            return
+        if self.scene is not None:
+            self.scene.set_plane(i)
+        elif mode == "2d":
+            self.schematic_plot.schematic(r, i)
         if self.tabs.currentIndex() == 0:
             self.spot_plot.spot(r, i, self.log_scale.isChecked())
         elif self.tabs.currentIndex() == 1:
@@ -758,6 +917,10 @@ class MainWindow(QMainWindow):
 
     def locate_focus(self):
         if self.result is not None:
+            if self.result.provenance.get("quality") == "preview":
+                self.compute()
+                self.status.setText("正在用完整采样计算焦面；快速预览不用于判断小光斑形状。")
+                return
             self.plane_slider.setValue(self.result.focus_index)
 
     def full_snapshot(self):
@@ -976,7 +1139,13 @@ class MainWindow(QMainWindow):
             return
         path = self.choose_path("保存三维场景", "scene.png", "PNG (*.png)")
         if path:
-            self.scene.screenshot(path)
+            if self.scene is not None:
+                self.scene.screenshot(path)
+            elif self.display_mode.currentData() == "2d":
+                self.schematic_plot.figure.savefig(path, dpi=300, facecolor="white")
+            else:
+                self.status.setText("仅计算模式没有场景图，可切换到 2D 或 3D。")
+                return
             self.status.setText("已保存场景：" + path)
 
     def closeEvent(self, event):
@@ -984,10 +1153,12 @@ class MainWindow(QMainWindow):
         self.preview_timer.stop()
         self.plane_timer.stop()
         self.play_timer.stop()
+        self.memory_timer.stop()
         if self.job and self.job.isRunning():
             self.job.cancel.set()
             self.job.wait()
-        self.scene.close()
+        if self.scene is not None:
+            self.scene.close()
         super().closeEvent(event)
 
 

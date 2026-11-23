@@ -17,7 +17,7 @@ from .backend import preview_project
 def run(output: Path):
     output.mkdir(parents=True, exist_ok=True)
     app = QApplication.instance() or QApplication([])
-    window = MainWindow(auto_compute=False)
+    window = MainWindow(auto_compute=False, display_mode="3d")
     window.show()
     app.processEvents()
     report = {"version": __version__, "frozen": bool(getattr(sys, "frozen", False)), "cases": []}

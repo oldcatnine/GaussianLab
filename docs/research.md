@@ -125,3 +125,12 @@
 重新查看 [CuPy 原仓库](https://github.com/cupy/cupy) 与 [14.2.0 官方安装说明](https://docs.cupy.dev/en/stable/install.html)，确认 Windows 预编译轮子与 Python 3.10、CUDA 12.x 路径。继续使用项目锁定版本，安装光场/FFT 需要的 6 个组件，沿用 MIT 与 NVIDIA 原始许可，不改变系统驱动。安装到应用私有 ASCII 目录并真实执行 GPU FFT；测试沙箱重定向 LOCALAPPDATA 的状态与用户真实环境分开记录，不把沙箱缺库误报为用户系统缺库。安装、冻结与额外高阶输入对照见 V3.1.1 验证。
 
 本轮继续沿用既有随包 DLL/头文件分发边界。读取已安装轮子的原始 NVIDIA 许可证，尝试打开归档 EULA 页面时网络连接失败，未据此扩展分发范围；完整头文件轮子由使用者自行从官方获取或使用其本机缓存，不加入运行包或源码 ZIP。离线与在线流程保持同一固定摘要校验。
+
+
+## 内存规划、低占用显示与焦面像素映射（2026-11-23）
+
+先查看 [psutil 原仓库](https://github.com/giampaolo/psutil)（BSD-3-Clause）及其系统/进程内存区分，再读取 Microsoft [GlobalMemoryStatusEx](https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex)、[GetProcessMemoryInfo](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo) 与 [CuPy memGetInfo](https://docs.cupy.dev/en/stable/reference/generated/cupy.cuda.runtime.memGetInfo.html)。采用 Windows 自带 API，无新增依赖；界面不为读数初始化 CUDA。显存显示工作区估算，并非查询出的空闲显存。
+
+复查 [PyVistaQt 原仓库](https://github.com/pyvista/pyvistaqt) 的 Qt 渲染集成，保留按需三维，新增不依赖 VTK 的 Matplotlib 二维示意；模块惰性导入，退出三维移除并关闭渲染上下文，明确库仍可能驻留。参考 Matplotlib 官方 [鼠标事件](https://matplotlib.org/stable/gallery/event_handling/coords_demo.html) 与 [imshow 坐标/插值说明](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html)，自行实现近点工具提示，不增加 mplcursors 依赖或复制上游代码。
+
+焦面检查发现：旧 imshow 将第一像素中心放在 x[0]+dx/2，光轴整体偏移半像素；bilinear 插值和固定最小 0.15 mm 半视野会掩盖小光斑的离散结构。修复范围是坐标映射、显示插值和视野，不将模拟光斑强制修改为理想高斯。孔径衍射、高阶模式、欠采样与有限窗口仍应区分；原始强度、解析基准与独立传播对照用于验证。

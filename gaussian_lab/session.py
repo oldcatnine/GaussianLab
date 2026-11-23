@@ -13,6 +13,11 @@ class ResultCache:
     def key(self, project, backend, preview=False):
         return json.dumps([asdict(project), backend, preview], sort_keys=True)
 
+    def clear(self):
+        """释放缓存引用；当前显示的结果由界面继续持有。"""
+        self.entries.clear()
+        self.bytes = 0
+
     def get(self, key):
         if key not in self.entries:
             return None

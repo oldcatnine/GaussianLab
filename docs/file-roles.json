@@ -104,5 +104,9 @@
   "docs/release-validation-v3.1.1.md":"本轮真实用户 CUDA 安装、沙箱诊断、全量回归和便携双后端冻结验证记录。",
   "docs/release-artifacts-v3.1.1.json":"V3.1.1 三个发行附件的大小、SHA-256、ZIP CRC、可执行文件摘要与双后端验收状态。",
   "docs/release-smoke-v3.1.1.json":"解压 V3.1.1 EXE 在独立 CPU/CUDA 环境的实际运行、相干输入、高阶模式与首次头文件校验记录。",
-  "LICENSE":"GaussianLab 自有源码的标准 MIT 开源许可证，保留版权、授权条件和免责声明。"
+  "LICENSE":"GaussianLab 自有源码的标准 MIT 开源许可证，保留版权、授权条件和免责声明。",
+  "gaussian_lab/memory.py":"估算结果强度体积、CPU/CUDA 工作区，读取系统可用 RAM 与当前进程工作集，统一显示内存单位。",
+  "docs/memory-display-validation.md":"可配置内存、低占用三种显示、焦面像素修复、解析/独立对照与悬停数据的实际验收记录。",
+  "docs/assets/memory-display-desktop.png":"本轮实际后台计算后的 2D 光路、内存估算与焦面光斑界面截图。",
+  "docs/assets/focal-spot-corrected.png":"按真实像素中心对齐和自动缩放后导出的数值焦面强度图，标明采样间距与像素数。"
 }

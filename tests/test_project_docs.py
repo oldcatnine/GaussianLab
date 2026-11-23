@@ -173,3 +173,17 @@ def test_public_project_has_prominent_star_and_mit_license():
     assert "不替代第三方组件" in notices
     packaging = (ROOT / "scripts/prepare_release.py").read_text(encoding="utf-8")
     assert 'shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")' in packaging
+
+
+
+def test_memory_display_controls_guides_and_validation_are_consistent():
+    """新功能入口、估算边界及原始焦面显示必须在用户文档中明确。"""
+    for name in ("USER_GUIDE.md", "项目学习手册.md", "memory-display-validation.md"):
+        text = (ROOT / "docs" / name).read_text(encoding="utf-8")
+        for term in ("65536", "MiB", "仅计算", "2D", "3D", "像素", "悬停"):
+            assert term in text, (name, term)
+    for name in ("memory-display-desktop.png", "focal-spot-corrected.png"):
+        assert (ROOT / "docs/assets" / name).read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+    text = (ROOT / "docs/memory-display-validation.md").read_text(encoding="utf-8")
+    assert "不是实体光学实验" in text
+    assert "42,074,112" in text

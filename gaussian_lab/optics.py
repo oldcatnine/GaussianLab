@@ -17,6 +17,7 @@ from . import __version__
 import numpy as np
 from scipy.fft import fft2, ifft2, fftfreq, fftshift
 from .model import Project
+from .memory import estimate_memory
 from .backend import Backend, array_module, select_backend, invalidate_cuda
 from bisect import bisect_right
 from functools import lru_cache
@@ -342,7 +343,7 @@ def _simulate(project, cancel, progress, engine):
     field = initial_field(p, r2)
     input_energy = float(xp.sum(abs(field)**2))
     dx = p.window / p.grid
-    zs = np.unique(np.r_[np.linspace(0, p.length, p.samples), [e.z for e in p.ordered()]])
+    zs = np.asarray(p.sampling_positions())
     images = np.empty((len(zs) + 1, p.grid, p.grid), dtype=np.float32)
     propagation = Propagation(p, r2, engine, cancel)
     sizes, powers, warnings = [], [], list(propagation.warnings)
@@ -390,6 +391,7 @@ def _simulate(project, cancel, progress, engine):
                     theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
     result.provenance["backend"] = engine.information()
     result.provenance["input_power_integral"] = input_energy * dx**2
+    result.provenance["memory_estimate"] = estimate_memory(p)
     result.provenance["sampling"] = {"transverse_step_m": dx,
                                      "axial_step_m": p.length / (p.samples - 1),
                                      "stored_planes": len(zs), "coherent_input": True}

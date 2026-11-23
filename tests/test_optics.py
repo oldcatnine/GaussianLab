@@ -395,3 +395,62 @@ def test_higher_modes_match_independent_lightpipes_source():
         expected = reference.field
         scale = np.vdot(expected, actual) / np.vdot(expected, expected)
         np.testing.assert_allclose(actual, expected * scale, atol=1e-12)
+
+
+
+@pytest.mark.parametrize("budget", [0, 31, 65537, 384.0, True, float("nan")])
+def test_memory_limit_rejects_invalid_budget(budget):
+    with pytest.raises(ValueError, match="结果数据上限"):
+        small(memory_limit_mib=budget).validate()
+
+
+def test_custom_memory_limit_legacy_and_roundtrip(tmp_path):
+    from gaussian_lab.model import from_dict
+    p = small(grid=2048, samples=65, memory_limit_mib=1536)
+    p.validate()
+    assert p.result_storage_bytes() == 1056 * 1024**2
+    path = tmp_path / "memory.json"
+    save_project(p, path)
+    assert load_project(path).memory_limit_mib == 1536
+    assert from_dict({"grid": 128, "samples": 17}).memory_limit_mib == 384
+    p.memory_limit_mib = 384
+    with pytest.raises(ValueError, match="提高结果数据上限"):
+        p.validate()
+
+
+def test_memory_prediction_matches_allocated_volume_with_duplicate_disabled_planes():
+    from gaussian_lab.memory import estimate_memory
+    p = small(grid=128, samples=17, focus_refinement=0,
+              elements=[Element("lens", .1, .2), Element("lens", .1, -.2),
+                        Element("lens", .111, .3, enabled=False)])
+    predicted = estimate_memory(p)
+    assert len(p.sampling_positions()) == 17
+    assert predicted["allocated_planes"] == 18
+    r = simulate(p)
+    assert r.intensity.base.nbytes == predicted["result_bytes"]
+    assert r.provenance["memory_estimate"] == predicted
+    p.elements[-1].enabled = True
+    updated = estimate_memory(p)
+    assert updated["allocated_planes"] == 19
+    assert updated["result_bytes"] > predicted["result_bytes"]
+    assert updated["cuda_device_high_bytes"] > predicted["cuda_device_high_bytes"]
+
+
+def test_memory_prediction_scales_and_does_not_probe_cuda(monkeypatch):
+    from gaussian_lab.memory import estimate_memory, system_memory, format_memory
+    from gaussian_lab import backend
+    def forbidden():
+        raise AssertionError("预测内存不应初始化 CUDA")
+    monkeypatch.setattr(backend, "cuda_probe", forbidden)
+    p = small(grid=128)
+    a = estimate_memory(p)
+    p.grid = 256
+    b = estimate_memory(p)
+    for key in a:
+        if key.endswith("bytes"):
+            assert b[key] == 4*a[key]
+    info = system_memory()
+    if info["total_bytes"] is not None:
+        assert 0 <= info["available_bytes"] <= info["total_bytes"]
+    assert format_memory(None) == "未知"
+    assert format_memory(1024**3) == "1.00 GiB"

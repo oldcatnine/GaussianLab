@@ -16,7 +16,7 @@ def main():
     from PySide6.QtWidgets import QApplication
     import numpy, scipy, PySide6, pyvista, pyvistaqt
     app = QApplication.instance() or QApplication([])
-    window = MainWindow(auto_compute=False)
+    window = MainWindow(auto_compute=False, display_mode="3d")
     window.show()
     app.processEvents()
     assets = ROOT / "docs/assets"

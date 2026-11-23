@@ -24,7 +24,7 @@ def app():
 
 @pytest.fixture
 def window(app):
-    w = MainWindow(auto_compute=False)
+    w = MainWindow(auto_compute=False, display_mode="3d")
     p = preset("单透镜聚焦")
     p.grid, p.samples = 128, 17
     w.fill_project(p)
@@ -444,3 +444,169 @@ def test_mode_controls_sampling_roundtrip_and_worker(window, app, tmp_path):
     window.samples.setValue(17)
     assert window.read_project().grid == 2048
     assert "Δx=" in window.sampling_info.text()
+
+
+
+def test_memory_options_prediction_and_saved_project(window, app, tmp_path, monkeypatch):
+    """超限配置仍显示预测，调整上限后可保存；元件编辑与系统低内存提示同步。"""
+    from gaussian_lab.model import save_project
+    import gaussian_lab.gui as gui
+    window.grid.setCurrentText("2048")
+    window.samples.setValue(65)
+    assert "1.03 GiB" in window.memory_info.text()
+    assert "结果超出上限" in window.memory_info.text()
+    with pytest.raises(ValueError, match="384 MiB"):
+        window.read_project()
+    window.memory_limit.setValue(1536)
+    p = window.read_project()
+    assert p.memory_limit_mib == 1536
+    assert "结果超出上限" not in window.memory_info.text()
+    assert "CUDA 显存工作区" in window.memory_info.text()
+    path = tmp_path / "memory-options.json"
+    save_project(p, path)
+    window.memory_limit.setValue(384)
+    window.fill_project(load_project(path))
+    assert window.memory_limit.value() == 1536
+    assert window.read_project() == p
+    monkeypatch.setattr(gui, "system_memory", lambda: {"total_bytes": 1024**3, "available_bytes": 1, "process_bytes": 1024**2})
+    window.update_sampling_info()
+    assert "超过当前可用 RAM" in window.memory_info.text()
+    assert window.memory_timer.isActive()
+    window.grid.setCurrentText("128")
+    window.samples.setValue(17)
+    window.table.item(0, 1).setText("111")
+    assert "结果数据：1.2 MiB" in window.memory_info.text()
+    window.compute()
+    wait_until(app, lambda: window.job is not None and not window.job.isRunning() and not window.dirty)
+    assert window.result.project.memory_limit_mib == 1536
+    assert window.result.provenance["memory_estimate"]["result_bytes"] == window.result.intensity.base.nbytes
+    assert window.memory_timer.isActive()
+
+
+
+def test_display_modes_release_3d_and_keep_calculation(window, app, monkeypatch):
+    """显示切换不重新求解；仅计算无新图形，二维无需三维场景。"""
+    original = window.result
+    revision = window.revision
+    window.display_mode.setCurrentIndex(window.display_mode.findData("2d"))
+    app.processEvents()
+    assert window.scene is None
+    assert window.result is original and window.revision == revision
+    assert window.schematic_plot.ax is not None
+    assert "二维光路" in window.schematic_plot.ax.get_title()
+    window.display_mode.setCurrentIndex(window.display_mode.findData("none"))
+    assert window.scene is None and not window.tabs.isVisible()
+    assert not window.bottom.isVisible()
+    assert all(not p.figure.axes for p in (window.spot_plot, window.beam_plot, window.schematic_plot))
+    window.compute()
+    wait_until(app, lambda: not window.job.isRunning() and not window.dirty)
+    assert window.result.r86.min() > 0
+    assert not window.spot_plot.figure.axes
+    window.display_mode.setCurrentIndex(window.display_mode.findData("2d"))
+    assert window.scene is None and window.spot_plot.ax.images
+    window.pin_baseline()
+    assert window.baseline is not None
+    window.release_memory_cache()
+    assert window.baseline is None and not window.result_cache.entries
+    window.display_mode.setCurrentIndex(window.display_mode.findData("3d"))
+    assert window.scene is not None and window.scene.screen_actor is not None
+
+
+def test_focal_image_pixel_centers_zoom_and_raw_intensity(window, app):
+    """焦点原始像素与物理光轴对齐，显示值不靠插值伪造亚像素结构。"""
+    from gaussian_lab.model import Project, Element
+    from gaussian_lab.optics import analytic
+    p = Project(grid=512, samples=17, window=.003, length=.18, elements=[Element("lens", .1, .04)])
+    r = simulate(p)
+    k = r.focus_index
+    window.spot_plot.spot(r, k)
+    plot = window.spot_plot.ax.images[0]
+    extent = plot.get_extent()
+    dx = p.window / p.grid * 1e3
+    midpoint = extent[0] + (p.grid//2 + .5)*dx
+    assert midpoint == pytest.approx(0, abs=1e-12)
+    np.testing.assert_allclose(plot.get_array(), r.intensity[k]/r.intensity[k].max())
+    assert plot.get_interpolation() == "nearest"
+    assert window.spot_plot.ax.get_xlim()[1] < .15
+    assert any("像素" in t.get_text() for t in window.spot_plot.ax.texts)
+    width = analytic(p, [r.z[k]])[0]
+    expected = np.exp(-2 * (r.x / width)**2)
+    np.testing.assert_allclose(r.intensity[k, p.grid//2]/r.intensity[k].max(), expected, atol=.02)
+
+
+def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):
+    """发送真实 Matplotlib 鼠标事件，核验各曲线和双纵轴的点值与单位。"""
+    from matplotlib.backend_bases import MouseEvent
+    p, r = window.result.project, window.result
+    rows = scan(p, 0, .1, .14, 3)
+    charts = [(window.beam_plot, lambda: window.beam_plot.beam(r, 0)),
+              (window.profile_plot, lambda: window.profile_plot.profile(r, 0)),
+              (window.energy_plot, lambda: window.energy_plot.energy(r, 0)),
+              (window.scan_plot, lambda: window.scan_plot.scanning(rows, "lens")),
+              (window.compare_plot, lambda: window.compare_plot.compare(r, 0, r, 1, "对比")),
+              (window.schematic_plot, lambda: window.schematic_plot.schematic(r, 0))]
+    for canvas, draw in charts:
+        draw()
+        canvas.draw()
+        seen = 0
+        for ax in canvas.figure.axes:
+            if ax.name == "3d": continue
+            for line in ax.lines:
+                if line.get_transform() is not ax.transData: continue
+                values = line.get_xydata()
+                xy = ax.transData.transform(values)
+                candidates = [i for i, (x,y) in enumerate(xy) if np.isfinite([x,y]).all() and ax.bbox.contains(x,y)]
+                if not candidates: continue
+                i = candidates[len(candidates)//2]
+                x,y = xy[i]
+                event = MouseEvent("motion_notify_event", canvas, x, y)
+                canvas.callbacks.process("motion_notify_event", event)
+                assert canvas.hover_data is not None
+                assert canvas.hover_data["xlabel"]
+                assert abs(canvas.hover_data["x"] - values[i,0]) <= max(abs(values[i,0])*.01, .01)
+                seen += 1
+        assert seen > 0
+        canvas.callbacks.process("figure_leave_event", MouseEvent("figure_leave_event", canvas, -1, -1))
+        assert canvas.hover_data is None
+    window.spot_plot.spot(r, 0)
+    window.spot_plot.draw()
+    x,y = window.spot_plot.ax.transData.transform((0,0))
+    window.spot_plot.callbacks.process("motion_notify_event", MouseEvent("motion_notify_event", window.spot_plot, x,y))
+    assert window.spot_plot.hover_data["label"] == "像素强度"
+
+
+def test_locating_focus_from_preview_requests_full_calculation(window, app):
+    window.result.provenance["quality"] = "preview"
+    window.locate_focus()
+    wait_until(app, lambda: window.job is not None and not window.job.isRunning() and not window.dirty)
+    assert window.result.provenance["quality"] == "full"
+    assert window.plane_slider.value() == window.result.focus_index
+
+
+
+@pytest.mark.parametrize("mode", ["none", "2d"])
+def test_cold_start_without_vtk_for_low_memory_modes(mode):
+    """独立进程证明低占用启动没有预先导入 VTK，不只是隐藏已创建的窗口。"""
+    import subprocess
+    import sys
+    from pathlib import Path
+    code = "from PySide6.QtWidgets import QApplication; from gaussian_lab.gui import MainWindow; import sys; app=QApplication([]); w=MainWindow(auto_compute=False, display_mode=sys.argv[1]); assert w.scene is None; assert not any(n.startswith('vtkmodules') for n in sys.modules); w.close()"
+    result = subprocess.run([sys.executable, "-c", code, mode], cwd=Path(__file__).resolve().parents[1],
+                            capture_output=True, timeout=40)
+    assert result.returncode == 0, result.stderr.decode(errors="replace")
+
+
+
+def test_actual_out_of_memory_has_actionable_chinese_message(app, monkeypatch):
+    import gaussian_lab.gui as gui
+    from gaussian_lab.model import Project
+    def allocation_failure(*args, **kwargs):
+        raise MemoryError("fixture allocation failure")
+    monkeypatch.setattr(gui, "simulate", allocation_failure)
+    job = Job("simulate", Project(grid=128, samples=17))
+    failures = []
+    job.failed.connect(failures.append)
+    job.run()
+    assert len(failures) == 1
+    assert "实际可用内存不足" in failures[0]
+    assert "保留上一次" in failures[0]

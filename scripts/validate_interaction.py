@@ -24,7 +24,7 @@ def wait(app, condition, timeout=60):
 
 def main():
     app = QApplication.instance() or QApplication([])
-    window = MainWindow(auto_compute=False)
+    window = MainWindow(auto_compute=False, display_mode="3d")
     errors = []
     window.show_error = errors.append
     heartbeats = []
@@ -32,7 +32,10 @@ def main():
     heartbeat.setInterval(50)
     heartbeat.timeout.connect(lambda: heartbeats.append(time.perf_counter()))
     window.show()
-    window.fill_project(preset("光阑衍射"))
+    project = preset("光阑衍射")
+    # 保持历史 512 网格基准和 128 MiB 结果缓存可比，不把新默认 1024 混入旧计时。
+    project.grid = 512
+    window.fill_project(project)
     window.backend_choice.setCurrentIndex(window.backend_choice.findData("cuda"))
     app.processEvents()
     heartbeat.start()
