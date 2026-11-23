@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass, field
 import csv
 import json
 import hashlib
+import math
 from pathlib import Path
 import platform
 import subprocess
@@ -21,7 +22,7 @@ from bisect import bisect_right
 from functools import lru_cache
 
 
-ALGORITHM_VERSION = "fresnel-segments-v3.1"
+ALGORITHM_VERSION = "fresnel-coherent-modes-v3.2"
 
 
 def source_fingerprint():
@@ -91,11 +92,44 @@ def coordinates(p):
 
 
 def initial_field(p, r2):
+    """在入口面相干求和归一到同一基模功率的 HG/LG 模式，保留干涉项。"""
     xp = array_module(r2)
     q = q_initial(p)
     w = radius(q, p.wavelength)
     # 复光场的相位表示与高斯 q 参数的符号约定相配套。
-    return xp.exp(-r2 / w**2 + 1j * np.pi / p.wavelength * (1 / q).real * r2)
+    envelope = xp.exp(-r2 / w**2 + 1j * np.pi / p.wavelength * (1 / q).real * r2)
+    axis = (xp.arange(p.grid) - p.grid // 2) * (p.window / p.grid)
+    xx, yy = axis[None, :], axis[:, None]
+    value = xp.zeros_like(envelope)
+    for mode in p.modes:
+        if mode.family == "HG":
+            def hermite(order, t):
+                previous, current = xp.ones_like(t), 2 * t
+                if order == 0:
+                    return previous
+                for k in range(1, order):
+                    previous, current = current, 2 * t * current - 2 * k * previous
+                return current
+            shape = (hermite(mode.n, np.sqrt(2) * xx / w)
+                     * hermite(mode.m, np.sqrt(2) * yy / w)
+                     / math.sqrt(2**(mode.n + mode.m) * math.factorial(mode.n) * math.factorial(mode.m)))
+        else:
+            order = abs(mode.m)
+            rho = 2 * r2 / w**2
+            previous, current = xp.ones_like(rho), 1 + order - rho
+            if mode.n == 0:
+                polynomial = previous
+            else:
+                for k in range(1, mode.n):
+                    previous, current = current, ((2*k + 1 + order - rho)*current - (k + order)*previous)/(k + 1)
+                polynomial = current
+            shape = (math.sqrt(math.factorial(mode.n) / math.factorial(mode.n + order))
+                     * rho**(order / 2) * polynomial * xp.exp(1j * mode.m * xp.arctan2(yy, xx)))
+        value += mode.amplitude * xp.exp(1j * np.deg2rad(mode.phase_deg)) * envelope * shape
+    scale = sum(mode.amplitude**2 for mode in p.modes) * float(xp.sum(abs(envelope)**2))
+    if float(xp.sum(abs(value)**2)) <= max(scale * 1e-24, 1e-300):
+        raise ValueError("相干输入近乎完全相消或光场无有效能量，请调整振幅、相位或窗口")
+    return value
 
 
 def fresnel(field, wavelength, dx, distance):
@@ -312,6 +346,8 @@ def _simulate(project, cancel, progress, engine):
     images = np.empty((len(zs) + 1, p.grid, p.grid), dtype=np.float32)
     propagation = Propagation(p, r2, engine, cancel)
     sizes, powers, warnings = [], [], list(propagation.warnings)
+    if len(p.modes) != 1 or p.modes[0].n or p.modes[0].m:
+        warnings.append("高阶/相干叠加输入：高斯 w、束腰与 θ 仅为基模包络参考；实际指标使用 r86 与 θ86")
     order = xp.argsort(rr.ravel())
     border = xp.ones(r2.shape, bool)
     border[8:-8, 8:-8] = False
@@ -354,6 +390,9 @@ def _simulate(project, cancel, progress, engine):
                     theta, reference, list(dict.fromkeys(warnings)), focus, calculation_provenance())
     result.provenance["backend"] = engine.information()
     result.provenance["input_power_integral"] = input_energy * dx**2
+    result.provenance["sampling"] = {"transverse_step_m": dx,
+                                     "axial_step_m": p.length / (p.samples - 1),
+                                     "stored_planes": len(zs), "coherent_input": True}
     if focus["boundary_minimum"]:
         result.warnings.append("最小 r86 平台接触搜索区间边界；可能没有内部焦点，请检查传播范围")
     if sizes.min() < 3 * dx:
@@ -428,8 +467,8 @@ def result_summary(result):
 def convergence(project, cancel=None, backend="cpu"):
     """分别改变横向网格、窗口与轴向分辨率；报告多指标变化，不自动宣称通过。"""
     project.validate()
-    if project.grid > 512 or project.focus_refinement >= 4:
-        raise ValueError("收敛检查基准网格最多 512，焦区细化级数最多 3")
+    if project.grid > 1024 or project.focus_refinement >= 4 or project.samples > 321:
+        raise ValueError("收敛检查基准网格最多 1024、轴向最多 321 点，焦区细化级数最多 3；加密结果仍受内存限制")
     variants = {"base": project.clone()}
     fine = project.clone()
     fine.grid *= 2
@@ -438,7 +477,7 @@ def convergence(project, cancel=None, backend="cpu"):
     wide.window *= 2
     variants["window"] = wide
     axial = project.clone()
-    axial.samples = min(161, 2 * axial.samples - 1)
+    axial.samples = 2 * axial.samples - 1
     axial.focus_refinement += 1
     variants["axial"] = axial
     # 先校验所有配置，避免执行到一半才遇到结果体积限制。

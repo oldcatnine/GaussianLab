@@ -293,3 +293,105 @@ def test_lens_clear_diameter_matches_explicit_aperture(tmp_path):
         p.elements[0].clear_diameter = diameter
         with pytest.raises(ValueError, match="有效通光直径"):
             p.validate()
+
+
+@pytest.mark.parametrize("mode", [("HG", 0, 0), ("HG", 3, 2), ("LG", 2, -3)])
+def test_modes_equal_power_and_free_space_conservation(mode):
+    """用解析归一化与无损传播检查高阶模式，而非只核对形状截图。"""
+    from gaussian_lab.model import Mode
+    p = small(grid=256, window=.006, modes=[Mode(*mode)])
+    _, r2 = coordinates(p)
+    value = initial_field(p, r2)
+    power = np.sum(abs(value)**2) * (p.window / p.grid)**2
+    assert power == pytest.approx(np.pi*p.waist**2/2, rel=1e-7)
+    r = simulate(p)
+    np.testing.assert_allclose(r.transmission, 1, atol=1e-12)
+    assert r.provenance["sampling"]["coherent_input"] is True
+
+
+def test_hg_nodes_lg_vortex_and_phase_interference():
+    """解析节点、涡旋符号与相位反转验证复振幅输入的物理含义。"""
+    from gaussian_lab.model import Mode
+    p = small(modes=[Mode("HG", 1, 0)])
+    _, r2 = coordinates(p)
+    hg = initial_field(p, r2)
+    mid = p.grid//2
+    np.testing.assert_allclose(hg[:, mid], 0, atol=1e-15)
+    assert hg[mid, mid+5] == pytest.approx(-hg[mid, mid-5])
+    p.modes = [Mode("LG", 0, 1)]
+    lg = initial_field(p, r2)
+    assert lg[mid, mid] == 0
+    assert lg[mid+5, mid] / lg[mid, mid+5] == pytest.approx(1j)
+    p.modes = [Mode("LG", 0, -1)]
+    np.testing.assert_allclose(initial_field(p, r2), lg.conj(), atol=1e-14)
+    p.modes = [Mode(), Mode("HG", 1, 0)]
+    a = initial_field(p, r2)
+    p.modes[1].phase_deg = 180
+    b = initial_field(p, r2)
+    assert abs(a[mid, mid+5])**2 == pytest.approx(abs(b[mid, mid-5])**2)
+    assert abs(a[mid, mid+5])**2 > abs(b[mid, mid+5])**2
+    p.modes = [Mode(), Mode(phase_deg=180)]
+    with pytest.raises(ValueError, match="相消"):
+        simulate(p)
+
+
+def test_coherent_propagation_is_linear_with_waist_offset():
+    from gaussian_lab.model import Mode
+    p = small(grid=128, waist_z=.1, modes=[Mode(), Mode("LG", 1, 2, .7, 55)])
+    _, r2 = coordinates(p)
+    combined = field_at(p, .2, r2)
+    parts = []
+    for mode in p.modes:
+        q = p.clone()
+        q.modes = [mode]
+        parts.append(field_at(q, .2, r2))
+    np.testing.assert_allclose(combined, sum(parts), atol=1e-13)
+
+
+def test_mode_project_roundtrip_legacy_and_validation(tmp_path):
+    from gaussian_lab.model import Mode, from_dict
+    p = small(modes=[Mode(), Mode("LG", 2, -3, .4, 90)])
+    path = tmp_path / "modes.json"
+    save_project(p, path)
+    assert load_project(path) == p
+    assert from_dict({"grid": 128, "samples": 17}).modes == [Mode()]
+    q = p.clone()
+    q.modes[0].phase_deg = 45
+    assert p.modes[0].phase_deg == 0
+    for modes in ([], [Mode("bad")], [Mode("HG", -1)], [Mode("HG", 0, -1)],
+                  [Mode("LG", 9)], [Mode(amplitude=float("nan"))], [Mode(amplitude=0)],
+                  [Mode(phase_deg=float("inf"))], [Mode()]*9):
+        p.modes = modes
+        with pytest.raises(ValueError):
+            p.validate()
+
+
+def test_finer_sampling_limits_and_actual_axial_planes():
+    assert Project().grid == 1024
+    small(grid=2048, samples=17).validate()
+    with pytest.raises(ValueError, match="384 MiB"):
+        small(grid=2048, samples=65).validate()
+    p = small(grid=128, samples=641, focus_refinement=0)
+    r = simulate(p)
+    assert len(r.z) == 641
+    assert r.provenance["sampling"]["axial_step_m"] == pytest.approx(p.length/640)
+    assert r.intensity.shape == (641, 128, 128)
+
+
+def test_higher_modes_match_independent_lightpipes_source():
+    """对照已有验证依赖，比较 HG/LG 源场；只允许相同归一化常数。"""
+    lp = pytest.importorskip("LightPipes")
+    from gaussian_lab.model import Mode
+    for mode in [Mode("HG", 2, 1), Mode("LG", 1, 2)]:
+        p = small(modes=[mode])
+        _, r2 = coordinates(p)
+        actual = initial_field(p, r2)
+        reference = lp.Begin(p.window, p.wavelength, p.grid)
+        if mode.family == "HG":
+            reference = lp.GaussHermite(reference, p.waist, n=mode.m, m=mode.n)
+        else:
+            # 本项目采用 exp(+i lφ)，上游采用 exp(-i lφ)，比较时翻转方位阶数。
+            reference = lp.GaussLaguerre(reference, p.waist, p=mode.n, l=-mode.m, ecs=0)
+        expected = reference.field
+        scale = np.vdot(expected, actual) / np.vdot(expected, expected)
+        np.testing.assert_allclose(actual, expected * scale, atol=1e-12)

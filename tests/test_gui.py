@@ -415,3 +415,32 @@ def test_longitudinal_uses_computed_slices_and_links_observer(window, monkeypatc
     window.export_target.setCurrentIndex(window.export_target.findData("longitudinal"))
     window.export_plot()
     assert path.stat().st_size > 5000
+
+
+
+def test_mode_controls_sampling_roundtrip_and_worker(window, app, tmp_path):
+    """从模式控件经真实后台线程到结果和项目文件验证完整链路。"""
+    from gaussian_lab.model import Mode
+    window.mode_preset.setCurrentIndex(5)
+    window.apply_mode_preset()
+    assert window.read_project().modes == [Mode(), Mode("HG", 1, 0)]
+    window.mode_table.item(1, 4).setText("90")
+    window.compute()
+    wait_until(app, lambda: window.job is not None and not window.job.isRunning() and not window.dirty)
+    assert window.result.project.modes[1].phase_deg == 90
+    assert any("高阶/相干" in w for w in window.result.warnings)
+    assert "256×256" in window.sampling_info.text()
+    p = window.read_project()
+    path = tmp_path / "coherent.json"
+    from gaussian_lab.model import save_project
+    save_project(p, path)
+    window.fill_project(load_project(path))
+    assert window.read_project() == p
+    window.samples.setValue(641)
+    window.grid.setCurrentText("2048")
+    assert window.grid.currentText() == "2048"
+    with pytest.raises(ValueError, match="384 MiB"):
+        window.read_project()
+    window.samples.setValue(17)
+    assert window.read_project().grid == 2048
+    assert "Δx=" in window.sampling_info.text()

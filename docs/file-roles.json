@@ -12,8 +12,8 @@
   "启动软件.ps1":"PowerShell 源码启动器，检查项目虚拟环境并运行应用。",
   "gaussian_lab/__init__.py":"定义应用包与版本号，是识别 Python 包的入口文件。",
   "gaussian_lab/__main__.py":"响应 python -m gaussian_lab 并调用桌面界面入口。",
-  "gaussian_lab/model.py":"定义光源、元件和项目数据，负责参数校验、排序、复制、预置和 JSON 保存加载。",
-  "gaussian_lab/optics.py":"实现解析参考、预分配菲涅耳传播、焦区细化、多指标收敛、包围能量及结果证据导出。",
+  "gaussian_lab/model.py":"定义光源相干模式、元件和项目数据，负责采样与模式校验、复制及兼容旧 JSON 的保存加载。",
+  "gaussian_lab/optics.py":"实现 HG/LG 相干源场、菲涅耳传播、基模包络参考、焦区细化、收敛与采样证据导出。",
   "gaussian_lab/gui.py":"构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。",
   "gaussian_lab/scene.py":"将计算结果转换为三维光路、包络、元件示意及观察面。",
   "gaussian_lab/charts.py":"以白色主题绘制轴向、光斑、剖面、强度曲面、扫描和包围能量图，供显示与导出。",
@@ -96,5 +96,6 @@
   "docs/github-release-v3.0.0.json":"V3 私有 GitHub 发行附件的回下载摘要、CRC、可见性及冻结检查状态。",
   "docs/github-release-smoke-v3.0.0.json":"从私有 GitHub 实际下载的 V3 EXE 的 CPU 与 CUDA 冻结验证证据。",
   "docs/release-artifacts-v3.1.0.json":"V3.1.0 本地便携附件大小、摘要、压缩完整性和解压验证记录。",
-  "docs/release-smoke-v3.1.0.json":"实际解压 V3.1.0 EXE 的 CPU、CUDA、预览和导出验证记录。"
+  "docs/release-smoke-v3.1.0.json":"实际解压 V3.1.0 EXE 的 CPU、CUDA、预览和导出验证记录。",
+  "docs/project-review-2026-11-23.md":"本轮全项目文件盘点、采样限制与相干横模扩展的检查证据和适用边界。"
 }

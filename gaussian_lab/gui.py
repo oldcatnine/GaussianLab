@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
     QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea)
 from . import __version__
-from .model import Project, Element, preset, load_project, save_project
+from .model import Project, Element, Mode, preset, load_project, save_project
 from .optics import simulate, scan, convergence, export_csv, export_result, ALGORITHM_VERSION, Cancelled
 from .scene import OpticalScene
 from .charts import PlotCanvas
@@ -191,10 +191,10 @@ class MainWindow(QMainWindow):
         self.length = spin(400, 10, 5000, 1, " mm")
         self.window_size = spin(6, .2, 100, 2, " mm")
         self.grid = QComboBox()
-        self.grid.addItems(["128", "256", "512", "1024"])
+        self.grid.addItems(["128", "256", "512", "1024", "2048"])
         self.grid.setCurrentText("256")
         self.samples = QSpinBox()
-        self.samples.setRange(17, 161)
+        self.samples.setRange(17, 641)
         self.samples.setValue(65)
         self.focus_refinement = QSpinBox()
         self.focus_refinement.setRange(0, 4)
@@ -210,6 +210,33 @@ class MainWindow(QMainWindow):
             else:
                 widget.valueChanged.connect(self.mark_dirty)
         left_layout.addWidget(source_box)
+        self.sampling_info = QLabel()
+        self.sampling_info.setWordWrap(True)
+        for widget in (self.window_size, self.length, self.samples):
+            widget.valueChanged.connect(self.update_sampling_info)
+        self.grid.currentTextChanged.connect(self.update_sampling_info)
+        left_layout.addWidget(self.sampling_info)
+        mode_box = QGroupBox("相干输入光 / 横模")
+        mode_layout = QVBoxLayout(mode_box)
+        self.mode_preset = QComboBox()
+        self.mode_preset.addItems(["基模 HG00", "双瓣 HG10", "四瓣 HG11", "涡旋 LG01", "径向 LG10", "HG00 + HG10 相干叠加"])
+        mode_layout.addWidget(self.mode_preset)
+        mode_layout.addWidget(button("应用输入光", self.apply_mode_preset))
+        self.mode_table = QTableWidget(0, 5)
+        self.mode_table.setHorizontalHeaderLabels(["类型", "n / p", "m / l", "振幅", "相位°"])
+        self.mode_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.mode_table.setMaximumHeight(160)
+        self.mode_table.setMinimumHeight(110)
+        self.mode_table.itemChanged.connect(self.mark_dirty)
+        mode_layout.addWidget(self.mode_table)
+        mode_buttons = QHBoxLayout()
+        mode_buttons.addWidget(button("添加模式", lambda: self.add_mode(Mode("HG", 1, 0))))
+        mode_buttons.addWidget(button("删除模式", self.remove_mode))
+        mode_layout.addLayout(mode_buttons)
+        mode_hint = QLabel("同波长、同轴、共用束腰。按复振幅相加，\n相位以入口面为参考；HG: n、m，LG: p、l。\n单模式等振幅具有相同理论功率；最多 8 项。")
+        mode_hint.setWordWrap(True)
+        mode_layout.addWidget(mode_hint)
+        left_layout.addWidget(mode_box)
         performance_box = QGroupBox("计算与交互")
         performance_form = QFormLayout(performance_box)
         self.backend_choice = QComboBox()
@@ -438,11 +465,49 @@ class MainWindow(QMainWindow):
                               (self.focus_refinement, p.focus_refinement)):
             widget.setValue(value)
         self.grid.setCurrentText(str(p.grid))
+        self.mode_table.setRowCount(0)
+        for mode in p.modes:
+            self.add_mode(mode)
         self.table.setRowCount(0)
         for e in p.elements:
             self.insert_element(e)
         self.loading = False
         self.refresh_targets()
+        self.mark_dirty()
+
+    def update_sampling_info(self, *_):
+        dx = self.window_size.value() * 1000 / int(self.grid.currentText())
+        dz = self.length.value() / (self.samples.value() - 1)
+        self.sampling_info.setText(f"完整计算：Δx={dx:.3f} μm，Δz={dz:.3f} mm。\n自动预览最多 256×256 / 33 点；精细结果请点计算光场。\n结果体积限制 384 MiB；2048 网格先用 17 点。")
+
+    def add_mode(self, mode):
+        row = self.mode_table.rowCount()
+        if row >= 8:
+            return
+        self.mode_table.insertRow(row)
+        family = QComboBox()
+        family.addItems(["HG", "LG"])
+        family.setCurrentText(mode.family)
+        family.currentTextChanged.connect(self.mark_dirty)
+        self.mode_table.setCellWidget(row, 0, family)
+        for col, value in enumerate((mode.n, mode.m, mode.amplitude, mode.phase_deg), 1):
+            self.mode_table.setItem(row, col, QTableWidgetItem(f"{value:.12g}"))
+        self.mark_dirty()
+
+    def remove_mode(self):
+        row = self.mode_table.currentRow()
+        if row >= 0 and self.mode_table.rowCount() > 1:
+            self.mode_table.removeRow(row)
+            self.mark_dirty()
+
+    def apply_mode_preset(self):
+        choices = [[Mode()], [Mode("HG", 1, 0)], [Mode("HG", 1, 1)],
+                   [Mode("LG", 0, 1)], [Mode("LG", 1, 0)], [Mode(), Mode("HG", 1, 0)]]
+        self.loading = True
+        self.mode_table.setRowCount(0)
+        for mode in choices[self.mode_preset.currentIndex()]:
+            self.add_mode(mode)
+        self.loading = False
         self.mark_dirty()
 
     def insert_element(self, e):
@@ -465,6 +530,14 @@ class MainWindow(QMainWindow):
 
     def read_project(self):
         elements = []
+        modes = []
+        try:
+            for row in range(self.mode_table.rowCount()):
+                modes.append(Mode(self.mode_table.cellWidget(row, 0).currentText(),
+                                  int(self.mode_table.item(row, 1).text()), int(self.mode_table.item(row, 2).text()),
+                                  float(self.mode_table.item(row, 3).text()), float(self.mode_table.item(row, 4).text())))
+        except (ValueError, AttributeError) as exc:
+            raise ValueError("模式阶数须为整数，振幅与相位须为数值") from exc
         try:
             for row in range(self.table.rowCount()):
                 diameter = self.table.item(row, 5).text().strip()
@@ -476,7 +549,7 @@ class MainWindow(QMainWindow):
             raise ValueError("元件位置与焦距/直径须为数值，透镜口径可留空") from exc
         return Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
                        self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
-                       int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value()).validate()
+                       int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value(), modes=modes).validate()
 
     def add_element(self, kind):
         n = self.table.rowCount() + 1

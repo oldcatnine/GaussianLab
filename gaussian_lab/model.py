@@ -16,6 +16,17 @@ class Element:
 
 
 @dataclass
+class Mode:
+    """同波长、同轴、共用束腰的相干横模；相位以入口面为参考，单位为度。"""
+
+    family: str = "HG"
+    n: int = 0
+    m: int = 0
+    amplitude: float = 1.0
+    phase_deg: float = 0.0
+
+
+@dataclass
 class Project:
     name: str = "单透镜聚焦"
     wavelength: float = 632.8e-9
@@ -23,11 +34,12 @@ class Project:
     waist_z: float = 0.0
     length: float = 0.4
     window: float = 0.006
-    grid: int = 512
+    grid: int = 1024
     samples: int = 65
     elements: list[Element] = field(default_factory=lambda: [Element()])
 
     focus_refinement: int = 2
+    modes: list[Mode] = field(default_factory=lambda: [Mode()])
 
     def validate(self):
         numbers = (self.wavelength, self.waist, self.waist_z, self.length, self.window)
@@ -35,16 +47,29 @@ class Project:
             raise ValueError("光源与距离参数必须为有限数值")
         if min(self.wavelength, self.waist, self.length, self.window) <= 0:
             raise ValueError("波长、束腰、传播长度和窗口必须大于零")
-        if self.grid not in (128, 256, 512, 1024):
-            raise ValueError("网格须为 128、256、512 或 1024")
-        if not isinstance(self.samples, int) or not 17 <= self.samples <= 161:
-            raise ValueError("轴向采样须为 17—161 点")
+        if type(self.grid) is not int or self.grid not in (128, 256, 512, 1024, 2048):
+            raise ValueError("网格须为 128、256、512、1024 或 2048")
+        if type(self.samples) is not int or not 17 <= self.samples <= 641:
+            raise ValueError("轴向采样须为 17—641 点")
         if type(self.focus_refinement) is not int or not 0 <= self.focus_refinement <= 4:
             raise ValueError("焦区细化级数须为 0—4")
         if len(self.elements) > 20:
             raise ValueError("第一版最多支持 20 个元件")
         if self.grid**2 * (self.samples + len(self.elements) + 1) * 4 > 384 * 1024**2:
-            raise ValueError("结果体积超过首版 384 MiB 限制，请减少网格或轴向采样点")
+            raise ValueError("结果体积超过 384 MiB 限制，请减少网格或轴向采样点；2048 网格建议先用 17 点")
+        if not 1 <= len(self.modes) <= 8:
+            raise ValueError("输入光须包含 1—8 个相干模式")
+        for mode in self.modes:
+            if mode.family not in ("HG", "LG"):
+                raise ValueError("模式类型须为 HG 或 LG")
+            if (type(mode.n) is not int or type(mode.m) is not int or not 0 <= mode.n <= 8
+                    or not (-8 if mode.family == "LG" else 0) <= mode.m <= 8):
+                raise ValueError("HG 阶数 m、n 和 LG 径向阶数 p 为 0—8，LG 方位阶数 l 为 -8—8")
+            if (not math.isfinite(mode.amplitude) or not 0 <= mode.amplitude <= 100
+                    or not math.isfinite(mode.phase_deg)):
+                raise ValueError("模式振幅须为 0—100 的有限数，相位须为有限数")
+        if not any(mode.amplitude > 0 for mode in self.modes):
+            raise ValueError("至少一个输入模式的振幅须大于零")
         for e in self.elements:
             if e.kind not in ("lens", "aperture"):
                 raise ValueError("未知元件类型")
@@ -70,6 +95,8 @@ class Project:
 def from_dict(data):
     data = dict(data)
     data["elements"] = [Element(**e) for e in data.get("elements", [])]
+    if "modes" in data:
+        data["modes"] = [Mode(**m) for m in data["modes"]]
     return Project(**data).validate()
 
 

@@ -70,7 +70,7 @@ def test_preview_does_not_modify_input_and_cache_is_bounded():
     p = preset("光阑衍射")
     q = backend.preview_project(p)
     assert (q.grid, q.samples, q.focus_refinement) == (256, 33, 0)
-    assert p.grid == 512 and p.samples == 65 and p.focus_refinement == 2
+    assert p.grid == 1024 and p.samples == 65 and p.focus_refinement == 2
     assert p.elements == q.elements and p.elements is not q.elements
     q.grid, q.samples = 128, 17
     r = simulate(q)

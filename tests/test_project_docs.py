@@ -143,3 +143,16 @@ def test_v3_current_documents_distinguish_release_preview_and_historical_evidenc
     log = (ROOT / 'docs/development-log.md').read_text(encoding='utf-8')
     overview = log.split('## 2. 当前阶段总览', 1)[1].split('## 3.', 1)[0]
     assert release['tag'] in overview and 'V0.1 已实现' not in overview
+
+
+
+def test_coherent_modes_sampling_documentation_matches_model():
+    """核对新增需求、模型限制与源码操作入口同步，避免把旧便携包当新实现。"""
+    from gaussian_lab.model import Project
+    assert Project().grid == 1024
+    for name in ("requirements.md", "USER_GUIDE.md", "项目学习手册.md", "project-review-2026-11-23.md"):
+        text = (ROOT / "docs" / name).read_text(encoding="utf-8")
+        for term in ("相干", "HG", "LG", "2048", "641", "384 MiB"):
+            assert term in text, (name, term)
+    review = (ROOT / "docs/project-review-2026-11-23.md").read_text(encoding="utf-8")
+    assert "未验证" in review and "便携包" in review

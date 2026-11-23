@@ -109,3 +109,12 @@
 性能验收贯穿上述改动。用 V3 和候选版本在同机重复连续改参，分别记录首次启动、热启动后从最后一次输入到正确画面的延迟、界面最长停顿和实际计算后端，检查旧任务没有覆盖新结果。优先覆盖朋友使用的 NVIDIA 电脑，另测无独显电脑。新增实验图按需生成，避免每次输入都增加计算量。
 
 以上为原项目公开说明与本地 V3 文档对照所得的设计建议。本轮未安装这些项目或测量新功能性能。采用代码或增加分发依赖前应针对选定版本复核许可及 Windows 兼容性。
+
+
+## 相干横模与提高采样（2026-11-23）
+
+沿用已有 LightPipes 调研，补读原仓库 [core.py](https://github.com/opticspy/lightpipes/blob/master/LightPipes/core.py)、[sources.py](https://github.com/opticspy/lightpipes/blob/master/LightPipes/sources.py) 和 [BSD-3-Clause 许可证](https://github.com/opticspy/lightpipes/blob/master/LICENSE.txt)，并用项目已安装的 LightPipes 读取 GaussHermite/GaussLaguerre 源码。借鉴横模与复场求和的模型划分；自行实现 Hermite、广义 Laguerre 递推，直接使用既有 NumPy/CuPy 数组后端，不复制上游代码，不增加运行依赖。
+
+独立源场对照的首轮 LG 比较失败，查明本项目 exp(+i lφ) 与 LightPipes ecs=0 的 exp(-i lφ) 相反；测试显式翻转上游 l，再比较同一物理场。HG 的 x/y 阶数字段也显式对应，不能仅按形参名字比较。高阶模式不再假设圆对称高斯，保留基模包络参考但给出警告，实际半径和角度继续来自数值能量积分。
+
+采样策略保持定长二维网格和完整强度体积，增加默认横向网格及可选上限，保留结果体积限制与轻量预览。未采用“插值放大图像”来代替提高计算采样。2048 网格与高轴向点数组合的内存限制是当前取舍，其他实体设备、便携包与所有高阶参数仍需后续验证。

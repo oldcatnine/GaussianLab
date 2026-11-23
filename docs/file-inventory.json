@@ -15,36 +15,6 @@
     "optional_local": false
   },
   {
-    "path": ".idea/.gitignore",
-    "purpose": "本机集成开发环境生成文件的忽略规则。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/inspectionProfiles/Project_Default.xml",
-    "purpose": "本机代码检查配置，包含检查工具与忽略包规则。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/inspectionProfiles/profiles_settings.xml",
-    "purpose": "本机代码检查方案的启用设置。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/modules.xml",
-    "purpose": "本机项目模块列表及模块文件引用。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/vcs.xml",
-    "purpose": "本机集成开发环境的 Git 目录映射。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/毕业设计.iml",
-    "purpose": "本机 Python 模块与解释器配置，不参与业务计算和发行运行。",
-    "optional_local": true
-  },
-  {
     "path": "GaussianLab.spec",
     "purpose": "可执行程序的打包配置，决定入口、资源、动态库、隐藏导入和组件排除。",
     "optional_local": false
@@ -230,6 +200,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/project-review-2026-11-23.md",
+    "purpose": "本轮全项目文件盘点、采样限制与相干横模扩展的检查证据和适用边界。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-artifacts-v0.1.0.json",
     "purpose": "早期本机构建附件的大小与摘要历史记录，不是远端重建文件的摘要。",
     "optional_local": false
@@ -381,12 +356,12 @@
   },
   {
     "path": "gaussian_lab/model.py",
-    "purpose": "定义光源、元件和项目数据，负责参数校验、排序、复制、预置和 JSON 保存加载。",
+    "purpose": "定义光源相干模式、元件和项目数据，负责采样与模式校验、复制及兼容旧 JSON 的保存加载。",
     "optional_local": false
   },
   {
     "path": "gaussian_lab/optics.py",
-    "purpose": "实现解析参考、预分配菲涅耳传播、焦区细化、多指标收敛、包围能量及结果证据导出。",
+    "purpose": "实现 HG/LG 相干源场、菲涅耳传播、基模包络参考、焦区细化、收敛与采样证据导出。",
     "optional_local": false
   },
   {
