@@ -250,6 +250,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/github-release-smoke-v4.0.4.json",
+    "purpose": "V4.0.4 下载版 CPU/CUDA 独立冻结运行与界面导出证据。",
+    "optional_local": false
+  },
+  {
     "path": "docs/github-release-v0.1.0.json",
     "purpose": "已发布私有版本的地址、附件大小与服务器摘要核验记录。",
     "optional_local": false
@@ -262,6 +267,11 @@
   {
     "path": "docs/github-release-v4.0.0.json",
     "purpose": "第四代实际回下载附件摘要、发布状态、构建与 Windows 版本证据。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/github-release-v4.0.4.json",
+    "purpose": "V4.0.4 实际下载附件、摘要、Windows版本及发布状态证据。",
     "optional_local": false
   },
   {
@@ -437,6 +447,11 @@
   {
     "path": "docs/release-validation-v4.0.0.md",
     "purpose": "第四代构建、测试、发布与附件核验状态记录。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/release-validation-v4.0.4.md",
+    "purpose": "V4.0.4 便携版构建、下载运行、验证边界与使用方法。",
     "optional_local": false
   },
   {

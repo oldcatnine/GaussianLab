@@ -7,3 +7,6 @@ V4.0.4 将整数、小数输入框的旧三角箭头替换为轻量细线折角�
 V4.0.4 将所有下拉框替换为统一细线折角、柔和边框和列表选中反馈，保持点击与键盘选择。
 
 V4.0.4 修复内存说明与显示说明的换行裁切，保留完整信息并按实际内容自动增高。
+
+
+2026-11-24 发布更新：V4.0.4 Windows 便携 EXE 已上传，完整解压 GaussianLab-v4.0.4-Windows-x64.zip 后运行 GaussianLab.exe，保留 _internal，无需 Python。实际附件与 CPU/CUDA 证据见 [V4.0.4 发布验证](release-validation-v4.0.4.md)。

@@ -24,7 +24,7 @@ V3.1.1 便携包已包含相干 HG/LG 输入与最高 2048 网格、641 轴向�
 
 ## 启动
 
-**便携版运行：** 下载 [V4.0.0 发行](https://github.com/oldcatnine/GaussianLab/releases/tag/v4.0.0) 的 `GaussianLab-v4.0.0-Windows-x64.zip` 到 Windows x64 电脑，完整解压后双击 `GaussianLab.exe`。保留 `_internal`、使用说明与随附文件。操作见 [V4.0.0 便携版指南](docs/USER_GUIDE-v4.0.0.md)。运行包、Qt 对应源码、应用源码和 SHA256SUMS.txt 保持同一版本。V3.0.0 的 GitHub 发行记录按原版本追溯。
+**便携版运行：** 下载 [V4.0.4 发行](https://github.com/oldcatnine/GaussianLab/releases/tag/v4.0.4) 的 `GaussianLab-v4.0.4-Windows-x64.zip`，完整解压后双击 `GaussianLab.exe`，保留 `_internal`。无需 Python。见 [使用说明](docs/USER_GUIDE-v4.0.4.md) 和 [发布验证](docs/release-validation-v4.0.4.md)。
 
 本机已创建独立 `.venv`（Python 3.10.11）。双击 **启动软件.cmd**，或在本目录执行：
 
@@ -145,3 +145,6 @@ V4.0.3 源码更新：预置案例、横模、工作区、后端、显示、存�
 
 
 V4.0.4 源码更新：修复计算设置中内存说明首尾裁切，长文字随宽度和警告内容自动增高，通过侧栏滚动查看完整信息；便携 EXE 仍按既有发布版本获取。
+
+
+2026-11-24：V4.0.4 便携 EXE 已正式发布，并通过实际下载版 CPU/CUDA 检查；此前源码更新段落按阶段历史阅读。

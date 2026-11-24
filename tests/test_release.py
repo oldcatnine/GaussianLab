@@ -370,3 +370,24 @@ def test_v4_published_artifacts_and_frozen_backends_are_verified():
         assert all(case["backend"]["used"] == backend for case in data["cases"])
     assert smoke["cpu"]["executable_sha256"] == smoke["cuda"]["executable_sha256"]
     assert smoke["cuda"]["headers_verified"]
+
+
+def test_v404_portable_release_has_verified_binary_and_backends():
+    """本次上传的便携版必须具有同版本资源和实际 CPU/CUDA 下载运行证据。"""
+    r = json.loads((ROOT / "docs/github-release-v4.0.4.json").read_text(encoding="utf-8"))
+    smoke = json.loads((ROOT / "docs/github-release-smoke-v4.0.4.json").read_text(encoding="utf-8"))
+    assert r["tag"] == "v4.0.4" and not r["draft"]
+    assert r["workflow"]["conclusion"] == "success"
+    assert r["windows_version"]["FileVersion"] == r["windows_version"]["ProductVersion"] == "4.0.4"
+    assert {a["name"] for a in r["assets"]} == {"GaussianLab-v4.0.4-" + suffix + ".zip" for suffix in ("Windows-x64", "Qt-Corresponding-Source", "Application-Source")}
+    for asset in r["assets"]:
+        assert asset["bytes"] > 0 and asset["github_digest"] == "sha256:" + asset["sha256"]
+    assert set(smoke) == {"cpu", "cuda"}
+    for backend, v in smoke.items():
+        assert v["version"] == "4.0.4" and v["frozen"] and v["exit_code"] == 0 and v["status"] == "passed"
+        assert "V4.0.4" in v["window_title"]
+        assert len(v["cases"]) == 3 and all(case["backend"]["used"] == backend for case in v["cases"])
+        assert v["coherent_input"]["phase_deg"] == 90
+        assert set(v["formats"]) == {"png", "svg", "pdf"}
+    assert smoke["cpu"]["executable_sha256"] == smoke["cuda"]["executable_sha256"]
+    assert smoke["cuda"]["headers_verified"]

@@ -212,3 +212,6 @@ V4.0.3 源码更新：预置案例、横模、工作区、后端、显示、存�
 
 
 V4.0.4 源码更新：修复计算设置中内存说明首尾裁切，长文字随宽度和警告内容自动增高，通过侧栏滚动查看完整信息；便携 EXE 仍按既有发布版本获取。
+
+
+2026-11-24 发布更新：V4.0.4 Windows 便携 EXE 已上传，完整解压 GaussianLab-v4.0.4-Windows-x64.zip 后运行 GaussianLab.exe，保留 _internal，无需 Python。实际附件与 CPU/CUDA 证据见 [V4.0.4 发布验证](release-validation-v4.0.4.md)。

@@ -132,5 +132,8 @@
   "docs/USER_GUIDE-v4.0.3.md": "V4.0.3 全局下拉框外观与工作区操作说明。",
   "docs/release-notes-v4.0.3.md": "V4.0.3 全局选择控件更新说明。",
   "docs/USER_GUIDE-v4.0.4.md": "V4.0.4 计算详情显示修复与操作说明。",
-  "docs/release-notes-v4.0.4.md": "V4.0.4 动态说明文字裁切修复记录。"
+  "docs/release-notes-v4.0.4.md": "V4.0.4 动态说明文字裁切修复记录。",
+  "docs/github-release-v4.0.4.json": "V4.0.4 实际下载附件、摘要、Windows版本及发布状态证据。",
+  "docs/github-release-smoke-v4.0.4.json": "V4.0.4 下载版 CPU/CUDA 独立冻结运行与界面导出证据。",
+  "docs/release-validation-v4.0.4.md": "V4.0.4 便携版构建、下载运行、验证边界与使用方法。"
 }
