@@ -265,35 +265,42 @@ class PlotCanvas(FigureCanvasQTAgg):
         ax.grid(alpha=.45)
         self.draw_idle()
 
-    def compare(self, a, i, b, j, mode):
+    def compare(self, a, i, b, j, mode, view=0):
         """采用相同入射功率标尺，并保留各方案独立的包围能量百分比。"""
         self.hide_data()
         self.figure.clear()
-        spot_a, spot_b, profile, energy = self.figure.subplots(2, 2).ravel()
-        pairs = ((a, i, "A", BLUE, spot_a), (b, j, "B", ORANGE, spot_b))
+        self.ax = None
+        pairs = ((a, i, "A", BLUE), (b, j, "B", ORANGE))
         images = [r.intensity[k] / r.provenance["input_power_integral"] / 1e6
-                  for r, k, _, _, _ in pairs]
+                  for r, k, _, _ in pairs]
         peak = max(float(image.max()) for image in images)
         limit = max(min(max(r.r86[k] * 3, .15e-3), r.project.window / 2)
-                    for r, k, _, _, _ in pairs) * 1e3
-        for (r, k, name, color, ax), image in zip(pairs, images):
-            dx = r.project.window / r.project.grid
-            extent = [(r.x[0] - dx / 2) * 1e3, (r.x[-1] + dx / 2) * 1e3] * 2
-            plot = ax.imshow(image, origin="lower", extent=extent, cmap=INTENSITY_CMAP,
-                             vmin=0, vmax=peak, interpolation="nearest")
-            ax.set(xlim=(-limit, limit), ylim=(-limit, limit), xlabel="x / mm", ylabel="y / mm",
-                   title=f"{name} · z={r.z[k]*1e3:.3f} mm · 透过率 {r.transmission[k]:.1%}")
-            profile.plot(r.x * 1e3, image[r.project.grid // 2], color=color, label=name)
-            radii, fraction = radial_energy(image, np.sqrt(np.add.outer(r.x**2, r.x**2)))
-            energy.plot(radii * 1e3, fraction * 100, color=color,
-                        label=f"{name} · r86 {r.r86[k]*1e6:.1f} μm")
-        self.figure.colorbar(plot, ax=[spot_a, spot_b], label=r"单位入射功率的强度 / $\mathrm{mm}^{-2}$")
-        self.figure.suptitle(mode)
-        profile.set(xlim=(-limit, limit), xlabel="x / mm", ylabel=r"中心剖面 / $\mathrm{mm}^{-2}$")
-        energy.set(xlim=(0, limit), ylim=(0, 101), xlabel="距光轴半径 / mm", ylabel="各自观察面的包围能量 / %")
-        for ax in (profile, energy):
+                    for r, k, _, _ in pairs) * 1e3
+        if view == 0:
+            axes = self.figure.subplots(1, 2, sharex=True, sharey=True)
+            for (r, k, name, _), image, ax in zip(pairs, images, axes):
+                dx = r.project.window / r.project.grid
+                extent = [(r.x[0] - dx / 2) * 1e3, (r.x[-1] + dx / 2) * 1e3] * 2
+                plot = ax.imshow(image, origin="lower", extent=extent, cmap=INTENSITY_CMAP,
+                                 vmin=0, vmax=peak, interpolation="nearest")
+                ax.set(xlim=(-limit, limit), ylim=(-limit, limit), xlabel="x / mm", ylabel="y / mm",
+                       title=f"{name} · z={r.z[k]*1e3:.3f} mm · 透过率 {r.transmission[k]:.1%}")
+            self.figure.colorbar(plot, ax=axes, label=r"单位入射功率的强度 / $\mathrm{mm}^{-2}$")
+        else:
+            ax = self.figure.subplots()
+            for (r, k, name, color), image in zip(pairs, images):
+                if view == 1:
+                    ax.plot(r.x * 1e3, image[r.project.grid // 2], color=color, label=name)
+                else:
+                    radii, fraction = radial_energy(image, np.sqrt(np.add.outer(r.x**2, r.x**2)))
+                    ax.plot(radii * 1e3, fraction * 100, color=color, label=f"{name} · r86 {r.r86[k]*1e6:.1f} μm")
+            if view == 1:
+                ax.set(xlim=(-limit, limit), xlabel="x / mm", ylabel=r"中心剖面 / $\mathrm{mm}^{-2}$")
+            else:
+                ax.set(xlim=(0, limit), ylim=(0, 101), xlabel="距光轴半径 / mm", ylabel="各自观察面的包围能量 / %")
             ax.grid(alpha=.35)
             ax.legend()
+        self.figure.suptitle(mode)
         self.draw_idle()
 
     def longitudinal(self, r):

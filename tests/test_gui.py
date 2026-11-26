@@ -133,6 +133,12 @@ def test_scan_gui_keeps_snapshot_and_exports(window, monkeypatch, tmp_path):
     assert (tmp_path/"scan.csv.meta.json").is_file()
     metadata = json.loads((tmp_path/"scan.csv.meta.json").read_text(encoding="utf-8"))
     assert metadata["metric"] == "末片透镜后粗搜索与局部细化的最小 r86；警告点需复核"
+    assert window.export_csv_button.text() == "导出扫描表"
+    window.workspace.setCurrentIndex(0)
+    path = tmp_path / "propagation.csv"
+    window.export_data()
+    assert window.export_csv_button.text() == "导出传播数据"
+    assert (tmp_path / "propagation.energy.csv").is_file()
 
 
 def test_gui_add_remove_and_validation(window):
@@ -176,19 +182,22 @@ def test_scan_button_runs_worker_and_populates_both_tabs(window, app, monkeypatc
     window.bottom.setCurrentIndex(2)
     assert float(window.scan_table.item(0, 0).text()) == 100
     assert float(window.scan_table.item(2, 0).text()) == 140
-    assert all(window.scan_table.item(i, 4).text() in ('ok', 'warning') for i in range(3))
+    assert all(window.scan_table.item(i, 4).text() in ('成功', '警告') for i in range(3))
 
 
-def test_convergence_preserves_scene_snapshot_and_marks_its_scope(window):
+def test_convergence_preserves_scene_snapshot_and_marks_its_scope(window, tmp_path):
     from gaussian_lab.optics import convergence
     p = window.result.project.clone()
     p.waist *= 1.2
     previous = window.result
+    window.last_directory = str(tmp_path)
     window.job = Job("convergence", p)
     window.job_done(convergence(p))
     assert window.result is previous
     assert "主场景仍为上次光场结果" in window.result_state.text()
     assert "焦区 r86" in window.status.text()
+    assert "透过率" in window.convergence_text
+    assert len(list((tmp_path / "convergence").glob("*.json"))) == 1
 
 
 
@@ -404,20 +413,27 @@ def test_preview_vector_export_carries_quality_label(window, app, monkeypatch, t
 
 
 def test_comparison_pins_full_result_and_exports_joint_scale(window, app, monkeypatch, tmp_path):
+    from PySide6.QtWidgets import QInputDialog
+    def choose(_parent, _title, message, options, *_):
+        assert "缺少共同截面" in message
+        assert "偏差" in options[0]
+        return options[0], True
+    monkeypatch.setattr(QInputDialog, "getItem", choose)
     window.pin_baseline()
     a = window.result
     window.table.item(0, 5).setText("0.8")
     assert window.read_project().elements[0].clear_diameter == pytest.approx(.0008)
+    p = window.read_project()
+    window.job = Job("scan", p, (0, .1, .14, 3))
+    window.job_done(scan(p, 0, .1, .14, 3))
+    assert window.dirty
     window.compare_results()
-    assert window.comparison is None
-    window.compute()
     deadline = time.monotonic() + 10
     while not window.run_button.isEnabled() and time.monotonic() < deadline:
         app.processEvents()
         time.sleep(.01)
     assert window.run_button.isEnabled()
     assert window.baseline is a and window.result is not a
-    window.compare_results()
     first, i, second, j, _ = window.comparison
     assert first.z[i] == pytest.approx(second.z[j], abs=1e-12)
     assert second.transmission[j] < first.transmission[i]
@@ -426,7 +442,10 @@ def test_comparison_pins_full_result_and_exports_joint_scale(window, app, monkey
     window.compare_mode.setCurrentIndex(1)
     window.compare_results()
     assert window.comparison[1:4:2] == (a.focus_index, second.focus_index)
-    window.compare_plot.set_axis_ranges(2, {"x":(-.12,.12)})
+    assert not window.main_views.isVisible()
+    window.compare_view.setCurrentIndex(1)
+    assert len(window.compare_plot.figure.axes[0].lines) == 2
+    window.compare_plot.set_axis_ranges(0, {"x":(-.12,.12)})
     path = tmp_path / "comparison.png"
     monkeypatch.setattr(window, "choose_path", lambda *args: str(path))
     window.export_target.setCurrentIndex(window.export_target.findData("compare"))
@@ -434,6 +453,21 @@ def test_comparison_pins_full_result_and_exports_joint_scale(window, app, monkey
     assert path.stat().st_size > 5000
     window.clear_baseline()
     assert window.baseline is None and window.comparison is None
+
+
+def test_import_precision_and_rejected_range_preserve_inputs(window):
+    p = window.read_project()
+    p.wavelength, p.waist, p.length = 632.815e-9, .452345e-3, .4000234
+    window.fill_project(p)
+    loaded = window.read_project()
+    assert (loaded.wavelength, loaded.waist, loaded.length) == (p.wavelength, p.waist, p.length)
+    invalid = p.clone()
+    invalid.wavelength = 99e-9
+    with pytest.raises(ValueError, match="波长为 99 nm"):
+        window.fill_project(invalid)
+    assert window.read_project() == loaded
+    window.waist.setValue(.75)
+    assert window.read_project().waist == pytest.approx(.75e-3)
 
 
 def test_longitudinal_uses_computed_slices_and_links_observer(window, monkeypatch, tmp_path):
@@ -639,8 +673,8 @@ def test_every_chart_axis_ranges_redraw_restore_and_editor(window, app):
             np.testing.assert_allclose(plot.data_axes()[1].get_xlim(), ranges["x"])
             assert plot.data_axes()[1].get_ylim() == defaults[1][1]
         if plot is window.compare_plot:
-            assert len(plot.data_axes()) == 4
-            assert plot.data_axes()[1].get_xlim() == defaults[1][0]
+            assert len(plot.data_axes()) == 2
+            np.testing.assert_allclose(plot.data_axes()[1].get_xlim(), ranges["x"])
         plot.axis_limits.clear()
         plot.draw_idle()
         for ax, (x,y) in zip(plot.data_axes(), defaults):
@@ -806,7 +840,7 @@ def test_all_curve_hover_points_dual_axis_and_image_pixels(window, app):
               (window.profile_plot, lambda: window.profile_plot.profile(r, 0)),
               (window.energy_plot, lambda: window.energy_plot.energy(r, 0)),
               (window.scan_plot, lambda: window.scan_plot.scanning(rows, "lens")),
-              (window.compare_plot, lambda: window.compare_plot.compare(r, 0, r, 1, "对比")),
+              (window.compare_plot, lambda: window.compare_plot.compare(r, 0, r, 1, "对比", view=1)),
               (window.schematic_plot, lambda: window.schematic_plot.schematic(r, 0))]
     for canvas, draw in charts:
         draw()

@@ -788,6 +788,7 @@ git diff --check
 <h3 id="section-98">V3.1 光路实验对比</h3>
 <p>薄透镜的有效通光直径以米存入 <code>clear_diameter</code>。有限口径等效于在透镜面增加圆孔遮罩，理想高斯参考仍按 ABCD 矩阵传播。旧配置缺省为不限口径。</p>
 <p>完整计算后可固定 A，改参并完成 B 后再生成对照。共用观察面从已采样位置选择，另可比较各自最小光斑面。强度除以入射面场强积分后使用共同标尺，包围能量百分比使用各自观察面的总能量。纵向强度图从已有强度矩阵取中心行，按 z 的实际间距绘图。操作见 <a href="USER_GUIDE.md">当前指南</a>。</p>
+<p>V4.0.5 的对比从完整任务快照读取 A/B，可选择共同采样面，并分别查看光斑、剖面和包围能量。传播导出与扫描分属各工作区，收敛报告按次归档。具体操作见 <a href="USER_GUIDE-v4.0.5.md">V4.0.5 使用指南</a>。</p>
 <!-- FILE_INDEX_START -->
 <table>
 <thead>
@@ -808,30 +809,6 @@ git diff --check
 <tr>
 <td><code>.gitignore</code></td>
 <td>排除虚拟环境、构建产物、运行输出及发行目录，避免将大文件与本机缓存提交到源码仓库。</td>
-</tr>
-<tr>
-<td><code>.idea/.gitignore</code></td>
-<td>本机集成开发环境生成文件的忽略规则。</td>
-</tr>
-<tr>
-<td><code>.idea/inspectionProfiles/Project_Default.xml</code></td>
-<td>本机代码检查配置，包含检查工具与忽略包规则。</td>
-</tr>
-<tr>
-<td><code>.idea/inspectionProfiles/profiles_settings.xml</code></td>
-<td>本机代码检查方案的启用设置。</td>
-</tr>
-<tr>
-<td><code>.idea/modules.xml</code></td>
-<td>本机项目模块列表及模块文件引用。</td>
-</tr>
-<tr>
-<td><code>.idea/vcs.xml</code></td>
-<td>本机集成开发环境的 Git 目录映射。</td>
-</tr>
-<tr>
-<td><code>.idea/毕业设计.iml</code></td>
-<td>本机 Python 模块与解释器配置，不参与业务计算和发行运行。</td>
 </tr>
 <tr>
 <td><code>GaussianLab.spec</code></td>
@@ -896,6 +873,10 @@ git diff --check
 <tr>
 <td><code>docs/USER_GUIDE-v4.0.4.md</code></td>
 <td>V4.0.4 计算详情显示修复与操作说明。</td>
+</tr>
+<tr>
+<td><code>docs/USER_GUIDE-v4.0.5.md</code></td>
+<td>V4.0.5 便携启动和新版工作流指南。</td>
 </tr>
 <tr>
 <td><code>docs/USER_GUIDE.md</code></td>
@@ -1118,6 +1099,10 @@ git diff --check
 <td>V4.0.4 动态说明文字裁切修复记录。</td>
 </tr>
 <tr>
+<td><code>docs/release-notes-v4.0.5.md</code></td>
+<td>V4.0.5 应用版本改动说明。</td>
+</tr>
+<tr>
 <td><code>docs/release-smoke-v0.1.0.json</code></td>
 <td>本地独立发行包的冻结冒烟测试结果。</td>
 </tr>
@@ -1235,7 +1220,7 @@ git diff --check
 </tr>
 <tr>
 <td><code>gaussian_lab/gui.py</code></td>
-<td>构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。</td>
+<td>构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。 包含完整光场快照比较、按工作区导出和收敛记录。</td>
 </tr>
 <tr>
 <td><code>gaussian_lab/memory.py</code></td>

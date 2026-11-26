@@ -428,13 +428,15 @@ def scan(project, element_index, low, high, count=11, cancel=None, progress=None
             rows.append({"value_m": float(value), "min_r86_m": float(r.r86[k]), "focus_z_m": float(r.z[k]),
                          "transmission": float(r.transmission[-1]), "theta86_rad": r.theta86,
                          "focus_bracket_m": r.focus["axial_bracket_width_m"],
+                         "boundary_minimum": r.focus["boundary_minimum"],
                          "backend": r.provenance["backend"]["used"],
                          "backend_reason": r.provenance["backend"]["reason"],
                          "status": "warning" if r.warnings else "ok", "note": "；".join(r.warnings)})
         except ValueError as exc:
             rows.append({"value_m": float(value), "min_r86_m": float("nan"), "focus_z_m": float("nan"),
                          "transmission": float("nan"), "theta86_rad": float("nan"),
-                         "focus_bracket_m": float("nan"), "backend": "not_run", "backend_reason": "参数或能量无效",
+                         "focus_bracket_m": float("nan"), "boundary_minimum": None,
+                         "backend": "not_run", "backend_reason": "参数或能量无效",
                          "status": "error", "note": str(exc)})
         if progress:
             progress(int((i + 1) / count * 100))

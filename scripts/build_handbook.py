@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 MANUAL = DOCS / '项目学习手册.md'
 EXTRA_FILES = ['docs/项目学习手册.md', 'docs/项目学习手册.html', 'docs/file-roles.json',
-               'docs/file-inventory.json', 'scripts/build_handbook.py', 'tests/test_text_policy.py']
+               'docs/file-inventory.json', 'scripts/build_handbook.py', 'tests/test_text_policy.py',
+               'docs/USER_GUIDE-v4.0.5.md', 'docs/release-notes-v4.0.5.md']
 
 
 def inventory():

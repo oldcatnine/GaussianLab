@@ -4,6 +4,7 @@ import os
 os.environ.setdefault("QT_API", "pyside6")
 import json
 import copy
+from datetime import datetime
 from dataclasses import asdict
 from pathlib import Path
 import threading
@@ -12,7 +13,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer, QSettings
 from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
+    QLabel, QPushButton, QInputDialog, QComboBox, QDoubleSpinBox, QSpinBox, QTableWidget, QTableWidgetItem,
     QHeaderView, QTabWidget, QSlider, QFileDialog, QMessageBox, QProgressBar, QSplitter,
     QFormLayout, QGroupBox, QCheckBox, QAbstractItemView, QScrollArea, QStackedWidget,
     QStyle, QStyleOptionSpinBox, QAbstractSpinBox)
@@ -208,6 +209,9 @@ class MainWindow(QMainWindow):
         self.revision = 0
         self.pending_preview = False
         self.pending_full = False
+        self.compare_revision = None
+        self.full_project = None
+        self.loaded_values = {}
         self.closing = False
         self.result_cache = ResultCache()
         self.preview_timer = QTimer(self)
@@ -271,6 +275,16 @@ class MainWindow(QMainWindow):
         self.waist_z = spin(0, -5000, 5000, 2, " mm")
         self.length = spin(400, 10, 5000, 1, " mm")
         self.window_size = spin(6, .2, 100, 2, " mm")
+        self.source_fields = (
+            (self.wave, "wavelength", "波长", 1e9, "nm"),
+            (self.waist, "waist", "束腰半径", 1e3, "mm"),
+            (self.waist_z, "waist_z", "束腰位置", 1e3, "mm"),
+            (self.length, "length", "传播长度", 1e3, "mm"),
+            (self.window_size, "window", "横向窗口", 1e3, "mm"),
+        )
+        for widget, *_ in self.source_fields:
+            widget.valueChanged.connect(lambda _, w=widget: self.forget_loaded_value(w))
+            widget.lineEdit().textEdited.connect(lambda _, w=widget: self.forget_loaded_value(w))
         self.grid = RefinedComboBox()
         self.grid.addItems(["128", "256", "512", "1024", "2048", "4096"])
         self.grid.setCurrentText("256")
@@ -407,7 +421,12 @@ class MainWindow(QMainWindow):
         sf.addRow(self.scan_button)
         left_layout.addWidget(scan_box)
         self.convergence_button = button("检查多指标收敛", self.start_convergence)
-        left_layout.addWidget(self.convergence_button)
+        convergence_controls = QHBoxLayout()
+        convergence_controls.addWidget(self.convergence_button, 1)
+        self.convergence_report_button = button("查看结果", self.show_convergence_report)
+        self.convergence_report_button.setEnabled(False)
+        convergence_controls.addWidget(self.convergence_report_button)
+        left_layout.addLayout(convergence_controls)
         # 将常用光路置顶，专业设置按需展开。
         left_layout.removeWidget(element_box)
         left_layout.insertWidget(1, element_box)
@@ -525,11 +544,20 @@ class MainWindow(QMainWindow):
         self.compare_mode = RefinedComboBox()
         self.compare_mode.addItems(["共用观察面", "各自最小光斑面"])
         compare_controls.addWidget(self.compare_mode)
-        compare_controls.addWidget(button("与当前 B 对比", self.compare_results, True))
+        self.compare_button = button("计算 B 并比较", self.compare_results, True)
+        compare_controls.addWidget(self.compare_button)
+        self.compare_view = RefinedComboBox()
+        self.compare_view.addItems(["光斑", "剖面", "包围能量"])
+        self.compare_axis_limits = [{}, {}, {}]
+        self.compare_view.currentIndexChanged.connect(self.draw_comparison)
+        compare_controls.addWidget(self.compare_view)
         compare_layout.addLayout(compare_controls)
+        self.compare_details = WrappingLabel("")
+        compare_layout.addWidget(self.compare_details)
         self.compare_plot = PlotCanvas()
         compare_layout.addWidget(self.compare_plot, 1)
-        self.bottom.addTab(compare_panel, "A/B 对比")
+        self.compare_tab = self.bottom.addTab(compare_panel, "A/B 对比")
+        self.bottom.currentChanged.connect(lambda _: self.update_workspace_views())
         longitudinal_panel = QWidget()
         longitudinal_layout = QVBoxLayout(longitudinal_panel)
         longitudinal_layout.addWidget(button("从当前结果生成纵向强度图", self.show_longitudinal), 0, Qt.AlignLeft)
@@ -549,7 +577,8 @@ class MainWindow(QMainWindow):
         self.result_state = QLabel("尚未计算")
         self.result_state.setStyleSheet("color:#475569;")
         exports.addWidget(self.result_state, 1)
-        exports.addWidget(button("导出 CSV", self.export_data))
+        self.export_csv_button = button("导出传播数据", self.export_data)
+        exports.addWidget(self.export_csv_button)
         self.export_target = RefinedComboBox()
         self.export_target.setAccessibleName("导出图像类型")
         for label, key in (("当前光斑分析", "current"), ("光斑图", "spot"), ("剖面强度曲线", "profile"),
@@ -590,7 +619,6 @@ class MainWindow(QMainWindow):
     def change_workspace(self, index):
         """共享输入和结果，只切换任务布局，不触发重新求解。"""
         self.scene_frame.setVisible(index == 0)
-        self.main_views.setVisible(index != 2)
         self.bottom.setVisible(index != 0)
         self.scan_panel.setVisible(index == 2)
         self.source_panel.setVisible(index != 2)
@@ -599,6 +627,14 @@ class MainWindow(QMainWindow):
             self.bottom.setCurrentIndex(1)
         elif index == 1 and self.bottom.currentIndex() in (1, 2):
             self.bottom.setCurrentIndex(0)
+        self.update_workspace_views()
+
+    def update_workspace_views(self):
+        if not hasattr(self, "main_views"):
+            return
+        index = self.workspace.currentIndex()
+        self.main_views.setVisible(index == 0 or (index == 1 and self.bottom.currentIndex() != self.compare_tab))
+        self.export_csv_button.setText("导出扫描表" if index == 2 else "导出传播数据")
 
     def reset_scene_view(self):
         if self.scene is not None:
@@ -671,6 +707,10 @@ class MainWindow(QMainWindow):
             self.update_sampling_info()
             self.revision += 1
             self.dirty = True
+            self.compare_revision = None
+            if hasattr(self, "compare_button"):
+                self.compare_button.setText("计算 B 并比较")
+                self.clear_comparison()
             if hasattr(self, "result_state"):
                 self.result_state.setText("参数已修改 · 当前图为上次结果")
             if hasattr(self, "auto_preview") and self.auto_preview.isChecked():
@@ -695,8 +735,18 @@ class MainWindow(QMainWindow):
         if not self.job or not self.job.isRunning():
             self.launch_job("preview", automatic=True)
 
+    def forget_loaded_value(self, widget):
+        if not self.loading and self.loaded_values.pop(widget, None) is not None:
+            self.mark_dirty()
+
     def fill_project(self, p):
+        for widget, field, label, scale, unit in self.source_fields:
+            value = getattr(p, field) * scale
+            if not widget.minimum() - 1e-10 <= value <= widget.maximum() + 1e-10:
+                raise ValueError(f"{label}为 {value:g} {unit}，允许范围为 "
+                                 f"{widget.minimum():g}—{widget.maximum():g} {unit}")
         self.loading = True
+        self.loaded_values = {widget: getattr(p, field) for widget, field, *_ in self.source_fields}
         self.project_name = p.name
         if self.presets.findText(p.name) >= 0:
             self.presets.setCurrentText(p.name)
@@ -779,7 +829,7 @@ class MainWindow(QMainWindow):
         family.currentTextChanged.connect(self.mark_dirty)
         self.mode_table.setCellWidget(row, 0, family)
         for col, value in enumerate((mode.n, mode.m, mode.amplitude, mode.phase_deg), 1):
-            self.mode_table.setItem(row, col, QTableWidgetItem(f"{value:.12g}"))
+            self.mode_table.setItem(row, col, QTableWidgetItem(str(value)))
         self.mark_dirty()
 
     def remove_mode(self):
@@ -802,8 +852,8 @@ class MainWindow(QMainWindow):
     def insert_element(self, e):
         row = self.table.rowCount()
         self.table.insertRow(row)
-        for col, text in enumerate(("透镜" if e.kind == "lens" else "光阑", f"{e.z*1e3:g}",
-                                    f"{e.value*1e3:g}", e.label)):
+        for col, text in enumerate(("透镜" if e.kind == "lens" else "光阑", str(e.z*1e3),
+                                    str(e.value*1e3), e.label)):
             item = QTableWidgetItem(text)
             if col == 0:
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
@@ -812,7 +862,7 @@ class MainWindow(QMainWindow):
         enabled.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
         enabled.setCheckState(Qt.Checked if e.enabled else Qt.Unchecked)
         self.table.setItem(row, 4, enabled)
-        diameter = QTableWidgetItem("" if e.clear_diameter is None else f"{e.clear_diameter*1e3:.12g}")
+        diameter = QTableWidgetItem("" if e.clear_diameter is None else str(e.clear_diameter*1e3))
         if e.kind != "lens":
             diameter.setFlags(diameter.flags() & ~Qt.ItemIsEditable)
         self.table.setItem(row, 5, diameter)
@@ -836,8 +886,9 @@ class MainWindow(QMainWindow):
                     float(diameter)/1e3 if diameter else None))
         except (ValueError, AttributeError) as exc:
             raise ValueError("元件位置与焦距/直径须为数值，透镜口径可留空") from exc
-        project = Project(self.project_name, self.wave.value()*1e-9, self.waist.value()*1e-3,
-                       self.waist_z.value()*1e-3, self.length.value()*1e-3, self.window_size.value()*1e-3,
+        source = [self.loaded_values.get(widget, widget.value() / scale)
+                  for widget, _, _, scale, _ in self.source_fields]
+        project = Project(self.project_name, *source,
                        int(self.grid.currentText()), self.samples.value(), elements, self.focus_refinement.value(),
                        modes=modes, memory_limit_mib=self.memory_limit.value(), storage_mode=self.storage_mode.currentData())
         return project.validate() if validate else project
@@ -931,6 +982,9 @@ class MainWindow(QMainWindow):
     def start_convergence(self):
         self.launch_job("convergence")
 
+    def show_convergence_report(self):
+        QMessageBox.information(self, "多指标收敛结果", self.convergence_text)
+
     def cancel_job(self):
         self.preview_timer.stop()
         self.pending_preview = self.pending_full = False
@@ -948,12 +1002,17 @@ class MainWindow(QMainWindow):
         self.convergence_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         if not self.closing:
+            if self.compare_revision == self.revision and job.kind == "simulate":
+                self.compare_revision = None
+                if job.request_project == self.full_project and not self.dirty:
+                    self.compare_results()
             if self.pending_full:
                 QTimer.singleShot(0, self.compute)
             elif self.pending_preview and self.auto_preview.isChecked() and not self.preview_timer.isActive():
                 self.preview_timer.start(1)
 
     def job_failed(self, message):
+        self.compare_revision = None
         self.status.setText(message)
         if "已取消" not in message and self.job.kind != "preview":
             self.show_error(message)
@@ -962,10 +1021,13 @@ class MainWindow(QMainWindow):
     def job_done(self, result):
         if self.job.kind in ("simulate", "preview") and self.job.revision is not None and self.job.revision != self.revision:
             return
-        try:
-            self.dirty = self.read_project() != self.job.request_project
-        except ValueError:
-            self.dirty = True
+        if self.job.kind in ("simulate", "preview"):
+            try:
+                self.dirty = self.read_project() != self.job.request_project
+            except ValueError:
+                self.dirty = True
+            self.full_project = self.job.request_project.clone() if self.job.kind == "simulate" else None
+            self.compare_button.setText("与当前 B 对比" if self.full_project is not None and not self.dirty else "计算 B 并比较")
         if self.job.kind == "scan":
             self.scan_rows = result
             self.scan_project = self.job.project.clone()
@@ -974,25 +1036,49 @@ class MainWindow(QMainWindow):
             if self.display_mode.currentData() != "none":
                 self.scan_plot.scanning(result, kind)
             self.scan_table.setColumnCount(6)
-            self.scan_table.setHorizontalHeaderLabels(["参数/mm", "最小r86/μm", "焦点/mm", "透过率/%", "状态", "说明"])
+            self.scan_table.setHorizontalHeaderLabels(["参数/mm", "最小r86/μm", "最小值位置/mm", "透过率/%", "状态", "说明"])
             self.scan_table.setRowCount(len(result))
             for row, item in enumerate(result):
-                for col, value in enumerate((f"{item['value_m']*1e3:.3f}", f"{item['min_r86_m']*1e6:.2f}",
-                    f"{item['focus_z_m']*1e3:.2f}", f"{item['transmission']*100:.2f}", item["status"], item["note"])):
+                failed = item["status"] == "error"
+                metrics = ("—", "—", "—") if failed else (
+                    f"{item['min_r86_m']*1e6:.2f}",
+                    f"{item['focus_z_m']*1e3:.2f}（{'边界' if item.get('boundary_minimum') else '内部'}）",
+                    f"{item['transmission']*100:.2f}")
+                label = {"ok": "成功", "warning": "警告", "error": "失败"}[item["status"]]
+                for col, value in enumerate((f"{item['value_m']*1e3:.3f}", *metrics, label, item["note"])):
                     self.scan_table.setItem(row, col, QTableWidgetItem(value))
             self.scan_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
             self.workspace.setCurrentIndex(2)
             self.bottom.setCurrentIndex(1)
-            self.status.setText(f"扫描完成 · {len(result)} 点 · 末片透镜后搜索并局部细化；警告点需复核 · CSV 保留警告")
+            counts = [sum(row["status"] == key for row in result) for key in ("ok", "warning", "error")]
+            self.status.setText(f"扫描完成 · 成功 {counts[0]} 点 · 警告 {counts[1]} 点 · 失败 {counts[2]} 点")
         elif self.job.kind == "convergence":
-            self.last_convergence = result
             changes = result["changes"]
-            self.status.setText("焦区 r86 变化：" + "；".join(
-                f"{label} {changes[key]['focus_r86_m_relative']:.2%} / 位置 {changes[key]['focus_z_absolute_m']*1e3:.3f} mm"
-                for key, label in (("grid", "网格"), ("window", "窗口"), ("axial", "轴向"))) +
-                "。远场、透过率与剖面见 outputs/convergence.json；变化不等于误差认证")
-            Path("outputs").mkdir(exist_ok=True)
-            Path("outputs/convergence.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+            variants = result["variants"]
+            measures = (("focus_r86_m", "焦区 r86", 1e6, "μm"),
+                        ("focus_z_m", "最小值位置", 1e3, "mm"),
+                        ("transmission", "透过率", 100, "%"),
+                        ("endpoint_r86_m", "末端 r86", 1e6, "μm"),
+                        ("theta86_rad", "远场 θ86", 1e3, "mrad"))
+            sections = [self.job.project.name]
+            for key, label in (("grid", "网格"), ("window", "窗口"), ("axial", "轴向")):
+                lines = [label]
+                for metric, caption, scale, unit in measures:
+                    base, value = (variants[side][metric] * scale for side in ("base", key))
+                    lines.append(f"{caption}：{base:.5g} → {value:.5g} {unit}（变化 {value-base:+.5g}）")
+                lines.append(f"归一化剖面 RMS 差值：{changes[key]['focus_profile_rms']:.4g}")
+                sections.append("\n".join(lines))
+            archive = Path(self.last_directory) / "convergence" / datetime.now().strftime("%Y%m%d-%H%M%S-%f.json")
+            try:
+                archive.parent.mkdir(parents=True, exist_ok=True)
+                archive.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+                sections.append("记录已保存到 " + str(archive))
+            except OSError as exc:
+                sections.append("记录保存失败：" + str(exc))
+            self.last_convergence = result
+            self.convergence_text = "\n\n".join([*sections, result["note"]])
+            self.convergence_report_button.setEnabled(True)
+            self.status.setText("焦区 r86 等收敛指标已计算，点击「查看结果」查看基准、加密值及记录路径。")
         else:
             changed = self.result is not result
             self.result = result
@@ -1005,8 +1091,9 @@ class MainWindow(QMainWindow):
                     self.scene.set_result(result)
             ref = result.reference
             k = result.focus_index
-            self.cards[0].setText(f"高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
-            self.cards[1].setText(f"最小光斑 r86 / 位置\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
+            quality = "快速预览" if self.job.kind == "preview" else "完整计算"
+            self.cards[0].setText(f"{quality} · 高斯参考束腰 / 全局 z\n{ref['waist']*1e6:.1f} μm  /  {ref['waist_z']*1e3:.1f} mm")
+            self.cards[1].setText(f"{quality} · 最小光斑 r86 / 位置\n{result.r86[k]*1e6:.1f} μm  /  {result.z[k]*1e3:.1f} mm")
             self.cards[1].setToolTip(f"焦区细化 {result.focus['levels']} 级；括区宽 {result.focus['axial_bracket_width_m']*1e3:.4f} mm。横向分位平台仍需复核。")
             self.cards[2].setText(f"参考 θ / 衍射 θ86\n{ref['divergence']*1e3:.2f} / {result.theta86*1e3:.2f} mrad")
             self.cards[3].setText(f"系统透过率 / 末端\n{result.transmission[-1]*100:.2f} %")
@@ -1075,7 +1162,8 @@ class MainWindow(QMainWindow):
             self.plane_slider.setValue(self.result.focus_index)
 
     def full_snapshot(self):
-        if (self.result is None or self.dirty or
+        if (self.result is None or self.full_project is None or
+                self.read_project() != self.full_project or
                 self.result.provenance.get("quality") == "preview"):
             raise ValueError("请先对当前参数完成一次光场计算")
         return self.result
@@ -1091,6 +1179,7 @@ class MainWindow(QMainWindow):
 
     def clear_comparison(self):
         self.comparison = None
+        self.compare_details.setText("")
         self.compare_plot.figure.clear()
         self.compare_plot.draw_idle()
 
@@ -1100,27 +1189,67 @@ class MainWindow(QMainWindow):
         self.clear_comparison()
 
     def compare_results(self):
+        a = self.baseline
+        if a is None:
+            self.status.setText("请先固定方案 A")
+            return
         try:
-            a, b = self.baseline, self.full_snapshot()
-            if a is None:
-                raise ValueError("请先固定方案 A")
+            current = self.read_project()
+            if self.full_project != current:
+                self.compare_revision = self.revision
+                self.compute()
+                return
+            b = self.full_snapshot()
             mode = self.compare_mode.currentText()
             if self.compare_mode.currentIndex() == 1:
                 i, j = a.focus_index, b.focus_index
             else:
-                # 只比较双方实际采样面；容差用于消除坐标浮点舍入差异。
                 ia = np.abs(a.z[:, None] - b.z[None, :]).argmin(axis=0)
                 common = np.flatnonzero(np.abs(a.z[ia] - b.z) <= 1e-12)
+                target = float(b.z[self.plane_slider.value()])
                 if not len(common):
                     raise ValueError("没有共同采样面，请统一传播长度与轴向采样")
-                target = b.z[self.plane_slider.value()]
-                j = int(common[np.argmin(np.abs(b.z[common] - target))])
+                order = common[np.argsort(np.abs(b.z[common] - target), kind="stable")]
+                j = int(order[0])
+                if abs(float(b.z[j]) - target) > 1e-12:
+                    revision = self.revision
+                    choices = [f"{b.z[k]*1e3:.6f} mm（偏差 {(b.z[k]-target)*1e3:+.6f} mm）"
+                               for k in order]
+                    choice, accepted = QInputDialog.getItem(self, "选择共用观察面",
+                        f"所选 {target*1e3:.6f} mm 缺少共同截面，请确认比较位置：", choices, 0, False)
+                    if not accepted or self.revision != revision or self.baseline is not a or self.result is not b:
+                        return
+                    j = int(order[choices.index(choice)])
                 i = int(ia[j])
-            self.compare_plot.compare(a, i, b, j, mode)
             self.comparison = a, i, b, j, mode
+            self.workspace.setCurrentIndex(1)
+            self.bottom.setCurrentIndex(self.compare_tab)
+            self.draw_comparison()
             self.status.setText(f"对比已生成 · A {a.z[i]*1e3:.3f} mm · B {b.z[j]*1e3:.3f} mm")
         except ValueError as exc:
             self.status.setText(str(exc))
+
+    def draw_comparison(self, *_):
+        if self.comparison is None:
+            return
+        a, i, b, j, mode = self.comparison
+        descriptions = [f"{name} · {r.project.name} · z={r.z[k]*1e3:.3f} mm · "
+                        f"λ={r.project.wavelength*1e9:g} nm · w₀={r.project.waist*1e3:g} mm · "
+                        f"传播 {r.project.length*1e3:g} mm · N={r.project.grid} · "
+                        f"透过率 {r.transmission[k]:.2%}" for name, r, k in (("A", a, i), ("B", b, j))]
+        self.compare_details.setText(" ｜ ".join(descriptions))
+        changed = []
+        for label, field in (("波长", "wavelength"), ("束腰", "waist"), ("束腰位置", "waist_z"),
+                             ("传播长度", "length"), ("窗口", "window"), ("网格", "grid"),
+                             ("采样点数", "samples"), ("焦区细化", "focus_refinement"),
+                             ("光路元件", "elements"), ("横模", "modes")):
+            if getattr(a.project, field) != getattr(b.project, field):
+                changed.append(label)
+        if changed:
+            self.compare_details.setText(self.compare_details.text() + "\n参数差异：" + "、".join(changed))
+        view = self.compare_view.currentIndex()
+        self.compare_plot.axis_limits = self.compare_axis_limits[view]
+        self.compare_plot.compare(a, i, b, j, mode, view=view)
 
     def show_longitudinal(self):
         if self.result is None or self.dirty:
@@ -1186,7 +1315,7 @@ class MainWindow(QMainWindow):
 
     def export_data(self):
         try:
-            is_scan = self.bottom.currentIndex() in (1, 2)
+            is_scan = self.workspace.currentIndex() == 2
             if is_scan and not self.scan_rows:
                 raise ValueError("当前扫描页没有结果，请先完成扫描")
             if not is_scan and self.result is None:
@@ -1194,7 +1323,9 @@ class MainWindow(QMainWindow):
             snapshot = self.result
             preview = snapshot is not None and snapshot.provenance.get("quality") == "preview"
             filename = "scan.csv" if is_scan else "propagation-preview.csv" if preview else "propagation.csv"
-            path = self.choose_path("导出计算快照数据", filename, "CSV (*.csv)")
+            project = self.scan_project if is_scan else snapshot.project
+            kind = "扫描表" if is_scan else ("传播预览数据" if preview else "传播数据")
+            path = self.choose_path(f"导出{kind} · {project.name}", filename, "CSV (*.csv)")
             if path:
                 if is_scan:
                     export_csv(self.scan_rows, path)
@@ -1206,7 +1337,10 @@ class MainWindow(QMainWindow):
                         "metric": "末片透镜后粗搜索与局部细化的最小 r86；警告点需复核"},
                         ensure_ascii=False, indent=2), encoding="utf-8")
                 else:
-                    export_result(snapshot, path, getattr(self, "last_convergence", None))
+                    report = getattr(self, "last_convergence", None)
+                    if report is not None and report["project"] != asdict(snapshot.project):
+                        report = None
+                    export_result(snapshot, path, report)
                 self.status.setText("已导出数据和对应参数快照：" + path)
         except Exception as exc:
             self.show_error(str(exc))
@@ -1242,6 +1376,7 @@ class MainWindow(QMainWindow):
                 if comparison is None:
                     raise ValueError("请先生成 A/B 对比")
                 plot = self.compare_plot
+                comparison_view = self.compare_view.currentIndex()
             elif key == "longitudinal":
                 r = self.longitudinal_result
                 if r is None:
@@ -1278,7 +1413,7 @@ class MainWindow(QMainWindow):
                 plot.axis_limits = axis_limits
                 if key == "compare":
                     plot.figure.set_size_inches(10, 7)
-                    plot.compare(*comparison)
+                    plot.compare(*comparison, view=comparison_view)
                 elif key == "longitudinal":
                     plot.longitudinal(r)
                 elif key == "scan":

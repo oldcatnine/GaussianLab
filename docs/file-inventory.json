@@ -15,36 +15,6 @@
     "optional_local": false
   },
   {
-    "path": ".idea/.gitignore",
-    "purpose": "本机集成开发环境生成文件的忽略规则。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/inspectionProfiles/Project_Default.xml",
-    "purpose": "本机代码检查配置，包含检查工具与忽略包规则。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/inspectionProfiles/profiles_settings.xml",
-    "purpose": "本机代码检查方案的启用设置。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/modules.xml",
-    "purpose": "本机项目模块列表及模块文件引用。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/vcs.xml",
-    "purpose": "本机集成开发环境的 Git 目录映射。",
-    "optional_local": true
-  },
-  {
-    "path": ".idea/毕业设计.iml",
-    "purpose": "本机 Python 模块与解释器配置，不参与业务计算和发行运行。",
-    "optional_local": true
-  },
-  {
     "path": "GaussianLab.spec",
     "purpose": "可执行程序的打包配置，决定入口、资源、动态库、隐藏导入和组件排除。",
     "optional_local": false
@@ -122,6 +92,11 @@
   {
     "path": "docs/USER_GUIDE-v4.0.4.md",
     "purpose": "V4.0.4 计算详情显示修复与操作说明。",
+    "optional_local": false
+  },
+  {
+    "path": "docs/USER_GUIDE-v4.0.5.md",
+    "purpose": "V4.0.5 便携启动和新版工作流指南。",
     "optional_local": false
   },
   {
@@ -400,6 +375,11 @@
     "optional_local": false
   },
   {
+    "path": "docs/release-notes-v4.0.5.md",
+    "purpose": "V4.0.5 应用版本改动说明。",
+    "optional_local": false
+  },
+  {
     "path": "docs/release-smoke-v0.1.0.json",
     "purpose": "本地独立发行包的冻结冒烟测试结果。",
     "optional_local": false
@@ -546,7 +526,7 @@
   },
   {
     "path": "gaussian_lab/gui.py",
-    "purpose": "构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。",
+    "purpose": "构建白色桌面界面、调度后台计算并提供观察屏、扫描、A/B 对比、纵向强度及图像导出。 包含完整光场快照比较、按工作区导出和收敛记录。",
     "optional_local": false
   },
   {
