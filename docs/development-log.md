@@ -616,6 +616,8 @@ Actions 43613467773 的基础环境和 58 项发行/计算检查通过，安装�
 - 工具与验证。使用 PowerShell、Python、Qt、pytest、Git 和 PyInstaller。Windows 桌面图形环境全量回归 189 项通过，CuPy 提示未检测到 CUDA_PATH，实际 CUDA 测试通过。首轮测试的悬停断言仍针对旧版四图，改为对新版剖面页验证后通过。Windows PowerShell 5.1 误读 UTF-8 构建脚本，改用 PowerShell 7 后完成打包阶段的 EXE 构建。相关文件为 GUI、图表、光学计算、测试、指南及版本资源。报告可复用对比复现与验收场景。
 - 关联提交主题。`fix: 修复光场对比与结果追溯并更新至 V4.0.5`。后续可以验证更多显示缩放和高分辨率案例。
 
+- 便携发行验证。应用提交 `91bde09`，本地标签 `v4.0.5`。首轮在运行依赖尚未复制完成时启动，冻结程序报缺少 _ctypes；用 Computer Use 核对报错后，改在完整目录中执行最终 EXE。CPU 与 CUDA 冻结冒烟均通过，覆盖三组案例、图像导出、扫描、预览和横模。三个附件均校验 SHA-256 和 ZIP CRC，解压 EXE 与目录版摘要一致。沙箱临时目录路径过长，改在标准 Windows 临时目录完成解压。验证文件位于 outputs/final405-cpu、outputs/final405-cuda 和 outputs/v405-archive-check.json。本条记录对应提交主题 `docs: 记录 V4.0.5 便携版验证`。
+
 ## 5. 毕业设计报告素材映射
 
 | 报告部分 | 当前已有素材 | 后续需补证据 |
