@@ -618,6 +618,8 @@ Actions 43613467773 的基础环境和 58 项发行/计算检查通过，安装�
 
 - 便携发行验证。应用提交 `91bde09`，本地标签 `v4.0.5`。首轮在运行依赖尚未复制完成时启动，冻结程序报缺少 _ctypes；用 Computer Use 核对报错后，改在完整目录中执行最终 EXE。CPU 与 CUDA 冻结冒烟均通过，覆盖三组案例、图像导出、扫描、预览和横模。三个附件均校验 SHA-256 和 ZIP CRC，解压 EXE 与目录版摘要一致。沙箱临时目录路径过长，改在标准 Windows 临时目录完成解压。验证文件位于 outputs/final405-cpu、outputs/final405-cuda 和 outputs/v405-archive-check.json。本条记录对应提交主题 `docs: 记录 V4.0.5 便携版验证`。
 
+- GitHub 发行。将 master（`346e5c3`）和标签 v4.0.5 推送到 oldcatnine/GaussianLab，标签指向 `91bde09`。使用 Git、项目发布脚本与 GitHub API，现场确认 [V4.0.5 Release](https://github.com/oldcatnine/GaussianLab/releases/tag/v4.0.5) 已正式发布并列为最新版。Windows 便携包、应用源码、Qt 对应源码和 SHA-256 清单四个附件的服务器摘要与本地预期值一致。代理上传速率较低，停止本任务自己的上传后改用单进程直连。核对并移除本次中断留下的 starter 附件，复用三个已核验附件，补传 Windows 包后发布。核验结果见 outputs/v405-remote-check.json。报告可引用发行链接及附件校验方法。关联提交主题为 `docs: 记录 V4.0.5 GitHub 发布`。
+
 ## 5. 毕业设计报告素材映射
 
 | 报告部分 | 当前已有素材 | 后续需补证据 |
